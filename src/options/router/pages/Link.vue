@@ -1,0 +1,48 @@
+<template>
+    <div>
+        <button @click='removeLink'>x</button>
+        <button @click='toggleSaved'>toggle saved</button>
+        {{status}} / 
+        {{link.url}}
+    </div>
+</template>
+
+<script>
+
+export default {
+  name: 'LinkDiv',
+  props: ['initialLink'],
+  data() {
+      return {
+          link: this.initialLink,
+      }
+  },
+  computed: {
+      status: function() {
+          return this.link.saved ? "saved" : "not saved";
+      }
+  },
+  methods: {
+      removeLink: function() {
+        this.$store.dispatch('removeLink', {
+            url: this.link.url,
+            targetId: this.$route.params.id,
+        });
+      },
+      toggleSaved: function() {
+        this.$store.dispatch('saveOrSkipLink', {
+            link: this.link.url,
+            action: this.link.saved ? 'skip' : 'save',
+            targetId: this.$route.params.id,
+        });
+      }
+  }
+};
+</script>
+
+<style scoped>
+    button {
+        margin: 5px;
+        align-self: center;
+    }
+</style>

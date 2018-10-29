@@ -1,0 +1,19 @@
+export const UPDATE_FOO = 'UPDATE_FOO';
+
+export const ADD_PROFILE = 'ADD_PROFILE';
+
+export const SAVE_OR_SKIP_LINK = 'SAVE_OR_SKIP_LINK';
+
+export const REMOVE_LINK = 'REMOVE_LINK';
+
+export const ADD_SUGGESTED_SOURCES = 'ADD_SUGGESTED_SOURCES';
+
+export const REMOVE_SUGGESTED_SOURCE = 'REMOVE_SUGGESTED_SOURCE';
+
+export const SET_TARGET = 'SET_TARGET';
+
+export const SET_CUR_URL = 'SET_CUR_URL';
+
+export const DELETE_PROFILE = 'DELETE_PROFILE';
+
+export const RENAME_PROFILE = 'RENAME_PROFILE';

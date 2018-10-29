@@ -1,0 +1,64 @@
+{
+  "name": "sos-kocal",
+  "description": "Save or skip",
+  "version": "2.0",
+  "author": "opowell@gmail.com",
+
+  "manifest_version": 2,
+  "icons": {
+    "48": "icons/icon_48.png",
+    "128": "icons/icon_128.png"
+  },
+  "browser_action": {
+    "default_title": "sos-kocal",
+    "default_popup": "popup/popup.html"
+  },
+  "background": {
+    "scripts": ["background.js"],
+    "persistent": false
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "exclude_matches": [
+         "*://*.reddit.com/*",
+         "*://news.ycombinator.com/*",
+         "*://*.literotica.com/*"
+        ],
+      "js": [
+        "scrapers/default.js"
+      ]
+    },
+    {
+      "matches": ["*://www.literotica.com/*"],
+      "js": [
+        "scrapers/www-literotica-com.js"
+      ]
+    },
+    {
+      "matches": ["*://tags.literotica.com/*"],
+      "js": [
+        "scrapers/tags-literotica-com.js"
+      ]
+    },
+    {
+      "matches": ["*://*.reddit.com/*"],
+      "js": ["scrapers/reddit.js"]
+    },
+    {
+      "matches": ["*://news.ycombinator.com/*"],
+      "js": ["scrapers/hackernews.js"]
+    }
+  ],
+    
+  "permissions": [
+    "tabs",
+    "http://*/",
+    "https://*/",
+    "storage",
+    "unlimitedStorage"
+  ],
+
+  "options_page": "options/options.html"
+  
+}

@@ -3,7 +3,7 @@
         <button @click='removeLink'>x</button>
         <button @click='toggleSaved'>toggle saved</button>
         {{status}} / 
-        {{link.url}}
+        <a :href='"http://" + link.url' target='_blank'>{{link.url}}</a>
     </div>
 </template>
 

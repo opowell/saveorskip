@@ -55,6 +55,7 @@ export default class {
     }
 
     let link = new Link(url, saved);
+    console.log('set link: ' + saved + ', ' + url);
     profile.links.push(link);
   }
 

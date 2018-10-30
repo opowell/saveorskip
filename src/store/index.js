@@ -16,6 +16,8 @@ export default new Vuex.Store({
     profileObjs: [],
     targetId: '',
     curUrlSaved: null,
+    curUrl: '',
+    profileDuplicate: null,
   },
   getters,
   mutations,

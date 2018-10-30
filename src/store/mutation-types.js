@@ -17,3 +17,5 @@ export const SET_CUR_URL = 'SET_CUR_URL';
 export const DELETE_PROFILE = 'DELETE_PROFILE';
 
 export const RENAME_PROFILE = 'RENAME_PROFILE';
+
+export const DUPLICATE_PROFILE = 'DUPLICATE_PROFILE';

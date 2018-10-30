@@ -3,7 +3,8 @@
         <div class='menu-item' id="saveAndGo">Save and go</div>
         <div class='menu-item' id="skipAndGo">Skip and go</div>
         <div class='menu-divider'></div>
-        <div class='menu-item'>Saved: {{linkStatus}}</div>
+        <div class='menu-item'>Cur Url: {{curUrl}}</div>
+        <div class='menu-item'>Status: {{linkStatus}}</div>
         <div class='menu-item' id="save">Save</div>
         <div class='menu-item' id="skip">Skip</div>
         <div class='menu-item' id="go">Go</div>
@@ -38,7 +39,6 @@
         <div class='menu-item' id='options'>Options</div>
         <div class='menu-item' id="account">User: opowell</div>
         <div class='menu-divider'></div>
-        <div class='menu-item' id="wipeData">Wipe data</div>
     </div>
 </template>
 
@@ -64,13 +64,14 @@ export default {
     },
     linkStatus() {
         return this.$store.getters.curLinkStatus;
+    },
+    curUrl() {
+        return this.$store.state.curUrl;
     }
   },
   methods: {
       setTarget() {
         this.$store.dispatch('setTarget', this.selectTargetId);
-        console.log('set target: ' + this.targetId);
-        console.log('set target: ' + localStorage.getItem('targetId'));
       }
   }
 };
@@ -120,10 +121,6 @@ sos.showOptions = function() {
     chrome.runtime.openOptionsPage();
 }
 
-sos.wipeData = function() {
-    chrome.runtime.sendMessage('wipeData');
-}
-
 // Listen to messages from the scraper.js script
 chrome.runtime.onMessage.addListener(function (message) {
 //    sos.log('Pop up heard: ' + message);
@@ -136,7 +133,6 @@ window.onload = function(e) {
     document.getElementById('skipAndGo').onclick    = sos.skipAndGo;
     document.getElementById('saveAsSource').onclick = sos.saveAsSource;
     document.getElementById('options').onclick      = sos.showOptions;
-    document.getElementById('wipeData').onclick = sos.wipeData;
 }
 </script>
 

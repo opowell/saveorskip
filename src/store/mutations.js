@@ -58,7 +58,52 @@ export default {
       }
     }
   },
+
+  [types.SET_CUR_URL](state, payload) {
+    state.curUrl = trimmedUrl(payload);
+  },
+
+  [types.DUPLICATE_PROFILE](state, payload) {
+    let profile = findProfile(state, payload.profileId);
+
+    let nameExists = true;
+    let i = 0;
+    let name;
+    while (nameExists) {
+      i++;
+      name = profile.name + i;
+      nameExists = false;
+      for (let j = 0; j < state.profileObjs.length; j++) {
+        if (state.profileObjs[j].name === name) {
+          nameExists = true;
+          break;
+        }
+      }
+    }
+
+    let copy = new Profile(name);
+    for (let i = 0; i < profile.links.length; i++) {
+      Profile.setLink(copy, profile.links[i].url, profile.links[i].saved);
+    }
+    for (let i = 0; i < Object.keys(profile.suggestedSources).length; i++) {
+      let key = Object.keys(profile.suggestedSources)[i];
+      Profile.addSuggestedSources(copy, profile.suggestedSources[key]);
+    }
+    state.profileObjs.push(copy);
+    state.profileDuplicate = copy;
+  },
 };
+
+function trimmedUrl(url) {
+  if (url.includes('://')) {
+    url = url.substring(url.indexOf('://') + '://'.length);
+  }
+  if (url.endsWith('/')) {
+    url = url.substring(0, url.length - 1);
+  }
+
+  return url;
+}
 
 function findProfile(state, id) {
   let profile = null;

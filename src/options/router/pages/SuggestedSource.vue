@@ -2,7 +2,7 @@
     <div>
         <button @click='removeSuggestedSource'>x</button>
         {{source.points}} // 
-        {{source.url}}
+        <a :href='"http://" + source.url' target='_blank'>{{source.url}}</a>
     </div>
 </template>
 

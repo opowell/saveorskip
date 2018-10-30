@@ -3,7 +3,7 @@
       <h2 class='title'>{{$route.params.id}}</h2>
       <div>
                   <button @click='renameProfile'>rename</button>
-                  <button>duplicate</button>
+                  <button @click='duplicateProfile'>duplicate</button>
                   <button @click='deleteProfile'>delete</button>
 
           </div>
@@ -125,7 +125,13 @@ export default {
             newName: newName,
         });
         this.$router.push(newName);
-          
+      },
+
+      duplicateProfile: function() {
+          this.$store.dispatch('duplicateProfile', {
+              profileId: this.$route.params.id,
+          });
+          this.$router.push(this.$store.getters.profileDuplicate.name);
       }
   },
   computed: {

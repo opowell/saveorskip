@@ -8,6 +8,10 @@ export const setTarget = ({ commit }, payload) => {
   commit(types.SET_TARGET, payload);
 };
 
+export const setCurUrl = ({ commit }, payload) => {
+  commit(types.SET_CUR_URL, payload);
+}
+
 export const addProfile = ({ commit }, payload) => {
   commit(types.ADD_PROFILE, payload);
 };
@@ -34,4 +38,8 @@ export const deleteProfile = ({ commit }, payload) => {
 
 export const renameProfile = ({ commit }, payload) => {
   commit(types.RENAME_PROFILE, payload);
-}
+};
+
+export const duplicateProfile = ({ commit }, payload) => {
+  commit(types.DUPLICATE_PROFILE, payload);
+};

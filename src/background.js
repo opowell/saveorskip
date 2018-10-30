@@ -17,7 +17,7 @@ sos.getCurTarget = function() {
   //     targetId = 'default';
   // }
   // return targetId;
-  return store.curTarget;
+  return store.getters.curTarget.name;
 };
 
 sos.getCurTargetSaved = function() {
@@ -190,10 +190,6 @@ sos.loadNextSuggestion = function() {
   });
 };
 
-sos.wipeData = function() {
-  localStorage.clear();
-};
-
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
   console.log('message received from ' + sos.trimmedUrl(sender.url) + ': ' + request);
 
@@ -209,6 +205,11 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
     case 'pageLoaded':
       if (sender.tab.id !== sos.getSuggestionTab) {
         console.log('not current suggestion tab: ' + sos.getSuggestionTab);
+        chrome.tabs.query({ active: true }, function(tabs) {
+          if (sos.trimmedUrl(tabs[0].url) === sos.trimmedUrl(sender.tab.url)) {
+            store.dispatch('setCurUrl', sender.tab.url);
+          }
+        });
       } else {
         sos.saveAsSource(sender.tab);
       }
@@ -228,18 +229,8 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
     case 'go':
       sos.showNextPage();
       break;
-    case 'wipeData':
-      sos.wipeData();
-      break;
     case 'saveAsSource':
-      chrome.tabs.query({ active: true }, function(tabs) {
-        sos.saveAsSource(tabs[0]);
-      });
       break;
-    // case 'setTarget':
-    //   sos.curTarget = request.targetId;
-    //   chrome.storage.local.set({ targetId: sos.curTarget });
-    //   break;
   }
 });
 

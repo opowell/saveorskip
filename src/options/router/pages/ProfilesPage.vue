@@ -5,34 +5,36 @@
           <input v-model='profileInput'>
           <button id='addProfile' @click='addProfile'>add</button>
         </div>
-        <profile v-for='profile in profilesComp' :profile='profile' :key='profile.name'></profile>
+        <profilestable></profilestable>
   </div>
 </template>
 
 <script>
 import Profile from './Profile.vue';
+import Profilestable from './Profilestable.vue';
 
 export default {
   name: 'ProfilesPage',
   components: {
     Profile,
+    Profilestable,
   },
   data: function() {
     return {
       profileInput: this.$store.getters.profileInput,
-      profiles: this.$store.getters.profileObjs  
-    }
+      profiles: this.$store.getters.profileObjs,
+    };
   },
   computed: {
-    profilesComp () {
-      return this.$store.getters.profileObjs
-    }
+    profilesComp() {
+      return this.$store.getters.profileObjs;
+    },
   },
   methods: {
     addProfile: function() {
       this.$store.dispatch('addProfile', this.profileInput);
       this.profileInput = '';
-    }
+    },
   },
 };
 </script>

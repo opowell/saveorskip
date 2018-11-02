@@ -1,5 +1,6 @@
 import Link from './Link';
 import Source from './Source';
+import Vue from 'vue';
 
 export default class {
   constructor(name) {

@@ -1,15 +1,15 @@
 <template>
     <div id='menu'>
-        <div class='menu-item' id="saveAndGo">Save and go</div>
-        <div class='menu-item' id="skipAndGo">Skip and go</div>
+        <div class='menu-item' @click="saveAndGo">Save and go</div>
+        <div class='menu-item' @click="skipAndGo">Skip and go</div>
         <div class='menu-divider'></div>
         <div class='menu-item'>Cur Url: {{curUrl}}</div>
         <div class='menu-item'>Status: {{linkStatus}}</div>
-        <div class='menu-item' id="save">Save</div>
-        <div class='menu-item' id="skip">Skip</div>
-        <div class='menu-item' id="go">Go</div>
+        <div class='menu-item' @click='save'>Save</div>
+        <div class='menu-item' @click="skip">Skip</div>
+        <div class='menu-item' @click="go">Go</div>
         <div class='menu-divider'></div>
-        <div class='menu-item' id="saveAsSource">Save as source</div>
+        <div class='menu-item' @click="saveAsSource">Save as source</div>
         <div class='menu-item' id="removeAsSavedSource">Remove as saved source</div>
         <div class='menu-divider'></div>
         <div class='menu-item'>Target:
@@ -36,20 +36,17 @@
               </select>
         </div>
         <div class='menu-divider'></div>
-        <div class='menu-item' id='options'>Options</div>
+        <div class='menu-item' @click='showOptions'>Options</div>
         <div class='menu-item' id="account">User: opowell</div>
         <div class='menu-divider'></div>
     </div>
 </template>
 
 <script>
-
-
-
 export default {
   data() {
     return {
-        selectTargetId: this.$store.state.targetId,
+      selectTargetId: this.$store.state.targetId,
     };
   },
   computed: {
@@ -57,83 +54,75 @@ export default {
       return this.$store.getters.profileObjs;
     },
     targetId() {
-        return this.$store.state.targetId;
+      return this.$store.state.targetId;
     },
     target() {
-        return this.$store.getters.curTarget;
+      return this.$store.getters.curTarget;
     },
     linkStatus() {
-        return this.$store.getters.curLinkStatus;
+      return this.$store.getters.curLinkStatus;
     },
     curUrl() {
-        return this.$store.state.curUrl;
-    }
+      return this.$store.state.curUrl;
+    },
   },
   methods: {
-      setTarget() {
-        this.$store.dispatch('setTarget', this.selectTargetId);
-      }
-  }
+    setTarget() {
+      this.$store.dispatch('setTarget', this.selectTargetId);
+    },
+    save() {
+      this.$store.dispatch('saveOrSkipLink', {
+        link: this.curUrl,
+        action: 'save',
+        targetId: this.targetId,
+      });
+    },
+    skip() {
+      this.$store.dispatch('saveOrSkipLink', {
+        link: this.curUrl,
+        action: 'skip',
+        targetId: this.targetId,
+      });
+    },
+    saveAndGo() {
+      chrome.runtime.sendMessage('saveAndGo');
+    },
+    go() {
+      chrome.runtime.sendMessage('go');
+    },
+    skipAndGo() {
+      chrome.runtime.sendMessage('skipAndGo');
+    },
+    saveAsSource() {
+      chrome.runtime.sendMessage('saveAsSource');
+    },
+    showOptions() {
+      chrome.runtime.openOptionsPage();
+    },
+  },
 };
 
 const sos = {};
 
 sos.log = function(message) {
-    console.log('popup.js received message: ' + JSON.stringify(message));
-    let div = document.createElement('div');
-    div.appendChild(document.createTextNode(JSON.stringify(message)));
-    document.getElementById('messages').appendChild(div);
-}
+  console.log('popup.js received message: ' + JSON.stringify(message));
+  let div = document.createElement('div');
+  div.appendChild(document.createTextNode(JSON.stringify(message)));
+  document.getElementById('messages').appendChild(div);
+};
 
 sos.sendMessage = function(text) {
-    chrome.runtime.sendMessage(text);
-}
-
-sos.save = function() {
-    chrome.runtime.sendMessage('save');
-}
-
-sos.saveAndGo = function() {
-    chrome.runtime.sendMessage('saveAndGo');
-}
-
-sos.skip = function() {
-    chrome.runtime.sendMessage('skip');
-}
-
-sos.go = function() {
-    chrome.runtime.sendMessage('go');
-}
-
-sos.skipAndGo = function() {
-    chrome.runtime.sendMessage('skipAndGo');
-}
-
-sos.saveAsSource = function() {
-    chrome.runtime.sendMessage('saveAsSource');
-}
+  chrome.runtime.sendMessage(text);
+};
 
 sos.showNextPage = function() {
-    chrome.runtime.sendMessage('showNextPage');
-}
-
-sos.showOptions = function() {
-    chrome.runtime.openOptionsPage();
-}
+  chrome.runtime.sendMessage('showNextPage');
+};
 
 // Listen to messages from the scraper.js script
-chrome.runtime.onMessage.addListener(function (message) {
-//    sos.log('Pop up heard: ' + message);
+chrome.runtime.onMessage.addListener(function(message) {
+  //    sos.log('Pop up heard: ' + message);
 });
-
-window.onload = function(e) {
-    document.getElementById('save').onclick         = sos.save;
-    document.getElementById('skip').onclick         = sos.skip;
-    document.getElementById('saveAndGo').onclick    = sos.saveAndGo;
-    document.getElementById('skipAndGo').onclick    = sos.skipAndGo;
-    document.getElementById('saveAsSource').onclick = sos.saveAsSource;
-    document.getElementById('options').onclick      = sos.showOptions;
-}
 </script>
 
 <style lang="scss" scoped>
@@ -142,28 +131,27 @@ p {
 }
 
 .menu-item {
-    padding: 5px 5px;
+  padding: 5px 5px;
 }
 
 .menu-item:hover {
-    background-color: #CCC;
-    cursor: pointer;
+  background-color: #ccc;
+  cursor: pointer;
 }
 
 .menu-divider {
-    border-bottom: 1px solid #888;
-    margin: 2px 5px;
+  border-bottom: 1px solid #888;
+  margin: 2px 5px;
 }
 
 #menu {
-    display: flex;
-    flex-direction: column;
-    white-space: nowrap;
+  display: flex;
+  flex-direction: column;
+  white-space: nowrap;
 }
 
 body {
-    padding: 0px;
-    margin: 0px;
+  padding: 0px;
+  margin: 0px;
 }
-
 </style>

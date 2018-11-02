@@ -9,7 +9,6 @@ export default {
   [types.ADD_PROFILE](state, payload) {
     let profile = new Profile(payload);
     state.profileObjs.push(profile);
-    state.profiles.push(payload);
   },
 
   [types.REMOVE_LINK](state, payload) {

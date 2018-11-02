@@ -1,12 +1,11 @@
 <template>
-  <div class='main'>
-      <h2 class='title'>{{$route.params.id}}</h2>
+  <div>
+      <h2>{{$route.params.id}}</h2>
       <div>
-                  <button @click='renameProfile'>rename</button>
-                  <button @click='duplicateProfile'>duplicate</button>
-                  <button @click='deleteProfile'>delete</button>
-
-          </div>
+        <button @click='renameProfile'>rename</button>
+        <button @click='duplicateProfile'>duplicate</button>
+        <button @click='deleteProfile'>delete</button>
+      </div>
       <h3>suggested sources</h3>
       <div style='display: flex; flex-direction: column;'>
         <div>
@@ -49,141 +48,131 @@ import store from '../../../store';
 export default {
   name: 'ProfilePage',
   components: {
-      LinkDiv,
-      SuggestedSourceDiv,
+    LinkDiv,
+    SuggestedSourceDiv,
   },
   watch: {
     '$route.params.id': function(id) {
-        this.fetchData();
-    }
+      this.fetchData();
+    },
   },
   created: function() {
-      this.fetchData();
+    this.fetchData();
   },
   data() {
-      return {
-          profile: {},
-          profileId: '',
-          sugSourceInput: '',
-          sugSourcePointsInput: 1,
-          newLinkUrl: '',
-          newLinkSaved: '',
-      }
+    return {
+      profile: {},
+      profileId: '',
+      sugSourceInput: '',
+      sugSourcePointsInput: 1,
+      newLinkUrl: '',
+      newLinkSaved: '',
+    };
   },
   methods: {
-      addSuggestedSource: function() {
-          let sourceUrl = this.sugSourceInput;
-          let points = this.sugSourcePointsInput;
-          console.log('trying to add source: ' + sourceUrl + ', ' + points + ', ' + this.profileId);
-        
-        store.dispatch('addSuggestedSources', {
-            sources: [
-                {
-                    url: sourceUrl,
-                    points: points,
-                }
-            ],
-          targetId: this.profileId,
-        });
-        this.fetchData();
-      },
+    addSuggestedSource: function() {
+      let sourceUrl = this.sugSourceInput;
+      let points = this.sugSourcePointsInput;
+      console.log('trying to add source: ' + sourceUrl + ', ' + points + ', ' + this.profileId);
 
-      addLink: function() {
-          store.dispatch('saveOrSkipLink', {
-              targetId: this.$route.params.id,
-              action: this.newLinkSaved ? 'save' : 'skip',
-              link: this.newLinkUrl,
-          });
-      },
+      store.dispatch('addSuggestedSources', {
+        sources: [
+          {
+            url: sourceUrl,
+            points: points,
+          },
+        ],
+        targetId: this.profileId,
+      });
+      this.fetchData();
+    },
 
-      deleteProfile: function() {
-        this.$store.dispatch('deleteProfile', {
-            profileId: this.$route.params.id,
-        });
-        this.$router.push({ name: 'profiles' });
-      },
+    addLink: function() {
+      store.dispatch('saveOrSkipLink', {
+        targetId: this.$route.params.id,
+        action: this.newLinkSaved ? 'save' : 'skip',
+        link: this.newLinkUrl,
+      });
+    },
 
-      fetchData: function() {
-          this.profileId = this.$route.params.id;
-          this.profile = null;
-          let profiles = this.$store.getters.profileObjs;
-          for (let i=0; i<profiles.length; i++) {
-              if (profiles[i].name === this.profileId) {
-                  this.profile = profiles[i];
-                  break;
-              }
-          }
-      },
+    deleteProfile: function() {
+      this.$store.dispatch('deleteProfile', {
+        profileId: this.$route.params.id,
+      });
+      this.$router.push({ name: 'profiles' });
+    },
 
-      renameProfile: function() {
-          var newName = prompt('Enter new name:');
-        if (newName == null) {
-            return;
+    fetchData: function() {
+      this.profileId = this.$route.params.id;
+      this.profile = null;
+      let profiles = this.$store.getters.profileObjs;
+      for (let i = 0; i < profiles.length; i++) {
+        if (profiles[i].name === this.profileId) {
+          this.profile = profiles[i];
+          break;
         }
-        this.$store.dispatch('renameProfile', {
-            profileId: this.$route.params.id,
-            newName: newName,
-        });
-        this.$router.push(newName);
-      },
-
-      duplicateProfile: function() {
-          this.$store.dispatch('duplicateProfile', {
-              profileId: this.$route.params.id,
-          });
-          this.$router.push(this.$store.getters.profileDuplicate.name);
       }
+    },
+
+    renameProfile: function() {
+      var newName = prompt('Enter new name:');
+      if (newName == null) {
+        return;
+      }
+      this.$store.dispatch('renameProfile', {
+        profileId: this.$route.params.id,
+        newName: newName,
+      });
+      this.$router.push(newName);
+    },
+
+    duplicateProfile: function() {
+      this.$store.dispatch('duplicateProfile', {
+        profileId: this.$route.params.id,
+      });
+      this.$router.push(this.$store.getters.profileDuplicate.name);
+    },
   },
   computed: {
-      suggestedSources: function() {
-          return this.profile == null ? [] : this.profile.suggestedSources;
-      },
-      links: function() {
-          return this.profile == null ? [] : this.profile.links;
-      },
-      savedLinks: function() {
-          return this.links.filter(link => link.saved === true);
-      },
-      skippedLinks: function() {
-          return this.links.filter(link => link.saved === false);
-      },
-      numLinks: function() {
-          return this.links.length;
-      },
-        numSavedLinks: function() {
-          return this.savedLinks.length;
-      },
-      numSkippedLinks: function() {
-          return this.skippedLinks.length;
-      },
-  }
+    suggestedSources: function() {
+      return this.profile == null ? [] : this.profile.suggestedSources;
+    },
+    links: function() {
+      return this.profile == null ? [] : this.profile.links;
+    },
+    savedLinks: function() {
+      return this.links.filter(link => link.saved === true);
+    },
+    skippedLinks: function() {
+      return this.links.filter(link => link.saved === false);
+    },
+    numLinks: function() {
+      return this.links.length;
+    },
+    numSavedLinks: function() {
+      return this.savedLinks.length;
+    },
+    numSkippedLinks: function() {
+      return this.skippedLinks.length;
+    },
+  },
 };
 </script>
 
 <style scoped>
-    div.main {
-        display: flex;
-        flex-direction: column;
-    }
+div.props {
+  color: #444;
+  display: flex;
+  font-size: 1rem;
+  flex-direction: column;
+}
 
-    .title {
-        color: #000;
-        font-size: 2rem;
-    }
+div.props > div {
+  padding: 5px;
+}
 
-    div.props {
-        color: #444;
-        display: flex;
-        font-size: 1rem;
-        flex-direction: column;
-    }
-
-    div.props > div {
-        padding: 5px;
-    }
-
-    button {
-        margin: 5px;
-        align-self: center;
-    }
+button {
+  margin: 5px;
+  align-self: center;
+}
 </style>

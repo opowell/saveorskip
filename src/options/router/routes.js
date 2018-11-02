@@ -1,4 +1,4 @@
-import PageIndex from './pages/Index';
+import HomePage from './pages/HomePage';
 import ProfilePage from './pages/ProfilePage';
 import ProfilesPage from './pages/ProfilesPage';
 import AccountPage from './pages/AccountPage';
@@ -8,7 +8,7 @@ export default [
   {
     name: 'home',
     path: '/',
-    component: PageIndex,
+    component: HomePage,
   },
   {
     path: '/profile/:id',

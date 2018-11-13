@@ -10,12 +10,27 @@ Vue.use(Vuex);
 
 export default new Vuex.Store({
   state: {
+    // Active tab id
+    activeTabId: '',
+
+    // Input for new profile
     profileInput: '',
+
+    // Set of profiles.
     profileObjs: [],
+
+    // Id of current target.
     targetId: '',
     curUrlSaved: null,
     curUrl: '',
+    curSavedItemsTab: null,
+    curSuggestion: null,
+    curSuggestionTabId: null,
     profileDuplicate: null,
+    needCurSuggestion: true,
+    sourceForCurUrl: null,
+    nextSuggestion: null,
+    scrapeDelayMS: 1000 * 60 * 60 * 24,
   },
   getters,
   mutations,

@@ -3,12 +3,14 @@ var sos = {
     SUGGESTIONS_SUBREDDIT: 3,
     SUGGESTIONS_POSTER: 3,
     SUGGESTIONS_COMMENTER: 1,
+    SUGGESTIONS_DOMAIN: 1,
     URL_SOURCE: 1,
   },
   skip: {
     SUGGESTIONS_SUBREDDIT: -2,
     SUGGESTIONS_POSTER: -2,
     SUGGESTIONS_COMMENTER: -1,
+    SUGGESTIONS_DOMAIN: 1,
     URL_SOURCE: -1,
   },
 };
@@ -50,7 +52,12 @@ sos.getSavedItems = function(sendResponse) {
 // Get the sources of this page.
 sos.scrapeOwnSources = function(saveOrSkip) {
   console.log('scraping own sources (' + saveOrSkip + ')');
-  let sources = [];
+  let sources = [
+    {
+      url: 'www.reddit.com',
+      points: sos[saveOrSkip].SUGGESTIONS_DOMAIN,
+    },
+  ];
   // SUBREDDIT
   let subreddit = null;
   if (document.getElementsByClassName('s1wtsv0-8').length > 0) {
@@ -115,6 +122,11 @@ sos.scrapeSourcesOfUrl = function(targetUrl, sendResponse, saveOrSkip) {
   let linkEls = document.getElementsByClassName('SQnoC3ObvgnGjWt90zD9Z');
   for (let i = 0; i < linkEls; i++) {
     let url = linkEls[i].getAttribute('href');
+
+    if (url == null) {
+      debugger;
+    }
+
     if (!url.includes('://')) {
       url = location.host + '/' + sos.trimmedUrl(url);
     } else {

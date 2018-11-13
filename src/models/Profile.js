@@ -1,33 +1,31 @@
 import Link from './Link';
 import Source from './Source';
-import Vue from 'vue';
 
 export default class {
   constructor(name) {
     this.name = name;
     this.links = []; // TODO: Change to object.
-    this.suggestedSources = {};
-    this.savedSources = {};
+    this.sources = {};
   }
 
-  static removeSuggestedSource(profile, url) {
+  static removeSource(profile, url) {
     if (url == null || profile == null) {
       return;
     }
-    console.log('Profile ' + profile.name + ': removing suggested source ' + url);
-    delete profile.suggestedSources[url];
+    console.log('Profile ' + profile.name + ': removing source ' + url);
+    delete profile.sources[url];
   }
 
-  static addSuggestedSources(profile, sources) {
+  static addSources(profile, sources) {
     if (sources == null || profile == null) {
       return;
     }
-    console.log('adding suggested sources: ' + profile.name + ', ' + JSON.stringify(sources));
+    console.log('adding sources: ' + profile.name + ', ' + JSON.stringify(sources));
     for (let i = 0; i < sources.length; i++) {
       let source = sources[i];
-      var srcObj = profile.suggestedSources[source.url] ? profile.suggestedSources[source.url] : new Source(source.url);
+      var srcObj = profile.sources[source.url] ? profile.sources[source.url] : new Source(source.url);
       srcObj.points = srcObj.points + source.points;
-      profile.suggestedSources[source.url] = srcObj;
+      profile.sources[source.url] = srcObj;
     }
   }
 
@@ -58,6 +56,18 @@ export default class {
     let link = new Link(url, saved);
     console.log('set link: ' + saved + ', ' + url);
     profile.links.push(link);
+  }
+
+  static setSourceSaved(profile, url, saved) {
+    if (profile == null) {
+      return;
+    }
+    let source = profile.sources[url];
+    if (source == null) {
+      return;
+    }
+
+    source.saved = saved;
   }
 
   static saveLink(profile, url) {

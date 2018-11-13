@@ -71,18 +71,10 @@ export default {
       this.$store.dispatch('setTarget', this.selectTargetId);
     },
     save() {
-      this.$store.dispatch('saveOrSkipLink', {
-        link: this.curUrl,
-        action: 'save',
-        targetId: this.targetId,
-      });
+      chrome.runtime.sendMessage('save');
     },
     skip() {
-      this.$store.dispatch('saveOrSkipLink', {
-        link: this.curUrl,
-        action: 'skip',
-        targetId: this.targetId,
-      });
+      chrome.runtime.sendMessage('skip');
     },
     saveAndGo() {
       chrome.runtime.sendMessage('saveAndGo');

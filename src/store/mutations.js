@@ -26,14 +26,19 @@ export default {
     }
   },
 
-  [types.ADD_SUGGESTED_SOURCES](state, payload) {
+  [types.ADD_SOURCES](state, payload) {
     let profile = findProfile(state, payload.targetId);
-    Profile.addSuggestedSources(profile, payload.sources);
+    Profile.addSources(profile, payload.sources);
   },
 
-  [types.REMOVE_SUGGESTED_SOURCE](state, payload) {
+  [types.SET_SOURCE_SAVED](state, payload) {
     let profile = findProfile(state, payload.targetId);
-    Profile.removeSuggestedSource(profile, payload.url);
+    Profile.setSourceSaved(profile, payload.source, payload.saved);
+  },
+
+  [types.REMOVE_SOURCE](state, payload) {
+    let profile = findProfile(state, payload.targetId);
+    Profile.removeSource(profile, payload.url);
   },
 
   [types.SET_TARGET](state, payload) {
@@ -59,7 +64,7 @@ export default {
   },
 
   [types.SET_CUR_URL](state, payload) {
-    state.curUrl = trimmedUrl(payload);
+    state.curUrl = trimmedUrl(payload.url);
   },
 
   [types.DUPLICATE_PROFILE](state, payload) {
@@ -90,6 +95,34 @@ export default {
     }
     state.profileObjs.push(copy);
     state.profileDuplicate = copy;
+  },
+
+  [types.SET_NEED_CUR_SUGGESTION](state, payload) {
+    state.needCurSuggestion = payload.value;
+  },
+
+  [types.SET_SOURCE_FOR_CUR_URL](state, payload) {
+    state.sourceForCurUrl = payload.url;
+  },
+
+  [types.SET_CUR_SUGGESTION_TAB_ID](state, payload) {
+    state.curSuggestionTabId = payload.tabId;
+  },
+
+  [types.SET_ACTIVE_TAB_ID](state, payload) {
+    state.activeTabId = payload.tabId;
+  },
+
+  [types.SET_CUR_SUGGESTION](state, payload) {
+    state.curSuggestion = payload.url;
+  },
+
+  [types.SET_NEXT_SUGGESTION](state, payload) {
+    state.nextSuggestion = payload.url;
+  },
+
+  [types.SET_CUR_SAVED_ITEMS_TAB](state, payload) {
+    state.curSavedItemsTab = payload.url;
   },
 };
 

@@ -31,6 +31,8 @@ export const curLinkOnTargetStatus = function(state, getters) {
   return getters.curLinkOnTarget.saved ? 'saved' : 'not saved';
 };
 
+export const foo = state => 'hi';
+
 export const curLinkStatus = function(state, getters) {
   let target = getters.curTarget;
   if (target == null) {

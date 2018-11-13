@@ -1,56 +1,23 @@
 <template>
   <div>
+      <b-breadcrumb :items="crumbs"/>
       <h2>{{$route.params.id}}</h2>
       <div>
         <button @click='renameProfile'>rename</button>
         <button @click='duplicateProfile'>duplicate</button>
         <button @click='deleteProfile'>delete</button>
       </div>
-      <h3>suggested sources</h3>
-      <div style='display: flex; flex-direction: column;'>
-        <div>
-            Url: <input type='text' v-model='sugSourceInput'>
-        </div>
-        <div>
-            Points: <input style='width: 50px' type='number' min=0 v-model='sugSourcePointsInput'>
-            </div>
-        <div>
-            <button @click='addSuggestedSource'>add</button>
-        </div>
-      </div>
-      <div class='props'>
-        <suggested-source-div v-for='source in suggestedSources' :key='source.url' :source='source'></suggested-source-div>
-      </div>
-    <h3>links ({{numLinks}})</h3>
-      <div style='display: flex; align-items: center'>
-        <input type='text' v-model='newLinkUrl'>
-<div>
-<input type="radio" id="one" value=true v-model="newLinkSaved">
-<label for="one">saved</label>
-<br>
-<input type="radio" id="two" value=false v-model="newLinkSaved">
-<label for="two">not saved</label>
-<br>
-</div>
-        <button @click='addLink'>add</button>
-      </div>
-      <div class='props'>
-        <link-div v-for='link in links' :key='link.url' :initialLink='link'></link-div>
-      </div>
+      <router-link :to='{ name: "profileLinks", params: { id: profile.name }}'>links</router-link> | 
+      <router-link :to='{ name: "profileSources", params: { id: profile.name }}'>sources</router-link>
   </div>
 </template>
 
 <script>
-import LinkDiv from './Link.vue';
-import SuggestedSourceDiv from './SuggestedSource.vue';
 import store from '../../../store';
 
 export default {
   name: 'ProfilePage',
-  components: {
-    LinkDiv,
-    SuggestedSourceDiv,
-  },
+  components: {},
   watch: {
     '$route.params.id': function(id) {
       this.fetchData();
@@ -63,38 +30,9 @@ export default {
     return {
       profile: {},
       profileId: '',
-      sugSourceInput: '',
-      sugSourcePointsInput: 1,
-      newLinkUrl: '',
-      newLinkSaved: '',
     };
   },
   methods: {
-    addSuggestedSource: function() {
-      let sourceUrl = this.sugSourceInput;
-      let points = this.sugSourcePointsInput;
-      console.log('trying to add source: ' + sourceUrl + ', ' + points + ', ' + this.profileId);
-
-      store.dispatch('addSuggestedSources', {
-        sources: [
-          {
-            url: sourceUrl,
-            points: points,
-          },
-        ],
-        targetId: this.profileId,
-      });
-      this.fetchData();
-    },
-
-    addLink: function() {
-      store.dispatch('saveOrSkipLink', {
-        targetId: this.$route.params.id,
-        action: this.newLinkSaved ? 'save' : 'skip',
-        link: this.newLinkUrl,
-      });
-    },
-
     deleteProfile: function() {
       this.$store.dispatch('deleteProfile', {
         profileId: this.$route.params.id,
@@ -134,26 +72,21 @@ export default {
     },
   },
   computed: {
-    suggestedSources: function() {
-      return this.profile == null ? [] : this.profile.suggestedSources;
-    },
-    links: function() {
-      return this.profile == null ? [] : this.profile.links;
-    },
-    savedLinks: function() {
-      return this.links.filter(link => link.saved === true);
-    },
-    skippedLinks: function() {
-      return this.links.filter(link => link.saved === false);
-    },
-    numLinks: function() {
-      return this.links.length;
-    },
-    numSavedLinks: function() {
-      return this.savedLinks.length;
-    },
-    numSkippedLinks: function() {
-      return this.skippedLinks.length;
+    crumbs: function() {
+      return [
+        {
+          text: 'Home',
+          href: '#/',
+        },
+        {
+          text: 'Profiles',
+          href: '#/profiles',
+        },
+        {
+          text: this.profileId,
+          href: '#/profile/' + this.profileId,
+        },
+      ];
     },
   },
 };

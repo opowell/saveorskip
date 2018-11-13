@@ -10,7 +10,7 @@ export const setTarget = ({ commit }, payload) => {
 
 export const setCurUrl = ({ commit }, payload) => {
   commit(types.SET_CUR_URL, payload);
-}
+};
 
 export const addProfile = ({ commit }, payload) => {
   commit(types.ADD_PROFILE, payload);
@@ -24,12 +24,12 @@ export const removeLink = ({ commit }, payload) => {
   commit(types.REMOVE_LINK, payload);
 };
 
-export const addSuggestedSources = ({ commit }, payload) => {
-  commit(types.ADD_SUGGESTED_SOURCES, payload);
+export const addSources = ({ commit }, payload) => {
+  commit(types.ADD_SOURCES, payload);
 };
 
-export const removeSuggestedSource = ({ commit }, payload) => {
-  commit(types.REMOVE_SUGGESTED_SOURCE, payload);
+export const removeSource = ({ commit }, payload) => {
+  commit(types.REMOVE_SOURCE, payload);
 };
 
 export const deleteProfile = ({ commit }, payload) => {
@@ -42,4 +42,32 @@ export const renameProfile = ({ commit }, payload) => {
 
 export const duplicateProfile = ({ commit }, payload) => {
   commit(types.DUPLICATE_PROFILE, payload);
+};
+
+export const setNeedCurSuggestion = ({ commit }, payload) => {
+  commit(types.SET_NEED_CUR_SUGGESTION, payload);
+};
+
+export const setSourceForCurUrl = ({ commit }, payload) => {
+  commit(types.SET_SOURCE_FOR_CUR_URL, payload);
+};
+
+export const setSourceSaved = ({ commit }, payload) => {
+  commit(types.SET_SOURCE_SAVED, payload);
+};
+
+export const setCurSuggestionTabId = ({ commit }, payload) => {
+  commit(types.SET_CUR_SUGGESTION_TAB_ID, payload);
+};
+
+export const setCurSuggestion = ({ commit }, payload) => {
+  commit(types.SET_CUR_SUGGESTION, payload);
+};
+
+export const setCurSavedItemsTab = ({ commit }, payload) => {
+  commit(types.SET_CUR_SAVED_ITEMS_TAB, payload);
+};
+
+export const setActiveTabId = ({ commit }, payload) => {
+  commit(types.SET_ACTIVE_TAB_ID, payload);
 };

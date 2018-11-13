@@ -6,8 +6,7 @@
         </router-link>
       </td>
       <td>{{ numLinks }}</td>
-      <td>{{ numSavedLinks }}</td>
-      <td>{{ numSkippedLinks }}</td>
+      <td>{{ numSources }}</td>
   </tr>
 </template>
 
@@ -24,17 +23,8 @@ export default {
     numLinks() {
       return this.profile.links.length;
     },
-    savedLinks: function() {
-      return this.profile.links.filter(link => link.saved === true);
-    },
-    skippedLinks: function() {
-      return this.profile.links.filter(link => link.saved === false);
-    },
-    numSavedLinks: function() {
-      return this.savedLinks.length;
-    },
-    numSkippedLinks: function() {
-      return this.skippedLinks.length;
+    numSources: function() {
+      return Object.keys(this.profile.sources).length;
     },
   },
 };

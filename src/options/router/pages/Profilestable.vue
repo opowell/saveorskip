@@ -20,7 +20,7 @@ export default {
   data: function() {
     return {
       profiles: this.$store.getters.profileObjs,
-      headers: ['Name', 'Links', 'Saved links', 'Skipped links'],
+      headers: ['Name', 'Links', 'Sources'],
     };
   },
   computed: {

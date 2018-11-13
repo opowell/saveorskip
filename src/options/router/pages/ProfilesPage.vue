@@ -1,5 +1,6 @@
 <template>
   <div>
+      <b-breadcrumb :items="crumbs"/>
         <h2>Profiles</h2>
         <div style='display: flex'>
           <input v-model='profileInput'>
@@ -28,6 +29,18 @@ export default {
   computed: {
     profilesComp() {
       return this.$store.getters.profileObjs;
+    },
+    crumbs: function() {
+      return [
+        {
+          text: 'Home',
+          href: '#/',
+        },
+        {
+          text: 'Profiles',
+          href: '#/profiles',
+        },
+      ];
     },
   },
   methods: {

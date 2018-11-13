@@ -7,5 +7,6 @@ export default class {
     this.points = 0;
     this.scrapedLinks = [];
     this.url = url;
+    this.saved = false;
   }
 }

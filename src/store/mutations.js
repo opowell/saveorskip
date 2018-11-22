@@ -8,7 +8,7 @@ export default {
 
   [types.ADD_PROFILE](state, payload) {
     let profile = new Profile(payload);
-    state.profileObjs.push(profile);
+    state.profiles.push(profile);
   },
 
   [types.REMOVE_LINK](state, payload) {
@@ -24,6 +24,7 @@ export default {
     if (payload.action === 'skip') {
       Profile.skipLink(profile, payload.link);
     }
+    chrome.runtime.sendMessage('store-saveOrSkipLink');
   },
 
   [types.ADD_SOURCES](state, payload) {
@@ -46,18 +47,18 @@ export default {
   },
 
   [types.DELETE_PROFILE](state, payload) {
-    for (let i = 0; i < state.profileObjs.length; i++) {
-      if (state.profileObjs[i].name === payload.profileId) {
-        state.profileObjs.splice(i, 1);
+    for (let i = 0; i < state.profiles.length; i++) {
+      if (state.profiles[i].name === payload.profileId) {
+        state.profiles.splice(i, 1);
         return;
       }
     }
   },
 
   [types.RENAME_PROFILE](state, payload) {
-    for (let i = 0; i < state.profileObjs.length; i++) {
-      if (state.profileObjs[i].name === payload.profileId) {
-        state.profileObjs[i].name = payload.newName;
+    for (let i = 0; i < state.profiles.length; i++) {
+      if (state.profiles[i].name === payload.profileId) {
+        state.profiles[i].name = payload.newName;
         return;
       }
     }
@@ -65,6 +66,11 @@ export default {
 
   [types.SET_CUR_URL](state, payload) {
     state.curUrl = trimmedUrl(payload.url);
+    chrome.runtime.sendMessage({
+      action: 'store',
+      mutationType: 'setCurUrl',
+      mutationData: payload,
+    });
   },
 
   [types.DUPLICATE_PROFILE](state, payload) {
@@ -77,8 +83,8 @@ export default {
       i++;
       name = profile.name + i;
       nameExists = false;
-      for (let j = 0; j < state.profileObjs.length; j++) {
-        if (state.profileObjs[j].name === name) {
+      for (let j = 0; j < state.profiles.length; j++) {
+        if (state.profiles[j].name === name) {
           nameExists = true;
           break;
         }
@@ -93,7 +99,7 @@ export default {
       let key = Object.keys(profile.suggestedSources)[i];
       Profile.addSuggestedSources(copy, profile.suggestedSources[key]);
     }
-    state.profileObjs.push(copy);
+    state.profiles.push(copy);
     state.profileDuplicate = copy;
   },
 
@@ -115,10 +121,21 @@ export default {
 
   [types.SET_CUR_SUGGESTION](state, payload) {
     state.curSuggestion = payload.url;
+    chrome.runtime.sendMessage({
+      action: 'store',
+      mutationType: 'setCurSuggestion',
+      mutationData: payload,
+    });
   },
 
   [types.SET_NEXT_SUGGESTION](state, payload) {
     state.nextSuggestion = payload.url;
+    // For some reason, need to explicitly notify popup of changes.
+    chrome.runtime.sendMessage({
+      action: 'store',
+      mutationType: 'setNextSuggestion',
+      mutationData: payload,
+    });
   },
 
   [types.SET_CUR_SAVED_ITEMS_TAB](state, payload) {
@@ -139,9 +156,9 @@ function trimmedUrl(url) {
 
 function findProfile(state, id) {
   let profile = null;
-  for (let i = 0; i < state.profileObjs.length; i++) {
-    if (state.profileObjs[i].name === id) {
-      profile = state.profileObjs[i];
+  for (let i = 0; i < state.profiles.length; i++) {
+    if (state.profiles[i].name === id) {
+      profile = state.profiles[i];
     }
   }
   return profile;

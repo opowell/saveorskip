@@ -5,8 +5,16 @@
           {{profile.name}}
         </router-link>
       </td>
-      <td>{{ numLinks }}</td>
-      <td>{{ numSources }}</td>
+      <td>
+        <router-link :to='{ name: "profileLinks", params: { id: profile.name }}'>
+          {{ numLinks }}
+        </router-link>
+      </td>
+      <td>
+        <router-link :to='{ name: "profileSources", params: { id: profile.name }}'>
+          {{ numSources }}
+        </router-link>
+      </td>
   </tr>
 </template>
 

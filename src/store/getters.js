@@ -1,11 +1,9 @@
-export const profileObjs = state => state.profileObjs;
-
 export const profileDuplicate = state => state.profileDuplicate;
 
 export const curTarget = state => {
-  for (let i = 0; i < state.profileObjs.length; i++) {
-    if (state.profileObjs[i].name === state.targetId) {
-      return state.profileObjs[i];
+  for (let i = 0; i < state.profiles.length; i++) {
+    if (state.profiles[i].name === state.targetId) {
+      return state.profiles[i];
     }
   }
   return null;
@@ -32,6 +30,19 @@ export const curLinkOnTargetStatus = function(state, getters) {
 };
 
 export const foo = state => 'hi';
+
+export const curSourceStatus = function(state, getters) {
+  let target = getters.curTarget;
+  if (target == null) {
+    return 'error';
+  }
+
+  if (target.sources[state.curUrl] == null) {
+    return 'no';
+  }
+
+  return target.sources[state.curUrl].saved ? 'saved' : 'unsaved';
+};
 
 export const curLinkStatus = function(state, getters) {
   let target = getters.curTarget;

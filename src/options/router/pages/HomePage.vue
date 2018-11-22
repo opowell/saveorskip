@@ -25,7 +25,7 @@ export default {
       ];
     },
     numProfiles: function() {
-      return this.$store.getters.profileObjs.length;
+      return this.$store.state.profiles.length;
     },
     numProfilesText: function() {
       return this.numProfiles > 0 ? '(' + this.numProfiles + ')' : '';

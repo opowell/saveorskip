@@ -7,41 +7,28 @@ global.browser = require('webextension-polyfill');
  * gotoNext - whether or not to move to a new page after saving.
  **/
 function saveOrSkip(gotoNext, action) {
-  // Save data from the current tab.
   let targetId = store.getters.curTarget.name;
-  console.log(targetId + ' - ' + action + ' current link');
-  chrome.tabs.query({ active: true }, function(tabs) {
-    if (tabs[0] == null) {
-      debugger;
-    }
-    var url = trimmedUrl(tabs[0].url);
-    console.log(targetId + ' - ' + action + ' link: ' + JSON.stringify(url));
-
-    store.dispatch('setActiveTabId', {
-      tabId: tabs[0].id,
-    });
-
-    let actionPast = null;
-    if (action === 'save') {
-      actionPast = 'Saved';
-    } else {
-      actionPast = 'Skipped';
-    }
-
-    store.dispatch('saveOrSkipLink', {
-      link: url,
-      action: action,
-      targetId: targetId,
-    });
-
-    console.log(targetId + ' - ' + actionPast + ' link: ' + JSON.stringify(url));
-
-    let cb = null;
-    if (gotoNext === true) {
-      cb = showNextPage;
-    }
-    saveSourcesOfUrl(tabs[0], url, cb, action);
+  let url = store.state.curUrl;
+  console.log(targetId + ' - ' + action + ' current link: ' + url);
+  let actionPast = null;
+  if (action === 'save') {
+    actionPast = 'Saved';
+  } else {
+    actionPast = 'Skipped';
+  }
+  store.dispatch('saveOrSkipLink', {
+    link: url,
+    action: action,
+    targetId: targetId,
   });
+  console.log(targetId + ' - ' + actionPast + ' link: ' + JSON.stringify(url));
+
+  let cb = null;
+  if (gotoNext === true) {
+    cb = showNextPage;
+  }
+
+  saveSourcesOfUrl(url, cb, action);
 }
 
 // Save a list of sources to storage.
@@ -61,7 +48,7 @@ function saveSources(sourcesToSave, callback) {
 }
 
 // Save sources from open pages that link to this item.
-function saveSourcesOfUrl(tab, url, cb, action) {
+function saveSourcesOfUrl(url, cb, action) {
   console.log(action + ' sources of ' + url);
   chrome.tabs.query({ active: false }, function(tabs) {
     for (let i = 0; i < tabs.length; i++) {
@@ -81,7 +68,8 @@ function saveSourcesOfUrl(tab, url, cb, action) {
       });
     }
     // Check tab itself for sources.
-    chrome.tabs.sendMessage(tab.id, { action: 'scrapeOwnSources', saveOrSkip: action }, function(response) {
+    console.log('scraping own sources from tabId=' + store.state.activeTabId);
+    chrome.tabs.sendMessage(store.state.activeTabId, { action: 'scrapeOwnSources', saveOrSkip: action }, function(response) {
       if (response != null) {
         for (let j = 0; j < response.sources.length; j++) {
           if (response.sources[j] == store.state.sourceForCurUrl) {
@@ -89,6 +77,10 @@ function saveSourcesOfUrl(tab, url, cb, action) {
           }
         }
         saveSources(response.sources, cb);
+      } else {
+        if (cb != null) {
+          cb();
+        }
       }
     });
   });
@@ -153,6 +145,28 @@ function loadNextSuggestion() {
     openUrl(newURL);
   }
 }
+
+chrome.tabs.onActivated.addListener(function(activeInfo) {
+  // console.log('saw onActivate event: ' + JSON.stringify(activeInfo));
+  store.dispatch('setActiveTabId', {
+    tabId: activeInfo.tabId,
+  });
+  chrome.tabs.get(activeInfo.tabId, function(tab) {
+    store.dispatch('setCurUrl', {
+      url: tab.url,
+    });
+  });
+});
+
+chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
+  // console.log('saw onUpdated event: ' + tabId + ', ' + JSON.stringify(changeInfo) + ', ' + JSON.stringify(tab));
+  if (tabId === store.activeTabId && changeInfo.url != null) {
+    // console.log('processing');
+    store.dispatch('setCurUrl', {
+      url: changeInfo.url,
+    });
+  }
+});
 
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
   console.log('message received from ' + trimmedUrl(sender.url) + ': ' + request);
@@ -261,6 +275,7 @@ function getSavedItemsCB(items) {
     if (store.state.curSuggestion != item && !alreadyViewed(targetLinks, item)) {
       console.log('found new link: ' + item);
       if (store.state.needCurSuggestion) {
+        console.log('saving cur suggestion as ' + item);
         changeActiveTabToUrl(item);
         store.dispatch('setSourceForCurUrl', {
           url: sourceName,

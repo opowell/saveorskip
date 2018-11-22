@@ -201,7 +201,8 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 
 sos.pageLoaded = false;
 
-let contentEl = document.querySelectorAll('.vz95qm-0.grqCvq')[1];
+// let contentEl = document.querySelectorAll('.vz95qm-0.grqCvq')[1];
+let contentEl = document.querySelectorAll('.sogqxs-0.dpKXTN')[1];
 try {
   if (contentEl == null) {
     console.log('SOS: page loaded, no content found');

@@ -7,8 +7,10 @@
         <button @click='duplicateProfile'>duplicate</button>
         <button @click='deleteProfile'>delete</button>
       </div>
-      <router-link :to='{ name: "profileLinks", params: { id: profile.name }}'>links</router-link> | 
-      <router-link :to='{ name: "profileSources", params: { id: profile.name }}'>sources</router-link>
+      <ol>
+      <li><router-link :to='{ name: "profileLinks", params: { id: profile.name }}'>links ({{numLinks}})</router-link></li>
+      <li><router-link :to='{ name: "profileSources", params: { id: profile.name }}'>sources ({{numSources}})</router-link></li>
+      </ol>
   </div>
 </template>
 
@@ -43,7 +45,7 @@ export default {
     fetchData: function() {
       this.profileId = this.$route.params.id;
       this.profile = null;
-      let profiles = this.$store.getters.profileObjs;
+      let profiles = this.$store.state.profiles;
       for (let i = 0; i < profiles.length; i++) {
         if (profiles[i].name === this.profileId) {
           this.profile = profiles[i];
@@ -72,6 +74,12 @@ export default {
     },
   },
   computed: {
+    numLinks: function() {
+      return this.profile.links.length;
+    },
+    numSources: function() {
+      return Object.keys(this.profile.sources).length;
+    },
     crumbs: function() {
       return [
         {

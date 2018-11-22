@@ -37,3 +37,9 @@ export default {
   },
 };
 </script>
+
+<style scoped>
+a {
+  word-break: all;
+}
+</style>

@@ -3,14 +3,21 @@
         <div class='menu-item' @click="saveAndGo">Save and go</div>
         <div class='menu-item' @click="skipAndGo">Skip and go</div>
         <div class='menu-divider'></div>
-        <div class='menu-item'>Cur Url: {{curUrl}}</div>
-        <div class='menu-item'>Status: {{linkStatus}}</div>
-        <div class='menu-item' @click='save'>Save</div>
-        <div class='menu-item' @click="skip">Skip</div>
+        <div class='menu-item'>
+          <span class='inline-item' @click='toggleSaved' :title='curUrl'>
+            <i v-show='linkSaved || linkSkipped' class="fa-star muted" v-bind:class='{fas: linkSaved, far: linkSkipped}'></i>
+            <i v-show='!linkSaved && !linkSkipped' class="fas fa-star-half-alt muted"></i>
+            {{curUrl}}
+          </span>
+          <i @click='deleteLink' class="fas fa-times"></i>
+        </div>
+        <div class='menu-item' :title='nextLink'>Next Link: {{nextLink}}</div>
         <div class='menu-item' @click="go">Go</div>
         <div class='menu-divider'></div>
-        <div class='menu-item' @click="saveAsSource">Save as source</div>
-        <div class='menu-item' id="removeAsSavedSource">Remove as saved source</div>
+        <div class='menu-item'>Source status: {{sourceStatus}}</div>
+        <div class='menu-item' @click="saveAsSource(true)">Save</div>
+        <div class='menu-item' @click="saveAsSource(false)">Unsave</div>
+        <div class='menu-item' @click="deleteSource">Delete</div>
         <div class='menu-divider'></div>
         <div class='menu-item'>Target:
             <select id='target-select' v-model='selectTargetId' @change='setTarget'>
@@ -21,24 +28,11 @@
                 >
                     {{profile.name}}
                 </option>
+                <option value='__new'>(new)</option>
             </select>
             </div>
-        <div class='menu-item' id="item-types">Viewing: suggested items</div>
-        <div class='menu-item' id="source">From: cute_babies</div>
         <div class='menu-divider'></div>
-        <div class='source-prob-formula'>
-            Source prob. formula:
-            <select>
-                <option value='100000 / (now - lastSaved)'>last saved (rand.)</option>
-                <option value='points'>points (rand.)</option>
-                <option value='points / ((now - lastSaved)/(1000*60*60)+2)^1.8)'>hot (HN)</option>
-                <option value=''>custom</option>
-              </select>
-        </div>
-        <div class='menu-divider'></div>
-        <div class='menu-item' @click='showOptions'>Options</div>
-        <div class='menu-item' id="account">User: opowell</div>
-        <div class='menu-divider'></div>
+        <div class='menu-item' @click='showOptions'>Manage...</div>
     </div>
 </template>
 
@@ -50,8 +44,14 @@ export default {
     };
   },
   computed: {
+    linkSaved() {
+      return this.linkStatus === 'saved';
+    },
+    linkSkipped() {
+      return this.linkStatus === 'not saved';
+    },
     profiles() {
-      return this.$store.getters.profileObjs;
+      return this.$store.state.profiles;
     },
     targetId() {
       return this.$store.state.targetId;
@@ -62,37 +62,94 @@ export default {
     linkStatus() {
       return this.$store.getters.curLinkStatus;
     },
+    sourceStatus() {
+      return this.$store.getters.curSourceStatus;
+    },
     curUrl() {
       return this.$store.state.curUrl;
     },
+    nextLink() {
+      return this.$store.state.nextSuggestion;
+    },
+  },
+  watch: {
+    nextSuggestion: function(val) {
+      console.log('new val=' + val);
+      vm.$forceUpdate();
+    },
   },
   methods: {
+    deleteSource() {
+      this.$store.dispatch('removeSource', {
+        targetId: this.targetId,
+        url: this.$store.state.curUrl,
+      });
+    },
+    toggleSaved() {
+      if (!this.linkSaved) {
+        this.save();
+      } else {
+        this.skip();
+      }
+    },
     setTarget() {
       this.$store.dispatch('setTarget', this.selectTargetId);
     },
     save() {
+      // cannot send messages to background via chrome.runtime.sendMessage.
+      this.$store.dispatch('saveOrSkipLink', {
+        link: this.curUrl,
+        action: 'save',
+        targetId: this.targetId,
+      });
       chrome.runtime.sendMessage('save');
     },
     skip() {
+      this.$store.dispatch('saveOrSkipLink', {
+        link: this.curUrl,
+        action: 'skip',
+        targetId: this.targetId,
+      });
       chrome.runtime.sendMessage('skip');
     },
     saveAndGo() {
+      this.$store.dispatch('saveOrSkipLink', {
+        link: this.curUrl,
+        action: 'save',
+        targetId: this.targetId,
+      });
       chrome.runtime.sendMessage('saveAndGo');
     },
     go() {
       chrome.runtime.sendMessage('go');
     },
     skipAndGo() {
+      this.$store.dispatch('saveOrSkipLink', {
+        link: this.curUrl,
+        action: 'skip',
+        targetId: this.targetId,
+      });
       chrome.runtime.sendMessage('skipAndGo');
     },
-    saveAsSource() {
-      chrome.runtime.sendMessage('saveAsSource');
+    saveAsSource(save) {
+      this.$store.dispatch('addSources', {
+        targetId: this.targetId,
+        sources: [
+          {
+            url: this.$store.state.curUrl,
+            saved: save,
+          },
+        ],
+      });
     },
     showOptions() {
       chrome.runtime.openOptionsPage();
     },
+    deleteLink() {},
   },
 };
+
+import store from '../../../store';
 
 const sos = {};
 
@@ -112,8 +169,13 @@ sos.showNextPage = function() {
 };
 
 // Listen to messages from the scraper.js script
-chrome.runtime.onMessage.addListener(function(message) {
-  //    sos.log('Pop up heard: ' + message);
+chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
+  console.log('sos received message: ' + request.action + '\n' + JSON.stringify(request));
+  switch (request.action) {
+    case 'store':
+      store.dispatch(request.mutationType, request.mutationData);
+      break;
+  }
 });
 </script>
 
@@ -124,6 +186,17 @@ p {
 
 .menu-item {
   padding: 5px 5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+}
+
+.inline-item {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .menu-item:hover {
@@ -140,6 +213,15 @@ p {
   display: flex;
   flex-direction: column;
   white-space: nowrap;
+  width: 300px;
+}
+
+.muted {
+  color: #888;
+}
+
+.muted:hover {
+  color: #000;
 }
 
 body {

@@ -23,12 +23,12 @@ export default {
   data: function() {
     return {
       profileInput: this.$store.getters.profileInput,
-      profiles: this.$store.getters.profileObjs,
+      profiles: this.$store.state.profiles,
     };
   },
   computed: {
     profilesComp() {
-      return this.$store.getters.profileObjs;
+      return this.$store.state.profiles;
     },
     crumbs: function() {
       return [

@@ -17,11 +17,10 @@ export default new Vuex.Store({
     profileInput: '',
 
     // Set of profiles.
-    profileObjs: [],
+    profiles: [],
 
     // Id of current target.
     targetId: '',
-    curUrlSaved: null,
     curUrl: '',
     curSavedItemsTab: null,
     curSuggestion: null,

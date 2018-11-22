@@ -25,6 +25,9 @@ export default class {
       let source = sources[i];
       var srcObj = profile.sources[source.url] ? profile.sources[source.url] : new Source(source.url);
       srcObj.points = srcObj.points + source.points;
+      if (source.saved != null) {
+        srcObj.saved = source.saved;
+      }
       profile.sources[source.url] = srcObj;
     }
   }

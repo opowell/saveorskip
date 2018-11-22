@@ -19,13 +19,13 @@ export default {
   },
   data: function() {
     return {
-      profiles: this.$store.getters.profileObjs,
+      profiles: this.$store.state.profiles,
       headers: ['Name', 'Links', 'Sources'],
     };
   },
   computed: {
     profilesComp() {
-      return this.$store.getters.profileObjs;
+      return this.$store.state.profiles;
     },
   },
 };

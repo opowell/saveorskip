@@ -11,9 +11,4 @@ new Vue({
   store,
   router,
   render: h => h(App),
-  created: function() {
-    chrome.tabs.query({ active: true }, function(tabs) {
-      store.dispatch('setCurUrl', tabs[0].url);
-    });
-  },
 });

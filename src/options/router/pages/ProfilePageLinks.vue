@@ -57,7 +57,7 @@ export default {
     fetchData: function() {
       this.profileId = this.$route.params.id;
       this.profile = null;
-      let profiles = this.$store.getters.profileObjs;
+      let profiles = this.$store.state.profiles;
       for (let i = 0; i < profiles.length; i++) {
         if (profiles[i].name === this.profileId) {
           this.profile = profiles[i];

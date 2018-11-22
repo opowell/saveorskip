@@ -1,6 +1,11 @@
 <template>
   <tr>
       <td><button @click='removeSource'>x</button></td>
+      <td>
+        <router-link :to='{ name: "source", params: { profileId: this.$route.params.id, sourceId: source.url }}'>
+          <i class="fas fa-edit"></i>
+        </router-link>
+      </td>
       <td><i @click='toggleSaved' class="fa-star" v-bind:class='{fas: source.saved, far: !source.saved}'></i></td>
       <td>{{ source.points }}</td>
       <td>{{ numLinks }}</td>

@@ -3,6 +3,7 @@ import ProfilePage from './pages/ProfilePage';
 import ProfilesPage from './pages/ProfilesPage';
 import AccountPage from './pages/AccountPage';
 import ScrapersPage from './pages/ScrapersPage';
+import SourcePage from './pages/SourcePage';
 import ProfilePageLinks from './pages/ProfilePageLinks';
 import ProfilePageSources from './pages/ProfilePageSources';
 
@@ -26,6 +27,11 @@ export default [
     path: '/profile/:id/sources',
     component: ProfilePageSources,
     name: 'profileSources',
+  },
+  {
+    path: '/profile/:profileId/sources/:sourceId',
+    component: SourcePage,
+    name: 'source',
   },
   {
     path: '/profiles',

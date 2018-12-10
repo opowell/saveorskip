@@ -16,9 +16,13 @@ export default {
   },
   methods: {
     removeLink: function() {
-      this.$store.dispatch('removeLink', {
-        url: this.link.url,
-        targetId: this.$route.params.id,
+      chrome.runtime.sendMessage({
+        action: 'storeDispatch',
+        storeAction: 'removeLink',
+        storePayload: {
+          url: this.link.url,
+          targetId: this.$route.params.id,
+        },
       });
     },
   },

@@ -1,5 +1,3 @@
-export const profileDuplicate = state => state.profileDuplicate;
-
 export const curTarget = state => {
   for (let i = 0; i < state.profiles.length; i++) {
     if (state.profiles[i].name === state.targetId) {
@@ -24,12 +22,10 @@ export const curLinkOnTarget = function(state, getters) {
 
 export const curLinkOnTargetStatus = function(state, getters) {
   if (getters.curLinkOnTarget == null) {
-    return 'not set';
+    return 'neither';
   }
   return getters.curLinkOnTarget.saved ? 'saved' : 'not saved';
 };
-
-export const foo = state => 'hi';
 
 export const curSourceStatus = function(state, getters) {
   let target = getters.curTarget;

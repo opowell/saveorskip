@@ -4,13 +4,13 @@
     <h2>Links ({{numLinks}})</h2>
       <div style='display: flex; align-items: center'>
         <input type='text' v-model='newLinkUrl'>
-          <div>
-          <input type="radio" id="one" value=true v-model="newLinkSaved">
-          <label for="one">saved</label>
-          <br>
-          <input type="radio" id="two" value=false v-model="newLinkSaved">
-          <label for="two">not saved</label>
-          <br>
+          <div style='padding: 0.5em'>
+            <input type="radio" id="one" value=true v-model="newLinkSaved">
+            <label for="one">saved</label>
+            <br>
+            <input type="radio" id="two" value=false v-model="newLinkSaved">
+            <label for="two">not saved</label>
+            <br>
           </div>
         <button @click='addLink'>add</button>
       </div>
@@ -22,7 +22,6 @@
 
 <script>
 import LinkDiv from './Link.vue';
-import store from '../../../store';
 
 export default {
   name: 'ProfilePage',
@@ -47,10 +46,14 @@ export default {
   },
   methods: {
     addLink: function() {
-      store.dispatch('saveOrSkipLink', {
-        targetId: this.$route.params.id,
-        action: this.newLinkSaved ? 'save' : 'skip',
-        link: this.newLinkUrl,
+      chrome.runtime.sendMessage({
+        action: 'storeDispatch',
+        storeAction: 'saveOrSkipLink',
+        storePayload: {
+          targetId: this.$route.params.id,
+          action: this.newLinkSaved ? 'save' : 'skip',
+          link: { url: this.newLinkUrl },
+        },
       });
     },
 
@@ -68,7 +71,7 @@ export default {
   },
   computed: {
     links: function() {
-      return this.profile == null ? [] : this.profile.links;
+      return this.profile == null ? {} : this.profile.links;
     },
     savedLinks: function() {
       return this.links.filter(link => link.saved === true);
@@ -77,13 +80,13 @@ export default {
       return this.links.filter(link => link.saved === false);
     },
     numLinks: function() {
-      return this.links.length;
+      return Object.keys(this.links).length;
     },
     numSavedLinks: function() {
-      return this.savedLinks.length;
+      return Object.keys(this.savedLinks).length;
     },
     numSkippedLinks: function() {
-      return this.skippedLinks.length;
+      return Object.keys(this.skippedLinks).length;
     },
     suggestedSources: function() {
       return this.profile == null ? [] : this.profile.suggestedSources;

@@ -6,7 +6,8 @@
           <i class="fas fa-edit"></i>
         </router-link>
       </td>
-      <td><i @click='toggleSaved' class="fa-star" v-bind:class='{fas: source.saved, far: !source.saved}'></i></td>
+      <td><i @click='save' class="fa-star" style='color: green' v-bind:class='{fas: source.saved, far: !source.saved}'></i></td>
+      <td><i @click='skip' class="fa-star" style='color: red' v-bind:class='{fas: !source.saved, far: source.saved}'></i></td>
       <td>{{ source.points }}</td>
       <td>{{ numLinks }}</td>
       <td>{{ source.nextScrape }}</td>
@@ -15,8 +16,6 @@
 </template>
 
 <script>
-import store from '../../../store';
-
 export default {
   name: 'SourceDiv',
   props: ['source'],
@@ -27,17 +26,36 @@ export default {
   },
   methods: {
     removeSource: function() {
-      store.dispatch('removeSource', {
-        url: this.source.url,
-        targetId: this.$route.params.id,
+      chrome.runtime.sendMessage({
+        action: 'storeDispatch',
+        storeAction: 'removeSource',
+        storePayload: {
+          url: this.source.url,
+          targetId: this.$route.params.id,
+        },
       });
       this.$parent.fetchData();
     },
-    toggleSaved: function() {
-      this.$store.dispatch('setSourceSaved', {
-        source: this.source.url,
-        saved: !this.source.saved,
-        targetId: this.$route.params.id,
+    save: function() {
+      chrome.runtime.sendMessage({
+        action: 'storeDispatch',
+        storeAction: 'setSourceSaved',
+        storePayload: {
+          source: this.source.url,
+          saved: true,
+          targetId: this.$route.params.id,
+        },
+      });
+    },
+    skip: function() {
+      chrome.runtime.sendMessage({
+        action: 'storeDispatch',
+        storeAction: 'setSourceSaved',
+        storePayload: {
+          source: this.source.url,
+          saved: false,
+          targetId: this.$route.params.id,
+        },
       });
     },
   },

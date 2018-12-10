@@ -26,6 +26,7 @@ export default new Vuex.Store({
     curSuggestion: null,
     curSuggestionTabId: null,
     profileDuplicate: null,
+    sourceDuplicate: null,
     needCurSuggestion: true,
     sourceForCurUrl: null,
     nextSuggestion: null,

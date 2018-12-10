@@ -1,23 +1,54 @@
 <template>
     <div id='menu'>
-        <div class='menu-item' @click="saveAndGo">Save and go</div>
-        <div class='menu-item' @click="skipAndGo">Skip and go</div>
+      <div style='display: flex;'>
+        <span class='menu-tile' @click="saveAndGo">
+          <div class='large-tile'>
+            <i class="far fa-star" style='color: green'></i>
+            <i class="fas fa-arrow-right" style='color: #444;'></i>
+          </div>
+          <div>
+            save and go
+            </div>
+        </span>
+        <span class='menu-tile' @click="skipAndGo">
+          <div class='large-tile'>
+            <i class="far fa-star" style='color: red'></i>
+            <i class="fas fa-arrow-right" style='color: #444;'></i>
+          </div>
+          <div>
+            skip and go
+            </div>
+        </span>
+        <span class='menu-tile' @click="go">
+          <div class='large-tile'>
+            <i class="fas fa-arrow-right" style='color: #444;'></i>
+          </div>
+          <div>
+            go
+            </div>
+        </span>
+        </div>
         <div class='menu-divider'></div>
         <div class='menu-item'>
-          <span class='inline-item' @click='toggleSaved' :title='curUrl'>
-            <i v-show='linkSaved || linkSkipped' class="fa-star muted" v-bind:class='{fas: linkSaved, far: linkSkipped}'></i>
-            <i v-show='!linkSaved && !linkSkipped' class="fas fa-star-half-alt muted"></i>
             {{curUrl}}
-          </span>
-          <i @click='deleteLink' class="fas fa-times"></i>
         </div>
+<div style='display: flex;'>
+  Link: 
+  <span class='button-group'>
+    <i class="far fa-star" @click='save' v-bind:class='{bgselected: linkSaved}' style='color: green'></i>
+    <i class="far fa-star" @click='skip' v-bind:class='{bgselected: linkSkipped}' style='color: red'></i>
+    <i class="fas fa-trash" @click='removeLink' v-bind:class='{bgselected: linkNeither}' style='color: grey'></i>
+  </span>
+</div>
+<div style='display: flex;'>
+  Source: 
+  <span class='button-group'>
+    <i class="far fa-star" @click='saveAsSource(true)' v-bind:class='{bgselected: sourceSaved}' style='color: green'></i>
+    <i class="far fa-star" @click='saveAsSource(false)' v-bind:class='{bgselected: sourceSkipped}' style='color: red'></i>
+    <i class="fas fa-trash" @click='deleteSource' v-bind:class='{bgselected: sourceNeither}' style='color: grey'></i>
+  </span>
+</div>
         <div class='menu-item' :title='nextLink'>Next Link: {{nextLink}}</div>
-        <div class='menu-item' @click="go">Go</div>
-        <div class='menu-divider'></div>
-        <div class='menu-item'>Source status: {{sourceStatus}}</div>
-        <div class='menu-item' @click="saveAsSource(true)">Save</div>
-        <div class='menu-item' @click="saveAsSource(false)">Unsave</div>
-        <div class='menu-item' @click="deleteSource">Delete</div>
         <div class='menu-divider'></div>
         <div class='menu-item'>Target:
             <select id='target-select' v-model='selectTargetId' @change='setTarget'>
@@ -41,6 +72,7 @@ export default {
   data() {
     return {
       selectTargetId: this.$store.state.targetId,
+      options: ['save', 'skip', 'delete'],
     };
   },
   computed: {
@@ -49,6 +81,18 @@ export default {
     },
     linkSkipped() {
       return this.linkStatus === 'not saved';
+    },
+    linkNeither() {
+      return this.linkStatus === 'neither';
+    },
+    sourceSaved() {
+      return this.linkStatus === 'saved';
+    },
+    sourceSkipped() {
+      return this.linkStatus === 'not saved';
+    },
+    sourceNeither() {
+      return this.linkStatus === 'neither';
     },
     profiles() {
       return this.$store.state.profiles;
@@ -80,103 +124,60 @@ export default {
   },
   methods: {
     deleteSource() {
-      this.$store.dispatch('removeSource', {
-        targetId: this.targetId,
-        url: this.$store.state.curUrl,
+      chrome.runtime.sendMessage({
+        action: 'storeDispatch',
+        storeAction: 'removeSource',
+        storePayload: {
+          targetId: this.targetId,
+          url: this.$store.state.curUrl,
+        },
       });
-    },
-    toggleSaved() {
-      if (!this.linkSaved) {
-        this.save();
-      } else {
-        this.skip();
-      }
     },
     setTarget() {
-      this.$store.dispatch('setTarget', this.selectTargetId);
+      chrome.runtime.sendMessage({
+        action: 'storeDispatch',
+        storeAction: 'setTarget',
+        storePayload: this.selectTargetId,
+      });
     },
     save() {
-      // cannot send messages to background via chrome.runtime.sendMessage.
-      this.$store.dispatch('saveOrSkipLink', {
-        link: this.curUrl,
-        action: 'save',
-        targetId: this.targetId,
-      });
       chrome.runtime.sendMessage('save');
     },
     skip() {
-      this.$store.dispatch('saveOrSkipLink', {
-        link: this.curUrl,
-        action: 'skip',
-        targetId: this.targetId,
-      });
       chrome.runtime.sendMessage('skip');
     },
     saveAndGo() {
-      this.$store.dispatch('saveOrSkipLink', {
-        link: this.curUrl,
-        action: 'save',
-        targetId: this.targetId,
-      });
       chrome.runtime.sendMessage('saveAndGo');
     },
     go() {
       chrome.runtime.sendMessage('go');
     },
     skipAndGo() {
-      this.$store.dispatch('saveOrSkipLink', {
-        link: this.curUrl,
-        action: 'skip',
-        targetId: this.targetId,
-      });
       chrome.runtime.sendMessage('skipAndGo');
     },
     saveAsSource(save) {
-      this.$store.dispatch('addSources', {
-        targetId: this.targetId,
-        sources: [
-          {
-            url: this.$store.state.curUrl,
-            saved: save,
-          },
-        ],
+      chrome.runtime.sendMessage({
+        action: 'storeDispatch',
+        storeAction: 'addSources',
+        storePayload: {
+          targetId: this.targetId,
+          sources: [
+            {
+              url: this.$store.state.curUrl,
+              saved: save,
+            },
+          ],
+        },
       });
     },
     showOptions() {
       chrome.runtime.openOptionsPage();
     },
-    deleteLink() {},
+    removeLink() {
+      chrome.runtime.sendMessage('removeLink');
+    },
   },
 };
-
-import store from '../../../store';
-
-const sos = {};
-
-sos.log = function(message) {
-  console.log('popup.js received message: ' + JSON.stringify(message));
-  let div = document.createElement('div');
-  div.appendChild(document.createTextNode(JSON.stringify(message)));
-  document.getElementById('messages').appendChild(div);
-};
-
-sos.sendMessage = function(text) {
-  chrome.runtime.sendMessage(text);
-};
-
-sos.showNextPage = function() {
-  chrome.runtime.sendMessage('showNextPage');
-};
-
-// Listen to messages from the scraper.js script
-chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
-  console.log('sos received message: ' + request.action + '\n' + JSON.stringify(request));
-  switch (request.action) {
-    case 'store':
-      store.dispatch(request.mutationType, request.mutationData);
-      break;
-  }
-});
 </script>
 
 <style lang="scss" scoped>
@@ -199,6 +200,10 @@ p {
   white-space: nowrap;
 }
 
+.large-tile {
+  font-size: 2em;
+}
+
 .menu-item:hover {
   background-color: #ccc;
   cursor: pointer;
@@ -216,6 +221,23 @@ p {
   width: 300px;
 }
 
+.menu-tile {
+  border: 1px solid #888;
+  margin: 1px;
+  padding: 5px;
+  display: flex;
+  flex-direction: column;
+  background-color: #efefef;
+  align-items: center;
+  border-radius: 4px;
+}
+
+.menu-tile:hover {
+  background-color: rgb(245, 245, 245);
+  border-color: #000;
+  cursor: pointer;
+}
+
 .muted {
   color: #888;
 }
@@ -227,5 +249,43 @@ p {
 body {
   padding: 0px;
   margin: 0px;
+}
+
+.button-group {
+  display: flex;
+}
+
+.button-group > * {
+  padding: 5px;
+  background-color: #bbb;
+  cursor: pointer;
+}
+
+.bgselected {
+  background-color: #efefef;
+}
+
+.button-group > *:hover {
+  background-color: #fff;
+}
+
+.button-group > *:not(:first-child) {
+  border-right: solid 1px #888;
+  border-top: solid 1px #888;
+  border-bottom: solid 1px #888;
+}
+
+.button-group > *:first-child {
+  border-top-left-radius: 4px;
+  border-bottom-left-radius: 4px;
+  border-left: solid 1px #888;
+  border-right: solid 1px #888;
+  border-top: solid 1px #888;
+  border-bottom: solid 1px #888;
+}
+
+.button-group > *:last-child {
+  border-top-right-radius: 4px;
+  border-bottom-right-radius: 4px;
 }
 </style>

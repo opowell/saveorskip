@@ -3,7 +3,7 @@
       <b-breadcrumb :items="crumbs"/>
         <h2>Profiles</h2>
         <div style='display: flex'>
-          <input v-model='profileInput'>
+          <input v-model='profileInput' v-on:keyup.enter="addProfile">
           <button id='addProfile' @click='addProfile'>add</button>
         </div>
         <profilestable></profilestable>
@@ -11,25 +11,19 @@
 </template>
 
 <script>
-import Profile from './Profile.vue';
 import Profilestable from './Profilestable.vue';
 
 export default {
   name: 'ProfilesPage',
   components: {
-    Profile,
     Profilestable,
   },
   data: function() {
     return {
       profileInput: this.$store.getters.profileInput,
-      profiles: this.$store.state.profiles,
     };
   },
   computed: {
-    profilesComp() {
-      return this.$store.state.profiles;
-    },
     crumbs: function() {
       return [
         {
@@ -45,7 +39,11 @@ export default {
   },
   methods: {
     addProfile: function() {
-      this.$store.dispatch('addProfile', this.profileInput);
+      chrome.runtime.sendMessage({
+        action: 'storeDispatch',
+        storeAction: 'addProfile',
+        storePayload: this.profileInput,
+      });
       this.profileInput = '';
     },
   },

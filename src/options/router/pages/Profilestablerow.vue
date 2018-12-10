@@ -1,6 +1,9 @@
 <template>
   <tr>
       <td>
+        <button @click='deleteProfile'>x</button>
+      </td>
+      <td>
         <router-link :to='{ name: "profile", params: { id: profile.name }}'>
           {{profile.name}}
         </router-link>
@@ -27,9 +30,20 @@ export default {
       required: true,
     },
   },
+  methods: {
+    deleteProfile: function() {
+      chrome.runtime.sendMessage({
+        action: 'storeDispatch',
+        storeAction: 'deleteProfile',
+        storePayload: {
+          profileId: this.profile.name,
+        },
+      });
+    },
+  },
   computed: {
     numLinks() {
-      return this.profile.links.length;
+      return Object.keys(this.profile.links).length;
     },
     numSources: function() {
       return Object.keys(this.profile.sources).length;

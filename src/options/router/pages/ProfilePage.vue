@@ -15,8 +15,6 @@
 </template>
 
 <script>
-import store from '../../../store';
-
 export default {
   name: 'ProfilePage',
   components: {},
@@ -70,12 +68,12 @@ export default {
       this.$store.dispatch('duplicateProfile', {
         profileId: this.$route.params.id,
       });
-      this.$router.push(this.$store.getters.profileDuplicate.name);
+      this.$router.push(this.$store.state.profileDuplicate.name);
     },
   },
   computed: {
     numLinks: function() {
-      return this.profile.links.length;
+      return Object.keys(this.profile.links).length;
     },
     numSources: function() {
       return Object.keys(this.profile.sources).length;

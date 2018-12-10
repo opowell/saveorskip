@@ -3,31 +3,54 @@ import Vue from 'vue';
 
 global.browser = require('webextension-polyfill');
 
+function removeLink() {
+  let targetId = store.getters.curTarget.name;
+  let url = store.state.curUrl;
+  store.dispatch('removeLink', {
+    link: url,
+    targetId: targetId,
+  });
+}
+
 /*
  * gotoNext - whether or not to move to a new page after saving.
  **/
 function saveOrSkip(gotoNext, action) {
   let targetId = store.getters.curTarget.name;
   let url = store.state.curUrl;
-  storeDispatch('saveOrSkipLink', {
+  console.log(targetId + ' - ' + action + ' current link: ' + url);
+  let actionPast = null;
+  if (action === 'save') {
+    actionPast = 'Saved';
+  } else {
+    actionPast = 'Skipped';
+  }
+  store.dispatch('saveOrSkipLink', {
     link: url,
     action: action,
     targetId: targetId,
   });
+  console.log(targetId + ' - ' + actionPast + ' link: ' + JSON.stringify(url));
+
   let cb = null;
   if (gotoNext === true) {
     cb = showNextPage;
   }
+
   saveSourcesOfUrl(url, cb, action);
 }
 
 // Save a list of sources to storage.
 function saveSources(sourcesToSave, callback) {
   if (sourcesToSave == null) return;
-  storeDispatch('addSources', {
+
+  console.log('SAVING suggested sources:\n' + arrJoin(sourcesToSave));
+
+  store.dispatch('addSources', {
     sources: sourcesToSave,
     targetId: store.getters.curTarget.name,
   });
+
   if (callback != null) {
     callback();
   }
@@ -79,18 +102,18 @@ function showNextPage() {
   if (store.state.nextSuggestion != null) {
     console.log('next suggestion exists');
     changeActiveTabToUrl(store.state.nextSuggestion);
-    storeDispatch('setCurSuggestion', {
+    store.dispatch('setCurSuggestion', {
       url: store.state.nextSuggestion,
     });
-    storeDispatch('setNextSuggestion', {
+    store.dispatch('setNextSuggestion', {
       url: null,
     });
-    storeDispatch('setNeedCurSuggestion', {
+    store.dispatch('setNeedCurSuggestion', {
       value: false,
     });
   } else {
     console.log('no next suggestion');
-    storeDispatch('setNeedCurSuggestion', {
+    store.dispatch('setNeedCurSuggestion', {
       value: true,
     });
   }
@@ -111,7 +134,7 @@ function loadNextSuggestion() {
   }
 
   console.log('DRAWING SUGGESTION from ' + source.url);
-  storeDispatch('setSourceForCurUrl', {
+  store.dispatch('setSourceForCurUrl', {
     url: trimmedUrl(source.url),
   });
   // If too early to scrape, proceed without scraping.
@@ -125,7 +148,7 @@ function loadNextSuggestion() {
   else {
     console.log('scraping items from ' + source.url);
     let newURL = 'http://' + trimmedUrl(source.url);
-    storeDispatch('setCurUrl', {
+    store.dispatch('setCurUrl', {
       url: trimmedUrl(newURL),
     });
     openUrl(newURL);
@@ -138,7 +161,7 @@ chrome.tabs.onActivated.addListener(function(activeInfo) {
     tabId: activeInfo.tabId,
   });
   chrome.tabs.get(activeInfo.tabId, function(tab) {
-    storeDispatch('setCurUrl', {
+    store.dispatch('setCurUrl', {
       url: tab.url,
     });
   });
@@ -148,21 +171,11 @@ chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
   // console.log('saw onUpdated event: ' + tabId + ', ' + JSON.stringify(changeInfo) + ', ' + JSON.stringify(tab));
   if (tabId === store.activeTabId && changeInfo.url != null) {
     // console.log('processing');
-    storeDispatch('setCurUrl', {
+    store.dispatch('setCurUrl', {
       url: changeInfo.url,
     });
   }
 });
-
-// Mutate store, and inform other pages of mutation.
-let storeDispatch = function(action, payload) {
-  store.dispatch(action, payload);
-  chrome.runtime.sendMessage({
-    action: 'storeDispatch',
-    storeAction: action,
-    storePayload: payload,
-  });
-};
 
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
   console.log('message received from ' + trimmedUrl(sender.url) + ': ' + request);
@@ -174,7 +187,7 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 
   switch (action) {
     case 'storeDispatch':
-      storeDispatch(request.storeAction, request.storePayload);
+      store.dispatch(request.storeAction, request.storePayload);
       break;
     case 'showNextPage':
       showNextPage();
@@ -184,10 +197,10 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
         console.log('not current suggestion tab: ' + store.state.curSuggestionTab);
         chrome.tabs.query({ active: true }, function(tabs) {
           if (trimmedUrl(tabs[0].url) === trimmedUrl(sender.tab.url)) {
-            storeDispatch('setCurUrl', {
+            store.dispatch('setCurUrl', {
               url: sender.tab.url,
             });
-            storeDispatch('setActiveTabId', {
+            store.dispatch('setActiveTabId', {
               tabId: sender.tab.id,
             });
           }
@@ -211,6 +224,9 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
     case 'go':
       showNextPage();
       break;
+    case 'removeLink':
+      removeLink();
+      break;
     case 'saveAsSource':
       break;
   }
@@ -218,24 +234,17 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 
 // Save current tab as a source.
 function saveAsSource(tab) {
-  storeDispatch('setCurSavedItemsTab', {
+  store.dispatch('setCurSavedItemsTab', {
     url: tab.url,
   });
 
-  storeDispatch('addSources', [
-    {
-      url: trimmedUrl(tab.url),
-      points: 2,
-      saved: true,
-    },
-  ]);
   let sources = store.getters.curTarget.sources;
 
   let sourceName = trimmedUrl(tab.url);
-  // if (sources[sourceName] == null) {
-  //   Vue.set(sources, sourceName, Source(sourceName));
-  //   sources[sourceName].points += 2;
-  // }
+  if (sources[sourceName] == null) {
+    Vue.set(sources, sourceName, Source(sourceName));
+    sources[sourceName].points += 2;
+  }
   let source = sources[sourceName];
   source.lastScraped = new Date().toJSON();
 

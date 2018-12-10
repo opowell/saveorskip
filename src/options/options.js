@@ -17,3 +17,17 @@ new Vue({
   router,
   render: h => h(App),
 });
+
+chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
+  console.log('message received from ' + sender.url + ': ' + JSON.stringify(request));
+  let action = request;
+  if (request.action != null) {
+    action = request.action;
+  }
+
+  switch (action) {
+    case 'storeDispatch':
+      store.dispatch(request.storeAction, request.storePayload);
+      break;
+  }
+});

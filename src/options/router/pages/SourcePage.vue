@@ -3,13 +3,13 @@
       <b-breadcrumb :items="crumbs"/>
       <h2>{{$route.params.sourceId}}</h2>
       <div>
-        <button @click='renameSource'>rename</button>
-        <button @click='duplicateSource'>duplicate</button>
-        <button @click='deleteSource'>delete</button>
+        <button @click='rename'>rename</button>
+        <button @click='duplicate'>duplicate</button>
+        <button @click='deleteS'>delete</button>
       </div>
       <div style='display: flex; flex-direction: column;'>
         <div>
-            Url: <input type='text' v-model='sourceInput'>
+            Url: <input type='text' v-model='sourceUrlInput'>
         </div>
         <div>
             Points: <input style='width: 50px' type='number' min=0 v-model='sourcePointsInput'>
@@ -26,7 +26,6 @@
 
 <script>
 import ScrapedLinkDiv from './ScrapedLink.vue';
-import store from '../../../store';
 
 export default {
   name: 'SourcePage',
@@ -46,21 +45,30 @@ export default {
       source: {},
       sourceId: '',
       sourceInput: '',
-      sourcePointsInput: 1,
+      sourcePointsInput: '',
+      sourceUrlInput: '',
     };
   },
   methods: {
     addLink: function() {
-      store.dispatch('saveOrSkipLink', {
-        targetId: this.$route.params.id,
-        action: this.newLinkSaved ? 'save' : 'skip',
-        link: this.newLinkUrl,
+      chrome.runtime.sendMessage({
+        action: 'storeDispatch',
+        storeAction: 'saveOrSkipLink',
+        storePayload: {
+          targetId: this.$route.params.id,
+          action: this.newLinkSaved ? 'save' : 'skip',
+          link: this.newLinkUrl,
+        },
       });
     },
 
-    deleteProfile: function() {
-      this.$store.dispatch('deleteProfile', {
-        profileId: this.$route.params.id,
+    deleteS: function() {
+      chrome.runtime.sendMessage({
+        action: 'storeDispatch',
+        storeAction: 'deleteSource',
+        storePayload: {
+          profileId: this.$route.params.id,
+        },
       });
       this.$router.push({ name: 'profiles' });
     },
@@ -68,6 +76,7 @@ export default {
     fetchData: function() {
       this.profileId = this.$route.params.profileId;
       this.sourceId = this.$route.params.sourceId;
+      this.sourceUrlInput = this.sourceId;
       this.profile = null;
       this.source = null;
       let profiles = this.$store.state.profiles;
@@ -75,51 +84,47 @@ export default {
         if (profiles[i].name === this.profileId) {
           this.profile = profiles[i];
           this.source = this.profile.sources[this.sourceId];
+          this.sourcePointsInput = this.source.points;
           break;
         }
       }
     },
 
-    renameProfile: function() {
+    rename: function() {
       var newName = prompt('Enter new name:');
       if (newName == null) {
         return;
       }
-      this.$store.dispatch('renameProfile', {
-        profileId: this.$route.params.id,
-        newName: newName,
+      chrome.runtime.sendMessage({
+        action: 'storeDispatch',
+        storeAction: 'renameSource',
+        storePayload: {
+          profileId: this.$route.params.targetId,
+          sourceId: this.$route.params.sourceId,
+          newName: newName,
+        },
       });
       this.$router.push(newName);
     },
 
-    duplicateProfile: function() {
-      this.$store.dispatch('duplicateProfile', {
-        profileId: this.$route.params.id,
+    duplicate: function() {
+      chrome.runtime.sendMessage({
+        action: 'storeDispatch',
+        storeAction: 'duplicateSource',
+        storePayload: {
+          profileId: this.$route.params.profileId,
+          sourceId: this.$route.params.sourceId,
+        },
       });
-      this.$router.push(this.$store.getters.profileDuplicate.name);
+      this.$router.push(this.$store.getters.sourceDuplicate.name);
     },
   },
   computed: {
-    sources: function() {
-      return this.profile == null ? [] : this.profile.sources;
-    },
     links: function() {
-      return this.profile == null ? [] : this.profile.links;
-    },
-    savedLinks: function() {
-      return this.links.filter(link => link.saved === true);
-    },
-    skippedLinks: function() {
-      return this.links.filter(link => link.saved === false);
+      return this.source == null ? [] : this.source.links;
     },
     numLinks: function() {
       return this.links.length;
-    },
-    numSavedLinks: function() {
-      return this.savedLinks.length;
-    },
-    numSkippedLinks: function() {
-      return this.skippedLinks.length;
     },
     crumbs: function() {
       return [

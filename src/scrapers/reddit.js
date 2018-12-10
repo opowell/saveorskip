@@ -40,7 +40,10 @@ sos.getSavedItems = function(sendResponse) {
       linkEl.style.padding = '3px';
       linkEl.style.margin = '2px';
     }
-    links.push('http://www.reddit.com' + linkEl.getAttribute('href'));
+    links.push({
+      link: 'http://www.reddit.com' + linkEl.getAttribute('href'),
+      title: linkEl.text,
+    });
   }
   console.log('returning saved links: ' + links.join('\n'));
   sendResponse(links);

@@ -1,9 +1,5 @@
 import * as types from './mutation-types';
 
-export const setFoo = ({ commit }, payload) => {
-  commit(types.UPDATE_FOO, payload);
-};
-
 export const setTarget = ({ commit }, payload) => {
   commit(types.SET_TARGET, payload);
 };
@@ -42,6 +38,14 @@ export const renameProfile = ({ commit }, payload) => {
 
 export const duplicateProfile = ({ commit }, payload) => {
   commit(types.DUPLICATE_PROFILE, payload);
+};
+
+export const renameSource = ({ commit }, payload) => {
+  commit(types.RENAME_SOURCE, payload);
+};
+
+export const duplicateSource = ({ commit }, payload) => {
+  commit(types.DUPLICATE_SOURCE, payload);
 };
 
 export const setNeedCurSuggestion = ({ commit }, payload) => {

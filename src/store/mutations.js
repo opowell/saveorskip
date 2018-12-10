@@ -1,11 +1,8 @@
 import * as types from './mutation-types';
 import Profile from '../models/Profile';
+import Source from '../models/Source';
 
 export default {
-  [types.UPDATE_FOO](state, payload) {
-    state.foo = payload;
-  },
-
   [types.ADD_PROFILE](state, payload) {
     let profile = new Profile(payload);
     state.profiles.push(profile);
@@ -24,7 +21,11 @@ export default {
     if (payload.action === 'skip') {
       Profile.skipLink(profile, payload.link);
     }
-    chrome.runtime.sendMessage('store-saveOrSkipLink');
+    chrome.runtime.sendMessage({
+      action: 'store',
+      mutationType: 'saveOrSkipLink',
+      mutationData: payload,
+    });
   },
 
   [types.ADD_SOURCES](state, payload) {
@@ -64,6 +65,25 @@ export default {
     }
   },
 
+  [types.RENAME_SOURCE](state, payload) {
+    for (let i = 0; i < state.profiles.length; i++) {
+      if (state.profiles[i].name === payload.profileId) {
+        let profile = state.profiles[i];
+        let keys = Object.keys(profile.sources);
+        for (let j = 0; j < keys.length; j++) {
+          if (profile.sources[keys[j]] === payload.sourceId) {
+            let key = keys[j];
+            let source = profile.sources[key];
+            source.url = payload.newName;
+            delete profile.sources[key];
+            profile.sources[payload.newName] = source;
+            return;
+          }
+        }
+      }
+    }
+  },
+
   [types.SET_CUR_URL](state, payload) {
     state.curUrl = trimmedUrl(payload.url);
     chrome.runtime.sendMessage({
@@ -92,15 +112,37 @@ export default {
     }
 
     let copy = new Profile(name);
-    for (let i = 0; i < profile.links.length; i++) {
+    for (let i in profile.links) {
       Profile.setLink(copy, profile.links[i].url, profile.links[i].saved);
     }
-    for (let i = 0; i < Object.keys(profile.suggestedSources).length; i++) {
-      let key = Object.keys(profile.suggestedSources)[i];
-      Profile.addSuggestedSources(copy, profile.suggestedSources[key]);
+    for (let i in profile.sources) {
+      Profile.addSources(copy, [profile.sources[i]]);
     }
     state.profiles.push(copy);
     state.profileDuplicate = copy;
+  },
+
+  [types.DUPLICATE_SOURCE](state, payload) {
+    let profile = findProfile(state, payload.profileId);
+
+    let nameExists = true;
+    let i = 0;
+    let name;
+    while (nameExists) {
+      i++;
+      name = payload.sourceId + i;
+      nameExists = profile.sources[name] == null;
+    }
+
+    let source = profile.sources[payload.sourceId];
+    let copy = new Source(name);
+    copy.saved = source.saved;
+    copy.lastScraped = source.lastScraped;
+    copy.nextScrape = source.nextScrape;
+    copy.points = source.points;
+    // TODO: Also copy scrapedLinks.
+    profile.sources[name] = copy;
+    state.sourceDuplicate = copy;
   },
 
   [types.SET_NEED_CUR_SUGGESTION](state, payload) {

@@ -22,16 +22,24 @@ export default {
   },
   methods: {
     removeLink: function() {
-      this.$store.dispatch('removeLink', {
-        url: this.link.url,
-        targetId: this.$route.params.id,
+      chrome.runtime.sendMessage({
+        action: 'storeDispatch',
+        storeAction: 'removeLink',
+        storePayload: {
+          url: this.link.url,
+          targetId: this.$route.params.id,
+        },
       });
     },
     toggleSaved: function() {
-      this.$store.dispatch('saveOrSkipLink', {
-        link: this.link.url,
-        action: this.link.saved ? 'skip' : 'save',
-        targetId: this.$route.params.id,
+      chrome.runtime.sendMessage({
+        action: 'storeDispatch',
+        storeAction: 'saveOrSkipLink',
+        storePayload: {
+          link: this.link.url,
+          action: this.link.saved ? 'skip' : 'save',
+          targetId: this.$route.params.id,
+        },
       });
     },
   },

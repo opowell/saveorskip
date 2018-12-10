@@ -1,19 +1,12 @@
 import Link from './Link';
 import Source from './Source';
+import Vue from 'vue';
 
 export default class {
   constructor(name) {
     this.name = name;
-    this.links = []; // TODO: Change to object.
+    this.links = {};
     this.sources = {};
-  }
-
-  static removeSource(profile, url) {
-    if (url == null || profile == null) {
-      return;
-    }
-    console.log('Profile ' + profile.name + ': removing source ' + url);
-    delete profile.sources[url];
   }
 
   static addSources(profile, sources) {
@@ -28,37 +21,28 @@ export default class {
       if (source.saved != null) {
         srcObj.saved = source.saved;
       }
-      profile.sources[source.url] = srcObj;
+      Vue.set(profile.sources, source.url, srcObj);
     }
+  }
+
+  static setLink(profile, link, saved) {
+    if (profile == null) {
+      return;
+    }
+    if (profile.links[link.url] != null) {
+      profile.links[link.url].saved = saved;
+      return;
+    }
+    let newLink = new Link(link, saved);
+    Vue.set(profile.links, link.url, newLink);
   }
 
   static removeLink(profile, url) {
-    if (profile == null) {
-      return;
-    }
-
-    for (let i = 0; i < profile.links.length; i++) {
-      if (profile.links[i].url === url) {
-        profile.links.splice(i, 1);
-        return;
-      }
-    }
+    Vue.delete(profile.links, url);
   }
 
-  static setLink(profile, url, saved) {
-    if (profile == null) {
-      return;
-    }
-    for (let i = 0; i < profile.links.length; i++) {
-      if (profile.links[i].url === url) {
-        profile.links[i].saved = saved;
-        return;
-      }
-    }
-
-    let link = new Link(url, saved);
-    console.log('set link: ' + saved + ', ' + url);
-    profile.links.push(link);
+  static removeSource(profile, url) {
+    Vue.delete(profile.sources, url);
   }
 
   static setSourceSaved(profile, url, saved) {

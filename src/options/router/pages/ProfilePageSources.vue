@@ -26,7 +26,6 @@
 
 <script>
 import SourceDiv from './Source.vue';
-import store from '../../../store';
 
 export default {
   name: 'ProfilePage',
@@ -47,7 +46,7 @@ export default {
       profileId: '',
       sourceInput: '',
       sourcePointsInput: 1,
-      sourceHeaders: ['del', '', '<i class="fa-star-half-alt fas"></i>', 'points', 'links', 'next scrape', 'url'],
+      sourceHeaders: ['del', '', '<i class="fas fa-star" style="color: green"></i>', '<i class="fas fa-star" style="color: red"></i>', 'points', 'links', 'next scrape', 'url'],
     };
   },
   methods: {
@@ -56,16 +55,21 @@ export default {
       let points = this.sourcePointsInput;
       console.log('trying to add source: ' + sourceUrl + ', ' + points + ', ' + this.profileId);
 
-      store.dispatch('addSources', {
-        sources: [
-          {
-            url: sourceUrl,
-            points: points,
-          },
-        ],
-        targetId: this.profileId,
+      chrome.runtime.sendMessage({
+        action: 'storeDispatch',
+        storeAction: 'addSources',
+        storePayload: {
+          sources: [
+            {
+              url: sourceUrl,
+              points: points,
+            },
+          ],
+          targetId: this.profileId,
+        },
       });
-      this.fetchData();
+
+      // this.fetchData();
     },
 
     fetchData: function() {
@@ -82,7 +86,7 @@ export default {
   },
   computed: {
     sources: function() {
-      return this.profile == null ? [] : this.profile.sources;
+      return this.profile == null ? {} : this.profile.sources;
     },
     crumbs: function() {
       return [

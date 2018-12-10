@@ -19,6 +19,7 @@ const config = {
     'scrapers/default': './scrapers/default.js',
     'scrapers/hackernews': './scrapers/hackernews.js',
     'scrapers/reddit': './scrapers/reddit.js',
+    'scrapers/youtube-com': './scrapers/youtube-com.js',
     'scrapers/tags-literotica-com': './scrapers/tags-literotica-com.js',
     'scrapers/www-literotica-com': './scrapers/www-literotica-com.js',
   },
@@ -73,7 +74,7 @@ const config = {
       {
         from: 'manifest.json',
         to: 'manifest.json',
-        transform: (content) => {
+        transform: content => {
           const jsonContent = JSON.parse(content);
           jsonContent.version = version;
 
@@ -102,9 +103,7 @@ if (config.mode === 'production') {
 }
 
 if (process.env.HMR === 'true') {
-  config.plugins = (config.plugins || []).concat([
-    new ChromeExtensionReloader(),
-  ]);
+  config.plugins = (config.plugins || []).concat([new ChromeExtensionReloader()]);
 }
 
 function transformHtml(content) {

@@ -29,6 +29,11 @@ export default class {
     if (profile == null) {
       return;
     }
+
+    if (typeof link !== 'object') {
+      link = { url: link };
+    }
+
     if (profile.links[link.url] != null) {
       profile.links[link.url].saved = saved;
       return;

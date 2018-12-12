@@ -41,7 +41,7 @@ sos.getSavedItems = function(sendResponse) {
       linkEl.style.margin = '2px';
     }
     links.push({
-      link: 'http://www.reddit.com' + linkEl.getAttribute('href'),
+      url: 'http://www.reddit.com' + linkEl.getAttribute('href'),
       title: linkEl.text,
     });
   }
@@ -187,7 +187,7 @@ sos.buildUrl = function(url) {
 };
 
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
-  console.log('sos received message: ' + request.action);
+  console.log('sos received message: ' + JSON.stringify(request));
 
   if (request.action === 'scrapeOwnSources') {
     let sources = sos.scrapeOwnSources(request.saveOrSkip);

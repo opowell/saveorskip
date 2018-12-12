@@ -5,7 +5,7 @@
       <div>
         <button @click='rename'>rename</button>
         <button @click='duplicate'>duplicate</button>
-        <button @click='deleteS'>delete</button>
+        <button @click='deleteSource'>delete</button>
       </div>
       <div style='display: flex; flex-direction: column;'>
         <div>
@@ -55,22 +55,28 @@ export default {
         action: 'storeDispatch',
         storeAction: 'saveOrSkipLink',
         storePayload: {
-          targetId: this.$route.params.id,
+          targetId: this.$route.params.profileId,
           action: this.newLinkSaved ? 'save' : 'skip',
           link: this.newLinkUrl,
         },
       });
     },
 
-    deleteS: function() {
+    deleteSource: function() {
       chrome.runtime.sendMessage({
         action: 'storeDispatch',
-        storeAction: 'deleteSource',
+        storeAction: 'removeSource',
         storePayload: {
-          profileId: this.$route.params.id,
+          targetId: this.$route.params.profileId,
+          url: this.$route.params.sourceId,
         },
       });
-      this.$router.push({ name: 'profiles' });
+      this.$router.push({
+        name: 'profileSources',
+        params: {
+          id: this.$route.params.profileId,
+        },
+      });
     },
 
     fetchData: function() {
@@ -99,7 +105,7 @@ export default {
         action: 'storeDispatch',
         storeAction: 'renameSource',
         storePayload: {
-          profileId: this.$route.params.targetId,
+          profileId: this.$route.params.profileId,
           sourceId: this.$route.params.sourceId,
           newName: newName,
         },

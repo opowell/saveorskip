@@ -29,9 +29,6 @@
         </span>
         </div>
         <div class='menu-divider'></div>
-        <div class='menu-item'>
-            {{curUrl}}
-        </div>
 <div style='display: flex;'>
   Link: 
   <span class='button-group'>
@@ -76,6 +73,9 @@ export default {
     };
   },
   computed: {
+    linkStatus() {
+      return this.$store.getters.curLinkStatus;
+    },
     linkSaved() {
       return this.linkStatus === 'saved';
     },
@@ -85,14 +85,17 @@ export default {
     linkNeither() {
       return this.linkStatus === 'neither';
     },
+    sourceStatus() {
+      return this.$store.getters.curSourceStatus;
+    },
     sourceSaved() {
-      return this.linkStatus === 'saved';
+      return this.sourceStatus === 'saved';
     },
     sourceSkipped() {
-      return this.linkStatus === 'not saved';
+      return this.sourceStatus === 'not saved';
     },
     sourceNeither() {
-      return this.linkStatus === 'neither';
+      return this.sourceStatus === 'neither';
     },
     profiles() {
       return this.$store.state.profiles;
@@ -103,23 +106,14 @@ export default {
     target() {
       return this.$store.getters.curTarget;
     },
-    linkStatus() {
-      return this.$store.getters.curLinkStatus;
-    },
-    sourceStatus() {
-      return this.$store.getters.curSourceStatus;
-    },
-    curUrl() {
-      return this.$store.state.curUrl;
-    },
+    // curUrl() {
+    //   return this.$store.state.curLink.url;
+    // },
+    // curTitle() {
+    //   return this.$store.state.curLink.title;
+    // },
     nextLink() {
       return this.$store.state.nextSuggestion;
-    },
-  },
-  watch: {
-    nextSuggestion: function(val) {
-      console.log('new val=' + val);
-      vm.$forceUpdate();
     },
   },
   methods: {
@@ -129,7 +123,7 @@ export default {
         storeAction: 'removeSource',
         storePayload: {
           targetId: this.targetId,
-          url: this.$store.state.curUrl,
+          url: this.$store.state.curLink.url,
         },
       });
     },
@@ -163,7 +157,7 @@ export default {
           targetId: this.targetId,
           sources: [
             {
-              url: this.$store.state.curUrl,
+              url: this.$store.state.curLink.url,
               saved: save,
             },
           ],
@@ -174,6 +168,14 @@ export default {
       chrome.runtime.openOptionsPage();
     },
     removeLink() {
+      chrome.runtime.sendMessage({
+        action: 'storeDispatch',
+        storeAction: 'removeLink',
+        storePayload: {
+          targetId: this.targetId,
+          url: this.$store.state.curLink.url,
+        },
+      });
       chrome.runtime.sendMessage('removeLink');
     },
   },

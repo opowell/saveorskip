@@ -7,18 +7,16 @@ global.browser = require('webextension-polyfill');
  * gotoNext - whether or not to move to a new page after saving.
  **/
 function saveOrSkip(gotoNext, action) {
-  let targetId = store.getters.curTarget.name;
-  let url = store.state.curUrl;
   storeDispatch('saveOrSkipLink', {
-    link: url,
+    link: store.state.curLink,
     action: action,
-    targetId: targetId,
+    targetId: store.getters.curTarget.name,
   });
   let cb = null;
   if (gotoNext === true) {
     cb = showNextPage;
   }
-  saveSourcesOfUrl(url, cb, action);
+  saveSourcesOfUrl(store.state.curLink.url, cb, action);
 }
 
 // Save a list of sources to storage.
@@ -33,9 +31,10 @@ function saveSources(sourcesToSave, callback) {
   }
 }
 
-// Save sources from open pages that link to this item.
 function saveSourcesOfUrl(url, cb, action) {
   console.log(action + ' sources of ' + url);
+
+  // Save sources from open pages that link to this item.
   chrome.tabs.query({ active: false }, function(tabs) {
     for (let i = 0; i < tabs.length; i++) {
       let otherTab = tabs[i];
@@ -53,12 +52,13 @@ function saveSourcesOfUrl(url, cb, action) {
         saveSources(response.sources);
       });
     }
+
     // Check tab itself for sources.
     console.log('scraping own sources from tabId=' + store.state.activeTabId);
     chrome.tabs.sendMessage(store.state.activeTabId, { action: 'scrapeOwnSources', saveOrSkip: action }, function(response) {
       if (response != null) {
         for (let j = 0; j < response.sources.length; j++) {
-          if (response.sources[j] == store.state.sourceForCurUrl) {
+          if (response.sources[j].url === store.state.sourceForCurUrl) {
             response.sources.splice(j, 1);
           }
         }
@@ -133,23 +133,22 @@ function loadNextSuggestion() {
 }
 
 chrome.tabs.onActivated.addListener(function(activeInfo) {
-  // console.log('saw onActivate event: ' + JSON.stringify(activeInfo));
   store.dispatch('setActiveTabId', {
     tabId: activeInfo.tabId,
   });
   chrome.tabs.get(activeInfo.tabId, function(tab) {
     storeDispatch('setCurUrl', {
       url: tab.url,
+      title: tab.title,
     });
   });
 });
 
 chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
-  // console.log('saw onUpdated event: ' + tabId + ', ' + JSON.stringify(changeInfo) + ', ' + JSON.stringify(tab));
   if (tabId === store.activeTabId && changeInfo.url != null) {
-    // console.log('processing');
     storeDispatch('setCurUrl', {
       url: changeInfo.url,
+      title: tab.title,
     });
   }
 });
@@ -218,25 +217,20 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 
 // Save current tab as a source.
 function saveAsSource(tab) {
-  storeDispatch('setCurSavedItemsTab', {
-    url: tab.url,
-  });
-
-  storeDispatch('addSources', [
-    {
-      url: trimmedUrl(tab.url),
-      points: 2,
-      saved: true,
-    },
-  ]);
   let sources = store.getters.curTarget.sources;
-
   let sourceName = trimmedUrl(tab.url);
-  // if (sources[sourceName] == null) {
-  //   Vue.set(sources, sourceName, Source(sourceName));
-  //   sources[sourceName].points += 2;
-  // }
   let source = sources[sourceName];
+  if (source == null) {
+    debugger;
+    return;
+    // storeDispatch('addSources', [
+    //   {
+    //     url: trimmedUrl(tab.url),
+    //     points: 2,
+    //     saved: false,
+    //   },
+    // ]);
+  }
   source.lastScraped = new Date().toJSON();
 
   // Set earliest time of next scrape.
@@ -247,57 +241,48 @@ function saveAsSource(tab) {
   chrome.tabs.sendMessage(tab.id, { action: 'getSavedItems' }, getSavedItemsCB);
 }
 
-function getSavedItemsCB(items) {
-  if (items == null) {
-    items = [];
+function getSavedItemsCB(links) {
+  if (links == null) {
+    links = [];
   }
-  console.log('received ' + items.length + ' new suggestions from/for ' + store.state.sourceForCurUrl + ':\n' + items.join('\n'));
+  console.log('received ' + links.length + ' new suggestions from/for ' + store.state.sourceForCurUrl + ':\n' + joinArray(links));
 
   let sources = store.getters.curTarget.sources;
   let targetLinks = store.getters.curTarget.links;
 
   let sourceName = trimmedUrl(store.state.sourceForCurUrl);
-  if (sources[sourceName] == null) {
-    Vue.set(sources, sourceName, Source(sourceName));
-    sources[sourceName].points += 2;
-  }
   let source = sources[sourceName];
-  if (source.scrapedLinks == null) {
-    source.scrapedLinks = [];
-  }
 
-  // Assumes newest links are at the front of the array. Start with oldest links first.
-  for (let i = items.length - 1; i >= 0; i--) {
-    let item = items[i];
-    let link = item;
-    if (typeof item === 'object') {
-      link = item.link;
-    }
-    if (!source.scrapedLinks.includes(link) && !alreadyViewed(targetLinks, link)) {
-      source.scrapedLinks.unshift(item);
+  // Store new links on the source.
+  // Newest links are at the front of the array. Start with oldest links first.
+  for (let i = links.length - 1; i >= 0; i--) {
+    let link = links[i];
+    // If the given link is not already on the source, add it (to the start) of the list.
+    if (!arrayContainsLink(source.scrapedLinks, link) && !objContainsLink(targetLinks, link)) {
+      source.scrapedLinks.unshift(link);
     }
   }
 
   let updated = false;
   for (let i = 0; i < source.scrapedLinks.length; i++) {
-    let item = trimmedUrl(source.scrapedLinks[i]);
-    console.log('checking sug. item: ' + item);
-    if (store.state.curSuggestion != item && !alreadyViewed(targetLinks, item)) {
-      console.log('found new link: ' + item);
+    let link = source.scrapedLinks[i];
+    console.log('checking sug. link: ' + link.url);
+    if (store.state.curSuggestion !== link.url && !objContainsLink(targetLinks, link)) {
+      console.log('found new link: ' + link.url);
       if (store.state.needCurSuggestion) {
-        console.log('saving cur suggestion as ' + item);
-        changeActiveTabToUrl(item);
-        store.dispatch('setSourceForCurUrl', {
+        console.log('saving cur suggestion as ' + link.url);
+        changeActiveTabToUrl(link.url);
+        storeDispatch('setSourceForCurUrl', {
           url: sourceName,
         });
-        store.dispatch('setNeedCurSuggestion', {
+        storeDispatch('setNeedCurSuggestion', {
           value: false,
         });
         loadNextSuggestion();
       } else {
-        console.log('saving next suggestion as ' + item);
-        store.dispatch('setNextSuggestion', {
-          url: item,
+        console.log('saving next suggestion as ' + link.url);
+        storeDispatch('setNextSuggestion', {
+          url: link.url,
         });
       }
       updated = true;
@@ -392,26 +377,25 @@ function scoreFnJustPoints(src) {
   return src.points;
 }
 
-// Whether or not the url is contained in the list.
-function alreadyViewed(links, url) {
-  for (let i = 0; i < links.length; i++) {
-    let link = links[i];
+// Whether or not an array of links contains a particular link
+function arrayContainsLink(array, linkToFind) {
+  let urlToFind = trimmedUrl(linkToFind.url);
+  for (let i = 0; i < array.length; i++) {
+    let link = array[i];
     if (typeof link === 'object') {
       link = link.url;
     }
-    if (trimmedUrl(link) === trimmedUrl(url)) {
+    if (trimmedUrl(link) === urlToFind) {
       return true;
     }
   }
   return false;
 }
 
-function arrJoin(arr, separator) {
-  var out = [];
-  for (var i = 0; i < arr.length; i++) {
-    out.push(JSON.stringify(arr[i]));
-  }
-  return out.join(separator || '\n');
+// Whether or not an object of links contains a particular link.
+function objContainsLink(links, linkToFind) {
+  let urlToFind = trimmedUrl(linkToFind.url);
+  return links[urlToFind] != null;
 }
 
 // Sorted alphabetically in storage.
@@ -473,5 +457,12 @@ function trimmedUrl(url) {
   return url;
 }
 
+function joinArray(array) {
+  let out = '';
+  for (let i = 0; i < array.length; i++) {
+    out += JSON.stringify(array[i]) + '\n';
+  }
+  return out;
+}
 // SETTINGS
 let scoreFn = scoreFnJustPoints;

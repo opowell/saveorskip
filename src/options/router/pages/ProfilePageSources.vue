@@ -2,35 +2,27 @@
   <div>
       <b-breadcrumb :items="crumbs"/>
       <h2>Sources</h2>
-      <div style='display: flex; flex-direction: column;'>
-        <div>
-            Url: <input type='text' v-model='sourceInput'>
-        </div>
-        <div>
-            Points: <input style='width: 50px' type='number' min=0 v-model='sourcePointsInput'>
-            </div>
-        <div>
-            <button @click='addSource'>add</button>
-        </div>
-      </div>
-      <table class='props'>
+      <!-- <table class='props'>
         <thead>
           <th v-for='header in sourceHeaders' :key='header'><span v-html='header'></span></th>
           </thead>
           <tbody>
             <source-div v-for='source in sources' :key='source.url' :source='source'></source-div>
           </tbody>
-      </table>
+      </table> -->
+      <pps-table></pps-table>
   </div>
 </template>
 
 <script>
 import SourceDiv from './Source.vue';
+import PpsTable from './ProfilePageSourcesTable.vue';
 
 export default {
   name: 'ProfilePage',
   components: {
     SourceDiv,
+    PpsTable,
   },
   watch: {
     '$route.params.id': function(id) {
@@ -46,7 +38,7 @@ export default {
       profileId: '',
       sourceInput: '',
       sourcePointsInput: 1,
-      sourceHeaders: ['del', '', '<i class="fas fa-star" style="color: green"></i>', '<i class="fas fa-star" style="color: red"></i>', 'points', 'links', 'next scrape', 'url'],
+      // sourceHeaders: ['del', '', '<i class="fas fa-star" style="color: green"></i>', '<i class="fas fa-star" style="color: red"></i>', 'points', 'links', 'next scrape', 'url'],
     };
   },
   methods: {

@@ -21,8 +21,10 @@ export default new Vuex.Store({
 
     // Id of current target.
     targetId: '',
-    curUrl: '',
-    curSavedItemsTab: null,
+    curLink: {
+      url: '',
+      title: '',
+    },
     curSuggestion: null,
     curSuggestionTabId: null,
     profileDuplicate: null,

@@ -21,11 +21,6 @@ export default {
     if (payload.action === 'skip') {
       Profile.skipLink(profile, payload.link);
     }
-    chrome.runtime.sendMessage({
-      action: 'store',
-      mutationType: 'saveOrSkipLink',
-      mutationData: payload,
-    });
   },
 
   [types.ADD_SOURCES](state, payload) {
@@ -85,12 +80,8 @@ export default {
   },
 
   [types.SET_CUR_URL](state, payload) {
-    state.curUrl = trimmedUrl(payload.url);
-    chrome.runtime.sendMessage({
-      action: 'store',
-      mutationType: 'setCurUrl',
-      mutationData: payload,
-    });
+    payload.url = trimmedUrl(payload.url);
+    state.curLink = payload;
   },
 
   [types.DUPLICATE_PROFILE](state, payload) {
@@ -113,7 +104,7 @@ export default {
 
     let copy = new Profile(name);
     for (let i in profile.links) {
-      Profile.setLink(copy, profile.links[i].url, profile.links[i].saved);
+      Profile.setLink(copy, profile.links[i], profile.links[i].saved);
     }
     for (let i in profile.sources) {
       Profile.addSources(copy, [profile.sources[i]]);
@@ -163,25 +154,10 @@ export default {
 
   [types.SET_CUR_SUGGESTION](state, payload) {
     state.curSuggestion = payload.url;
-    chrome.runtime.sendMessage({
-      action: 'store',
-      mutationType: 'setCurSuggestion',
-      mutationData: payload,
-    });
   },
 
   [types.SET_NEXT_SUGGESTION](state, payload) {
     state.nextSuggestion = payload.url;
-    // For some reason, need to explicitly notify popup of changes.
-    chrome.runtime.sendMessage({
-      action: 'store',
-      mutationType: 'setNextSuggestion',
-      mutationData: payload,
-    });
-  },
-
-  [types.SET_CUR_SAVED_ITEMS_TAB](state, payload) {
-    state.curSavedItemsTab = payload.url;
   },
 };
 

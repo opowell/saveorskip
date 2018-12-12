@@ -68,10 +68,6 @@ export const setCurSuggestion = ({ commit }, payload) => {
   commit(types.SET_CUR_SUGGESTION, payload);
 };
 
-export const setCurSavedItemsTab = ({ commit }, payload) => {
-  commit(types.SET_CUR_SAVED_ITEMS_TAB, payload);
-};
-
 export const setActiveTabId = ({ commit }, payload) => {
   commit(types.SET_ACTIVE_TAB_ID, payload);
 };

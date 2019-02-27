@@ -21,7 +21,7 @@ sos.highlightLinks = true;
 sos.closeAfterScrape = true;
 
 // Get the links from this page.
-sos.getSavedItems = function(sendResponse) {
+sos.getLinks = function(sendResponse) {
   console.log('get saved items');
   let linkEls = document.querySelectorAll('a#video-title');
 
@@ -39,7 +39,7 @@ sos.getSavedItems = function(sendResponse) {
 };
 
 // Get the sources of this page.
-sos.scrapeOwnSources = function(saveOrSkip) {
+sos.getSources = function(saveOrSkip) {
   console.log('scraping own sources (' + saveOrSkip + ')');
   let sources = [
     {
@@ -87,7 +87,7 @@ sos.objJoin = function(obj, separator) {
 };
 
 // Check if the current page contains a certain link.
-sos.scrapeSourcesOfUrl = function(targetUrl, sendResponse, saveOrSkip) {
+sos.getUrlSources = function(targetUrl, sendResponse, saveOrSkip) {
   console.log('scraping sources (' + saveOrSkip + ') of url: ' + targetUrl);
   let sources = [];
   let linkEls = document.querySelectorAll('a#video-title');
@@ -130,13 +130,13 @@ sos.buildUrl = function(url) {
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
   console.log('sos received message: ' + request.action);
 
-  if (request.action === 'scrapeOwnSources') {
-    let sources = sos.scrapeOwnSources(request.saveOrSkip);
+  if (request.action === 'getSources') {
+    let sources = sos.getSources(request.saveOrSkip);
     sendResponse({ sources: sources });
-  } else if (request.action === 'scrapeSourcesOfUrl') {
-    sos.scrapeSourcesOfUrl(request.url, sendResponse, request.saveOrSkip);
-  } else if (request.action === 'getSavedItems') {
-    sos.getSavedItems(sendResponse);
+  } else if (request.action === 'getUrlSources') {
+    sos.getUrlSources(request.url, sendResponse, request.saveOrSkip);
+  } else if (request.action === 'getLinks') {
+    sos.getLinks(sendResponse);
   } else {
     console.log('sos unknown message: ' + JSON.stringify(request));
     sendResponse({}); // Send nothing..

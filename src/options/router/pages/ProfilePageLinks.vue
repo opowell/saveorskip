@@ -2,7 +2,8 @@
   <div>
     <b-breadcrumb :items="crumbs"/>
     <h2>Links ({{numLinks}})</h2>
-      <div style='display: flex; align-items: center'>
+    <ppl-table></ppl-table>
+      <!-- <div style='display: flex; align-items: center'>
         <input type='text' v-model='newLinkUrl'>
           <div style='padding: 0.5em'>
             <input type="radio" id="one" value=true v-model="newLinkSaved">
@@ -16,17 +17,19 @@
       </div>
       <div class='props'>
         <link-div v-for='link in links' :key='link.url' :initialLink='link'></link-div>
-      </div>
+      </div> -->
   </div>
 </template>
 
 <script>
 import LinkDiv from './Link.vue';
+import PplTable from './ProfilePageLinksTable.vue';
 
 export default {
   name: 'ProfilePage',
   components: {
     LinkDiv,
+    PplTable,
   },
   watch: {
     '$route.params.id': function(id) {
@@ -40,23 +43,9 @@ export default {
     return {
       profile: {},
       profileId: '',
-      newLinkUrl: '',
-      newLinkSaved: '',
     };
   },
   methods: {
-    addLink: function() {
-      chrome.runtime.sendMessage({
-        action: 'storeDispatch',
-        storeAction: 'saveOrSkipLink',
-        storePayload: {
-          targetId: this.$route.params.id,
-          action: this.newLinkSaved ? 'save' : 'skip',
-          link: { url: this.newLinkUrl },
-        },
-      });
-    },
-
     fetchData: function() {
       this.profileId = this.$route.params.id;
       this.profile = null;
@@ -73,23 +62,8 @@ export default {
     links: function() {
       return this.profile == null ? {} : this.profile.links;
     },
-    savedLinks: function() {
-      return this.links.filter(link => link.saved === true);
-    },
-    skippedLinks: function() {
-      return this.links.filter(link => link.saved === false);
-    },
     numLinks: function() {
       return Object.keys(this.links).length;
-    },
-    numSavedLinks: function() {
-      return Object.keys(this.savedLinks).length;
-    },
-    numSkippedLinks: function() {
-      return Object.keys(this.skippedLinks).length;
-    },
-    suggestedSources: function() {
-      return this.profile == null ? [] : this.profile.suggestedSources;
     },
     crumbs: function() {
       return [

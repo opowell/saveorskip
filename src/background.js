@@ -1,5 +1,4 @@
 import store from './store';
-import Vue from 'vue';
 
 global.browser = require('webextension-polyfill');
 
@@ -19,6 +18,19 @@ function saveOrSkip(gotoNext, action) {
   saveSourcesOfUrl(store.state.curLink.url, cb, action);
 }
 
+function saveOrSkipLink(gotoNext, action, link) {
+  storeDispatch('saveOrSkipLink', {
+    link: link,
+    action: action,
+    targetId: store.getters.curTarget.name,
+  });
+  let cb = null;
+  if (gotoNext === true) {
+    cb = showNextPage;
+  }
+  saveSourcesOfUrl(link.url, cb, action);
+}
+
 // Save a list of sources to storage.
 function saveSources(sourcesToSave, callback) {
   if (sourcesToSave == null) return;
@@ -31,44 +43,86 @@ function saveSources(sourcesToSave, callback) {
   }
 }
 
+// function saveSourcesOfTab(tab) {
+//   let action = 'save';
+//   console.log(action + ' sources of ' + tab.url);
+
+//   // Save sources from open pages that link to this item.
+//   chrome.tabs.query({}, function(tabs) {
+//     for (let i = 0; i < tabs.length; i++) {
+//       if (tabs[i].id === tab.id) {
+//         // Check tab itself for sources.
+//         console.log('scraping own sources from tabId=' + store.state.activeTabId);
+//         chrome.tabs.sendMessage(tab.id, { action: 'getSources', saveOrSkip: action }, function(response) {
+//           if (response != null) {
+//             for (let j = 0; j < response.sources.length; j++) {
+//               if (response.sources[j].url === store.state.sourceForCurUrl) {
+//                 response.sources.splice(j, 1);
+//               }
+//             }
+//             saveSources(response.sources);
+//           }
+//         });
+//       }
+//       let otherTab = tabs[i];
+//       chrome.tabs.sendMessage(otherTab.id, { action: 'getUrlSources', url: tab.url, saveOrSkip: action }, function(response) {
+//         if (response == null || response.sources == null) {
+//           console.log(otherTab.url + ' returned no sources of ' + tab.url);
+//           return;
+//         }
+
+//         for (let j = 0; j < response.sources.length; j++) {
+//           if (response.sources[j] == store.state.sourceForCurUrl) {
+//             response.sources.splice(j, 1);
+//           }
+//         }
+//         saveSources(response.sources);
+//       });
+//     }
+//   });
+// }
+
 function saveSourcesOfUrl(url, cb, action) {
   console.log(action + ' sources of ' + url);
 
   // Save sources from open pages that link to this item.
-  chrome.tabs.query({ active: false }, function(tabs) {
+  chrome.tabs.query({}, function(tabs) {
     for (let i = 0; i < tabs.length; i++) {
-      let otherTab = tabs[i];
-      chrome.tabs.sendMessage(otherTab.id, { action: 'scrapeSourcesOfUrl', url: url, saveOrSkip: action }, function(response) {
-        if (response == null || response.sources == null) {
-          console.log(otherTab.url + ' returned no sources of ' + url);
-          return;
-        }
-
-        for (let j = 0; j < response.sources.length; j++) {
-          if (response.sources[j] == store.state.sourceForCurUrl) {
-            response.sources.splice(j, 1);
+      let tab = tabs[i];
+      if (trimmedUrl(tab.url) === trimmedUrl(url)) {
+        // Check tab itself for sources.
+        console.log('scraping own sources from tabId=' + tab.id);
+        chrome.tabs.sendMessage(tab.id, { action: 'getSources', saveOrSkip: action }, function(response) {
+          if (response != null) {
+            for (let j = 0; j < response.sources.length; j++) {
+              if (response.sources[j].url === store.state.sourceForCurUrl) {
+                response.sources.splice(j, 1);
+              }
+            }
+            saveSources(response.sources, cb);
+          } else {
+            if (cb != null) {
+              cb();
+            }
           }
-        }
-        saveSources(response.sources);
-      });
-    }
-
-    // Check tab itself for sources.
-    console.log('scraping own sources from tabId=' + store.state.activeTabId);
-    chrome.tabs.sendMessage(store.state.activeTabId, { action: 'scrapeOwnSources', saveOrSkip: action }, function(response) {
-      if (response != null) {
-        for (let j = 0; j < response.sources.length; j++) {
-          if (response.sources[j].url === store.state.sourceForCurUrl) {
-            response.sources.splice(j, 1);
-          }
-        }
-        saveSources(response.sources, cb);
+        });
       } else {
-        if (cb != null) {
-          cb();
-        }
+        let otherTab = tabs[i];
+        chrome.tabs.sendMessage(otherTab.id, { action: 'getUrlSources', url: url, saveOrSkip: action }, function(response) {
+          if (response == null || response.sources == null) {
+            console.log(otherTab.url + ' returned no sources of ' + url);
+            return;
+          }
+
+          for (let j = 0; j < response.sources.length; j++) {
+            if (response.sources[j] == store.state.sourceForCurUrl) {
+              response.sources.splice(j, 1);
+            }
+          }
+          saveSources(response.sources);
+        });
       }
-    });
+    }
   });
 }
 
@@ -119,7 +173,7 @@ function loadNextSuggestion() {
   console.log('comparing now to next scrape date: ' + now + ' vs. ' + source.nextScrape);
   if (new Date(source.nextScrape) > now) {
     console.log('drawing item from previously scraped links: ' + source.url);
-    getSavedItemsCB();
+    getLinksCB();
   }
   // Otherwise, open the page and scrape it.
   else {
@@ -128,7 +182,7 @@ function loadNextSuggestion() {
     storeDispatch('setCurUrl', {
       url: trimmedUrl(newURL),
     });
-    openUrl(newURL);
+    openUrl(newURL, true);
   }
 }
 
@@ -172,6 +226,17 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
   }
 
   switch (action) {
+    case 'openAndScrape':
+      let url = request.url;
+      storeDispatch('setUrlToScrape', url);
+      saveOrSkipLink(
+        {
+          url: request.url,
+          title: sender.title,
+        },
+        false
+      );
+      break;
     case 'storeDispatch':
       storeDispatch(request.storeAction, request.storePayload);
       break;
@@ -179,7 +244,9 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
       showNextPage();
       break;
     case 'pageLoaded':
-      if (sender.tab.id !== store.state.curSuggestionTabId) {
+      if (sender.tab.url === store.state.urlToScrape) {
+        saveSourcesOfUrl(sender.tab.url);
+      } else if (sender.tab.id !== store.state.curSuggestionTabId) {
         console.log('not current suggestion tab: ' + store.state.curSuggestionTab);
         chrome.tabs.query({ active: true }, function(tabs) {
           if (trimmedUrl(tabs[0].url) === trimmedUrl(sender.tab.url)) {
@@ -238,10 +305,10 @@ function saveAsSource(tab) {
   console.log('current time: ' + new Date(now).toJSON());
   source.nextScrape = new Date(now + store.state.scrapeDelayMS).toJSON();
   console.log(source.url + ': next scrape not before ' + source.nextScrape);
-  chrome.tabs.sendMessage(tab.id, { action: 'getSavedItems' }, getSavedItemsCB);
+  chrome.tabs.sendMessage(tab.id, { action: 'getLinks' }, getLinksCB);
 }
 
-function getSavedItemsCB(links) {
+function getLinksCB(links) {
   if (links == null) {
     links = [];
   }
@@ -412,7 +479,7 @@ function Source(url) {
 }
 
 // Open URL and get suggestion from it.
-function openUrl(newURL) {
+function openUrl(newURL, getSuggestion) {
   console.log('creating new tab: ' + newURL);
   chrome.tabs.create({ url: newURL, active: false }, function(tab) {
     console.log('tab created: ' + newURL);

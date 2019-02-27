@@ -2,14 +2,6 @@
   <div>
       <b-breadcrumb :items="crumbs"/>
       <h2>Sources</h2>
-      <!-- <table class='props'>
-        <thead>
-          <th v-for='header in sourceHeaders' :key='header'><span v-html='header'></span></th>
-          </thead>
-          <tbody>
-            <source-div v-for='source in sources' :key='source.url' :source='source'></source-div>
-          </tbody>
-      </table> -->
       <pps-table></pps-table>
   </div>
 </template>
@@ -36,34 +28,9 @@ export default {
     return {
       profile: {},
       profileId: '',
-      sourceInput: '',
-      sourcePointsInput: 1,
-      // sourceHeaders: ['del', '', '<i class="fas fa-star" style="color: green"></i>', '<i class="fas fa-star" style="color: red"></i>', 'points', 'links', 'next scrape', 'url'],
     };
   },
   methods: {
-    addSource: function() {
-      let sourceUrl = this.sourceInput;
-      let points = this.sourcePointsInput;
-      console.log('trying to add source: ' + sourceUrl + ', ' + points + ', ' + this.profileId);
-
-      chrome.runtime.sendMessage({
-        action: 'storeDispatch',
-        storeAction: 'addSources',
-        storePayload: {
-          sources: [
-            {
-              url: sourceUrl,
-              points: points,
-            },
-          ],
-          targetId: this.profileId,
-        },
-      });
-
-      // this.fetchData();
-    },
-
     fetchData: function() {
       this.profileId = this.$route.params.id;
       this.profile = null;
@@ -77,9 +44,6 @@ export default {
     },
   },
   computed: {
-    sources: function() {
-      return this.profile == null ? {} : this.profile.sources;
-    },
     crumbs: function() {
       return [
         {

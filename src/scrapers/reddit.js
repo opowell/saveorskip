@@ -17,12 +17,12 @@ var sos = {
 
 sos.MAX_COMMENTERS = 3;
 
-sos.highlightLinks = true;
+sos.highlightLinks = false;
 sos.closeAfterScrape = true;
 
 // Get the links from this page.
-sos.getSavedItems = function(sendResponse) {
-  console.log('get saved items');
+sos.getLinks = function(sendResponse) {
+  console.log('get links');
   let linkEls = document.getElementsByClassName('SQnoC3ObvgnGjWt90zD9Z');
 
   let links = [];
@@ -45,7 +45,7 @@ sos.getSavedItems = function(sendResponse) {
       title: linkEl.text,
     });
   }
-  console.log('returning saved links: ' + links.join('\n'));
+  console.log('returning links: ' + links.join('\n'));
   sendResponse(links);
   if (links.length > 0 && sos.closeAfterScrape) {
     window.close();
@@ -53,8 +53,8 @@ sos.getSavedItems = function(sendResponse) {
 };
 
 // Get the sources of this page.
-sos.scrapeOwnSources = function(saveOrSkip) {
-  console.log('scraping own sources (' + saveOrSkip + ')');
+sos.getSources = function(saveOrSkip) {
+  console.log('get sources (' + saveOrSkip + ')');
   let sources = [
     {
       url: 'www.reddit.com',
@@ -104,7 +104,7 @@ sos.scrapeOwnSources = function(saveOrSkip) {
     }
   }
 
-  console.log('returning own sources: ' + sos.objJoin(sources, '\n'));
+  console.log('returning sources: ' + sos.objJoin(sources, '\n'));
   return sources;
 };
 
@@ -119,8 +119,8 @@ sos.objJoin = function(obj, separator) {
 };
 
 // Check if the current page contains a certain link.
-sos.scrapeSourcesOfUrl = function(targetUrl, sendResponse, saveOrSkip) {
-  console.log('scraping sources (' + saveOrSkip + ') of url: ' + targetUrl);
+sos.getUrlSources = function(targetUrl, sendResponse, saveOrSkip) {
+  console.log('get sources (' + saveOrSkip + ') of url: ' + targetUrl);
   let sources = [];
   let linkEls = document.getElementsByClassName('SQnoC3ObvgnGjWt90zD9Z');
   for (let i = 0; i < linkEls; i++) {
@@ -189,13 +189,13 @@ sos.buildUrl = function(url) {
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
   console.log('sos received message: ' + JSON.stringify(request));
 
-  if (request.action === 'scrapeOwnSources') {
-    let sources = sos.scrapeOwnSources(request.saveOrSkip);
+  if (request.action === 'getSources') {
+    let sources = sos.getSources(request.saveOrSkip);
     sendResponse({ sources: sources });
-  } else if (request.action === 'scrapeSourcesOfUrl') {
-    sos.scrapeSourcesOfUrl(request.url, sendResponse, request.saveOrSkip);
-  } else if (request.action === 'getSavedItems') {
-    sos.getSavedItems(sendResponse);
+  } else if (request.action === 'getUrlSources') {
+    sos.getUrlSources(request.url, sendResponse, request.saveOrSkip);
+  } else if (request.action === 'getLinks') {
+    sos.getLinks(sendResponse);
   } else {
     console.log('sos unknown message: ' + JSON.stringify(request));
     sendResponse({}); // Send nothing..

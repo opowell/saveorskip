@@ -84,6 +84,10 @@ export default {
     state.curLink = payload;
   },
 
+  [types.SET_URL_TO_SCRAPE](state, payload) {
+    state.urlToScrape = payload;
+  },
+
   [types.DUPLICATE_PROFILE](state, payload) {
     let profile = findProfile(state, payload.profileId);
 

@@ -17,7 +17,7 @@ export const curSourceStatus = function(state, getters) {
     return 'neither';
   }
 
-  return target.sources[state.curUrl].saved ? 'saved' : 'unsaved';
+  return target.sources[state.curLink.url].saved ? 'saved' : 'unsaved';
 };
 
 export const curLinkStatus = function(state, getters) {

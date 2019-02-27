@@ -2,7 +2,7 @@ var sos = {};
 
 sos.SUGGESTIONS_PER_SAVE = 2;
 
-sos.getSavedItems = function(sendResponse) {
+sos.getLinks = function(sendResponse) {
   let links = [];
   let linkEls = [];
 
@@ -28,7 +28,7 @@ sos.getSavedItems = function(sendResponse) {
   window.close();
 };
 
-sos.scrapeSourcesOfUrl = function(targetUrl, sendResponse) {
+sos.getUrlSources = function(targetUrl, sendResponse) {
   let sources = [];
   let linkEls = document.querySelectorAll('a');
   for (let i = 0; i < linkEls.length; i++) {
@@ -42,7 +42,21 @@ sos.scrapeSourcesOfUrl = function(targetUrl, sendResponse) {
   sendResponse(sources);
 };
 
-sos.scrapeOwnSources = function(sendResponse) {
+sos.getSources = function(sendResponse) {
+  // If not on last page of story, redirect to last page and getSources there.
+  let pageSelect = document.querySelector('select');
+  if (pageSelect != null) {
+    console.log('not last page');
+    // Open last page in background and scrape sources from there.
+    let pageLinks = document.querySelectorAll('.b-pager-pages a');
+    let lastLink = pageLinks[pageLinks.length - 1].href;
+    chrome.runtime.sendMessage({
+      action: 'openAndScrape',
+      url: lastLink,
+    });
+    sendResponse({});
+  }
+
   let sources = [];
   let author = document.querySelector('span.b-story-user-y > a');
   if (author != null) {
@@ -107,12 +121,12 @@ sos.trimmedUrl = function(url) {
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
   console.log('sos received message: ' + request.action);
 
-  if (request.action === 'scrapeOwnSources') {
-    sos.scrapeOwnSources(sendResponse);
-  } else if (request.action == 'scrapeSourcesOfUrl') {
-    sos.scrapeSourcesOfUrl(request.url, sendResponse);
-  } else if (request.action == 'getSavedItems') {
-    sos.getSavedItems(sendResponse);
+  if (request.action === 'getSources') {
+    sos.getSources(sendResponse);
+  } else if (request.action == 'getUrlSources') {
+    sos.getUrlSources(request.url, sendResponse);
+  } else if (request.action == 'getLinks') {
+    sos.getLinks(sendResponse);
   } else {
     console.log('sos unknown message: ' + request.action);
     sendResponse({}); // Send nothing..

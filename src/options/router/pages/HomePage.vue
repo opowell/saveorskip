@@ -1,12 +1,12 @@
 <template>
   <div>
-      <b-breadcrumb :items="crumbs"/>
-<h2>      save or skip: surfing without borders</h2>
-      <ol>
-<li>        <router-link :to='{ name: "profiles" }'>Profiles {{numProfilesText}}</router-link></li>
-<li>        <router-link :to='{ name: "account" }'>Account</router-link></li>
-<li>        <router-link :to='{ name: "scrapers" }'>Scrapers</router-link></li>
-      </ol>
+    <b-breadcrumb :items="crumbs"/>
+    <h2>save or skip: surfing without borders</h2>
+    <ol>
+      <li><router-link :to='{ name: "profiles" }'>Profiles {{numProfilesText}}</router-link></li>
+      <li><router-link :to='{ name: "account" }'>Account</router-link></li>
+      <li><router-link :to='{ name: "scrapers" }'>Scrapers</router-link></li>
+    </ol>
   </div>
 </template>
 

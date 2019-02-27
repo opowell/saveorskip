@@ -15,12 +15,17 @@
     "watch:dev": "cross-env HMR=true npm run build:dev -- --watch"
   },
   "dependencies": {
+    "@firebase/app": "^0.3.5",
+    "@firebase/firestore": "^0.9.0",
     "axios": "^0.18.0",
     "bootstrap-vue": "^2.0.0-rc.11",
     "core-js": "^2.5.7",
+    "firebase": "^5.8.3",
     "vue": "^2.5.17",
+    "vue-firestore": "^0.3.1",
     "vue-router": "^3.0.1",
     "vuex": "^3.0.1",
+    "vuex-easy-firestore": "^1.29.1",
     "vuex-persistedstate": "^2.5.4",
     "webextension-polyfill": "^0.3.1"
   },

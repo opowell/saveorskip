@@ -6,7 +6,7 @@
           <b-input-group>
             <b-form-input v-model="filter" placeholder="Add / filter" />
             <b-input-group-append>
-              <b-btn variant='primary' :disabled="!filter" @click="addSource">Add</b-btn>
+              <b-btn variant='primary' :disabled="!filter" @click="addLink">Add</b-btn>
             </b-input-group-append>
           </b-input-group>
       </b-col>
@@ -15,7 +15,7 @@
     <!-- Main table element -->
     <b-table show-empty
              stacked="md"
-             :items="sources"
+             :items="links"
              :fields="fields"
              :filter="filter"
              :sort-by.sync="sortBy"
@@ -26,36 +26,26 @@
           <b-form-checkbox @click.native.stop />
       </template>
       <template slot="HEAD_saved" slot-scope="data">
-          <i class="fas fa-star" style='color: green'></i>
+          <i class="fas fa-star"></i>
       </template>
-      <template slot="HEAD_skipped" slot-scope="data">
-          <i class="fas fa-star" style='color: red'></i>
-      </template>
-
-
+      
       <template slot='select' slot-scope="data">
           <b-form-checkbox @click.native.stop :value="data.column" v-model="selected"/>
       </template>
-      <template slot="links" slot-scope="data">{{Object.keys(data.item.scrapedLinks).length}}</template>
       <template slot='saved' slot-scope='data'>
-          <i @click='setSaved(true, data.item.url)' class="fa-star" style='color: green' v-bind:class='{fas: data.item.saved, far: !data.item.saved}'></i>
-      </template>
-
-      <template slot='skipped' slot-scope='data'>
-        <i @click='setSaved(false, data.item.url)' class="fa-star" style='color: red' v-bind:class='{fas: !data.item.saved, far: data.item.saved}'></i>
+        <i @click='toggleSaved(data.item)' class="fa-star" v-bind:class='{fas: data.item.saved, far: !data.item.saved}'></i>
       </template>
 
       <template slot="actions" slot-scope="data">
         <span style='display: flex;'>
-            <i class='fas fa-trash' @click='removeSource(data.item.url)'></i>
-            <router-link :to='{ name: "source", params: { profileId: profileId, sourceId: data.item.url }}'>
+            <i class='fas fa-trash' @click='removeLink(data.item.url)'></i>
+            <router-link :to='{ name: "link", params: { profileId: profileId, linkId: data.item.url }}'>
                 <i class="fas fa-pen"></i>
             </router-link>
             <i class="fas fa-external-link-alt" @click='openInNewTab(data.item.url)'></i>
         </span>
       </template>
     </b-table>
-
   </b-container>
 </template>
 
@@ -66,15 +56,11 @@ export default {
       fields: [
         { key: 'select' },
         { key: 'saved', sortable: true },
-        { key: 'skipped', sortable: true },
-        { key: 'points', label: 'Points', sortable: true },
-        { key: 'links', label: 'Links', sortable: true },
-        { key: 'lastScraped', label: 'Last scraped', sortable: true, class: 'nowrap' },
-        { key: 'nextScrape', label: 'Next scrape', sortable: true, class: 'nowrap' },
+        { key: 'title', label: 'Title', sortable: true, class: 'nowrap' },
         { key: 'url', label: 'Url', sortable: true, class: 'nowrap' },
         { key: 'actions', label: '' },
       ],
-      sortBy: 'points',
+      sortBy: 'saved',
       sortDesc: true,
       filter: null,
       selected: [],
@@ -93,18 +79,14 @@ export default {
   },
 
   methods: {
-    addSource: function() {
+    addLink: function() {
       chrome.runtime.sendMessage({
         action: 'storeDispatch',
-        storeAction: 'addSources',
+        storeAction: 'saveOrSkipLink',
         storePayload: {
-          sources: [
-            {
-              url: this.filter,
-              points: 0,
-            },
-          ],
-          targetId: this.profileId,
+          targetId: this.$route.params.id,
+          action: 'save',
+          link: { url: this.filter },
         },
       });
     },
@@ -125,16 +107,27 @@ export default {
       }
     },
 
-    removeSource: function(sourceId) {
+    removeLink: function(url) {
       chrome.runtime.sendMessage({
         action: 'storeDispatch',
-        storeAction: 'removeSource',
+        storeAction: 'removeLink',
         storePayload: {
-          url: sourceId,
+          url: url,
           targetId: this.profileId,
         },
       });
       this.$parent.fetchData();
+    },
+    toggleSaved: function(link) {
+      chrome.runtime.sendMessage({
+        action: 'storeDispatch',
+        storeAction: 'saveOrSkipLink',
+        storePayload: {
+          link: link.url,
+          action: link.saved ? 'skip' : 'save',
+          targetId: this.$route.params.id,
+        },
+      });
     },
 
     setSaved: function(saved, sourceId) {
@@ -150,13 +143,13 @@ export default {
     },
   },
   computed: {
-    sources: function() {
+    links: function() {
       let out = [];
       if (this.profile == null) {
         return out;
       }
-      for (let i in this.profile.sources) {
-        out.push(this.profile.sources[i]);
+      for (let i in this.profile.links) {
+        out.push(this.profile.links[i]);
       }
       return out;
     },
@@ -171,12 +164,12 @@ export default {
           href: '#/profiles',
         },
         {
-          text: this.id,
-          href: '#/profile/' + this.id,
+          text: this.profileId,
+          href: '#/profile/' + this.profileId,
         },
         {
-          text: 'Sources',
-          to: '{ name: "profileSources", params: { id: this.id }}',
+          text: 'Links',
+          to: '{ name: "profileLinks", params: { id: this.profileId }}',
         },
       ];
     },
@@ -189,7 +182,7 @@ export default {
   },
 };
 </script>
-<style scoped>
+<style>
 .nowrap > div {
   overflow-wrap: break-word;
   max-width: 300px;

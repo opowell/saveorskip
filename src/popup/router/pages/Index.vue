@@ -32,17 +32,17 @@
 <div style='display: flex;'>
   Link: 
   <span class='button-group'>
-    <i class="far fa-star" @click='save' v-bind:class='{bgselected: linkSaved}' style='color: green'></i>
-    <i class="far fa-star" @click='skip' v-bind:class='{bgselected: linkSkipped}' style='color: red'></i>
-    <i class="fas fa-trash" @click='removeLink' v-bind:class='{bgselected: linkNeither}' style='color: grey'></i>
+    <i class="far fa-star" @click='save' :class='{bgselected: linkSaved}' style='color: green'></i>
+    <i class="far fa-star" @click='skip' :class='{bgselected: linkSkipped}' style='color: red'></i>
+    <i class="fas fa-trash" @click='removeLink' :class='{bgselected: linkNeither}' style='color: grey'></i>
   </span>
 </div>
 <div style='display: flex;'>
   Source: 
   <span class='button-group'>
-    <i class="far fa-star" @click='saveAsSource(true)' v-bind:class='{bgselected: sourceSaved}' style='color: green'></i>
-    <i class="far fa-star" @click='saveAsSource(false)' v-bind:class='{bgselected: sourceSkipped}' style='color: red'></i>
-    <i class="fas fa-trash" @click='deleteSource' v-bind:class='{bgselected: sourceNeither}' style='color: grey'></i>
+    <i class="far fa-star" @click='saveAsSource(true)' :class='{bgselected: sourceSaved}' style='color: green'></i>
+    <i class="far fa-star" @click='saveAsSource(false)' :class='{bgselected: sourceSkipped}' style='color: red'></i>
+    <i class="fas fa-trash" @click='deleteSource' :class='{bgselected: sourceNeither}' style='color: grey'></i>
   </span>
 </div>
         <div class='menu-item' :title='nextLink'>Next Link: {{nextLink}}</div>

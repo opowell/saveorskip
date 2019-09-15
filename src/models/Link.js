@@ -1,11 +1,13 @@
 export default class {
-  constructor(link, saved) {
-    this.url = link.url;
+  constructor(url, saved, props) {
+    this.url = url;
     this.saved = saved;
-    let propKeys = Object.keys(link);
-    for (let i = 0; i < propKeys.length; i++) {
-      let propKey = propKeys[i];
-      this[propKey] = link[propKey];
+    if (props != null) {
+      let propKeys = Object.keys(props);
+      for (let i = 0; i < propKeys.length; i++) {
+        let propKey = propKeys[i];
+        this[propKey] = props[propKey];
+      }
     }
   }
 }

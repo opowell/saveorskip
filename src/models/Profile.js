@@ -38,7 +38,7 @@ export default class {
       profile.links[link.url].saved = saved;
       return;
     }
-    let newLink = new Link(link, saved);
+    let newLink = new Link(link.url, saved, link.keyProps);
     Vue.set(profile.links, link.url, newLink);
   }
 

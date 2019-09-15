@@ -1,12 +1,13 @@
 <template>
   <div>
     <b-breadcrumb :items="crumbs"/>
-    <h2>save or skip: surfing without borders</h2>
+    <h2>save or skip</h2>
     <ol>
       <li><router-link :to='{ name: "profiles" }'>Profiles {{numProfilesText}}</router-link></li>
       <li><router-link :to='{ name: "account" }'>Account</router-link></li>
       <li><router-link :to='{ name: "scrapers" }'>Scrapers</router-link></li>
     </ol>
+    <button @click="resetDB">Reset DB</button>
   </div>
 </template>
 
@@ -29,6 +30,11 @@ export default {
     },
     numProfilesText: function() {
       return this.numProfiles > 0 ? '(' + this.numProfiles + ')' : '';
+    },
+  },
+  methods: {
+    resetDB() {
+      indexedDB.deleteDatabase('saveorskip');
     },
   },
 };

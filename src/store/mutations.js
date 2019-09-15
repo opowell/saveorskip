@@ -1,11 +1,54 @@
 import * as types from './mutation-types';
 import Profile from '../models/Profile';
 import Source from '../models/Source';
+import Link from '../models/Link';
+import { openDB } from 'idb';
+
+const dbName = 'saveorskip';
+
+const dbPromise = openDB(dbName, 1, {
+  upgrade(db, oldVersion, newVersion, transaction) {
+    if (oldVersion === 0) {
+      console.log('Creating stores');
+
+      db.createObjectStore('profiles', { keyPath: 'id' });
+
+      let linksStore = db.createObjectStore('links', { keyPath: ['profileId', 'url'] });
+      linksStore.createIndex('saved', 'saved');
+      linksStore.createIndex('profileId', 'profileId');
+      linksStore.createIndex('url', 'url');
+
+      let sourcesStore = db.createObjectStore('sources', { keyPath: ['profileId', 'url'] });
+      sourcesStore.createIndex('profileId', 'profileId');
+      sourcesStore.createIndex('saved', 'saved');
+      sourcesStore.createIndex('url', 'url');
+    }
+  },
+});
 
 export default {
   [types.ADD_PROFILE](state, payload) {
     let profile = new Profile(payload);
     state.profiles.push(profile);
+    dbPromise.then(function(db) {
+      let storeName = 'profiles';
+      var tx = db.transaction(storeName, 'readwrite');
+      var store = tx.objectStore(storeName);
+      return Promise.all(
+        [profile].map(function(item) {
+          item.id = state.profiles.length;
+          console.log('Adding profile:', item);
+          return store.add(item);
+        })
+      )
+        .catch(function(e) {
+          tx.abort();
+          console.log(e);
+        })
+        .then(function() {
+          console.log('Profiles added successfully!');
+        });
+    });
   },
 
   [types.REMOVE_LINK](state, payload) {
@@ -21,11 +64,59 @@ export default {
     if (payload.action === 'skip') {
       Profile.skipLink(profile, payload.link);
     }
+    dbPromise.then(function(db) {
+      let storeName = 'links';
+      var tx = db.transaction(storeName, 'readwrite');
+      var store = tx.objectStore(storeName);
+      return Promise.all(
+        [payload.link].map(function(item) {
+          let link = {
+            url: item.url,
+            saved: payload.action === 'save',
+            profileId: payload.targetId,
+          };
+          if (item.props != null) {
+            let propKeys = Object.keys(item.props);
+            for (let i = 0; i < propKeys.length; i++) {
+              link[propKeys[i]] = item.props[i];
+            }
+          }
+          console.log('Storing link:', item);
+          return store.add(item);
+        })
+      )
+        .catch(function(e) {
+          tx.abort();
+          console.log(e);
+        })
+        .then(function() {
+          console.log('Link "' + payload.link.url + '" stored successfully.');
+        });
+    });
   },
 
   [types.ADD_SOURCES](state, payload) {
     let profile = findProfile(state, payload.targetId);
     Profile.addSources(profile, payload.sources);
+    dbPromise.then(function(db) {
+      let storeName = 'sources';
+      var tx = db.transaction(storeName, 'readwrite');
+      var store = tx.objectStore(storeName);
+      return Promise.all(
+        [payload.sources].map(function(item) {
+          item.profileId = payload.targetId;
+          console.log('Storing source:', item);
+          return store.add(item);
+        })
+      )
+        .catch(function(e) {
+          tx.abort();
+          console.log(e);
+        })
+        .then(function() {
+          console.log('Source "' + payload.source.url + '" stored successfully.');
+        });
+    });
   },
 
   [types.SET_SOURCE_SAVED](state, payload) {

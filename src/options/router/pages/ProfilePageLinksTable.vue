@@ -67,6 +67,7 @@ export default {
 
       profile: {},
       profileId: '',
+      links: [],
     };
   },
   watch: {
@@ -105,6 +106,14 @@ export default {
           break;
         }
       }
+      this.links.push(
+        ...this.$store.dbPromise.then(function(db) {
+          var tx = db.transaction('links', 'readonly');
+          var store = tx.objectStore('links');
+          var index = store.index('profileId');
+          return index.get(profileId);
+        })
+      );
     },
 
     removeLink: function(url) {
@@ -143,16 +152,6 @@ export default {
     },
   },
   computed: {
-    links: function() {
-      let out = [];
-      if (this.profile == null) {
-        return out;
-      }
-      for (let i in this.profile.links) {
-        out.push(this.profile.links[i]);
-      }
-      return out;
-    },
     crumbs: function() {
       return [
         {

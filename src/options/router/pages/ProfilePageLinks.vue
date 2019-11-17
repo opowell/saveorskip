@@ -3,21 +3,6 @@
     <b-breadcrumb :items="crumbs"/>
     <h2>Links ({{numLinks}})</h2>
     <ppl-table></ppl-table>
-      <!-- <div style='display: flex; align-items: center'>
-        <input type='text' v-model='newLinkUrl'>
-          <div style='padding: 0.5em'>
-            <input type="radio" id="one" value=true v-model="newLinkSaved">
-            <label for="one">saved</label>
-            <br>
-            <input type="radio" id="two" value=false v-model="newLinkSaved">
-            <label for="two">not saved</label>
-            <br>
-          </div>
-        <button @click='addLink'>add</button>
-      </div>
-      <div class='props'>
-        <link-div v-for='link in links' :key='link.url' :initialLink='link'></link-div>
-      </div> -->
   </div>
 </template>
 
@@ -43,11 +28,13 @@ export default {
     return {
       profile: {},
       profileId: '',
+      links: [],
     };
   },
   methods: {
     fetchData: function() {
       this.profileId = this.$route.params.id;
+      let profileId = this.profileId;
       this.profile = null;
       let profiles = this.$store.state.profiles;
       for (let i = 0; i < profiles.length; i++) {

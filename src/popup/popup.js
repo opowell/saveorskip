@@ -6,7 +6,7 @@ import router from './router';
 global.browser = require('webextension-polyfill');
 
 /* eslint-disable no-new */
-new Vue({
+window.vue = new Vue({
   el: '#app',
   store,
   router,

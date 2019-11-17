@@ -1,6 +1,6 @@
 import Vue from 'vue';
 import Vuex from 'vuex';
-import VuexPersistence from 'vuex-persist';
+// import VuexPersistence from 'vuex-persist';
 
 import * as getters from './getters';
 import mutations from './mutations';
@@ -8,9 +8,9 @@ import * as actions from './actions';
 
 Vue.use(Vuex);
 
-const vuexLocal = new VuexPersistence({
-  storage: window.localForage,
-});
+// const vuexLocal = new VuexPersistence({
+//   storage: window.localForage,
+// });
 
 export default new Vuex.Store({
   state: {
@@ -22,6 +22,8 @@ export default new Vuex.Store({
 
     // Set of profiles.
     profiles: [],
+    links: [],
+    sources: [],
 
     // Id of current target.
     targetId: '',
@@ -38,9 +40,11 @@ export default new Vuex.Store({
     nextSuggestion: null,
     scrapeDelayMS: 1000 * 60 * 60 * 24,
     urlToScrape: null,
+
+    dbPromise: null,
   },
   getters,
   mutations,
   actions,
-  plugins: [vuexLocal.plugin],
+  // plugins: [vuexLocal.plugin],
 });

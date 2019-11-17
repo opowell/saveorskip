@@ -8,6 +8,7 @@
       <li><router-link :to='{ name: "scrapers" }'>Scrapers</router-link></li>
     </ol>
     <button @click="resetDB">Reset DB</button>
+    <button @click="fetchProfiles">Fetch profiles</button>
   </div>
 </template>
 
@@ -35,6 +36,9 @@ export default {
   methods: {
     resetDB() {
       indexedDB.deleteDatabase('saveorskip');
+    },
+    fetchProfiles() {
+      this.$store.dispatch('fetchProfiles');
     },
   },
 };

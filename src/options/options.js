@@ -11,11 +11,14 @@ Vue.use(BootstrapVue);
 global.browser = require('webextension-polyfill');
 
 /* eslint-disable no-new */
-new Vue({
+window.vue = new Vue({
   el: '#app',
   store,
   router,
   render: h => h(App),
+  mounted() {
+    this.$store.dispatch('fetchProfiles');
+  },
 });
 
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {

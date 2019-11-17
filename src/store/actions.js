@@ -79,3 +79,7 @@ export const setActiveTabId = ({ commit }, payload) => {
 export const setNextSuggestion = ({ commit }, payload) => {
   commit(types.SET_NEXT_SUGGESTION, payload);
 };
+
+export const fetchProfiles = ({ commit }, payload) => {
+  commit(types.FETCH_PROFILES, payload);
+};

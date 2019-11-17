@@ -1,22 +1,22 @@
 import * as types from './mutation-types';
 import Profile from '../models/Profile';
 import Source from '../models/Source';
-import Link from '../models/Link';
 import { openDB } from 'idb';
-
+import store from '../store/index.js';
 const dbName = 'saveorskip';
 
-const dbPromise = openDB(dbName, 1, {
+let dbPromise = openDB(dbName, 1, {
   upgrade(db, oldVersion, newVersion, transaction) {
+    store.state.dbPromise = this;
     if (oldVersion === 0) {
       console.log('Creating stores');
 
-      db.createObjectStore('profiles', { keyPath: 'id' });
+      db.createObjectStore('profiles', { keyPath: 'id', autoIncrement: true });
 
       let linksStore = db.createObjectStore('links', { keyPath: ['profileId', 'url'] });
-      linksStore.createIndex('saved', 'saved');
-      linksStore.createIndex('profileId', 'profileId');
-      linksStore.createIndex('url', 'url');
+      linksStore.createIndex('saved', 'saved', { unique: false });
+      linksStore.createIndex('profileId', 'profileId', { unique: false });
+      linksStore.createIndex('url', 'url', { unique: false });
 
       let sourcesStore = db.createObjectStore('sources', { keyPath: ['profileId', 'url'] });
       sourcesStore.createIndex('profileId', 'profileId');
@@ -27,27 +27,42 @@ const dbPromise = openDB(dbName, 1, {
 });
 
 export default {
+  [types.FETCH_PROFILES](state, payload) {
+    openDB(dbName, 1, {
+      upgrade(db, oldVersion, newVersion, transaction) {
+        let STORE_NAME = 'profiles';
+        var objectStore = transaction.objectStore(STORE_NAME);
+        objectStore.getAll().onsuccess = function(event) {
+          console.log(JSON.stringify(event.target.result));
+        };
+      },
+    });
+  },
+
   [types.ADD_PROFILE](state, payload) {
     let profile = new Profile(payload);
     state.profiles.push(profile);
-    dbPromise.then(function(db) {
+    dbPromise.then(async function(db) {
       let storeName = 'profiles';
       var tx = db.transaction(storeName, 'readwrite');
-      var store = tx.objectStore(storeName);
-      return Promise.all(
-        [profile].map(function(item) {
-          item.id = state.profiles.length;
-          console.log('Adding profile:', item);
-          return store.add(item);
-        })
-      )
-        .catch(function(e) {
-          tx.abort();
-          console.log(e);
-        })
-        .then(function() {
-          console.log('Profiles added successfully!');
-        });
+      var profilesStore = tx.objectStore(storeName);
+      try {
+        await Promise.all(
+          [profile].map(function(item) {
+            let toSave = {
+              id: state.profiles.length,
+              name: item.name,
+            };
+            console.log('Adding profile:', toSave);
+            return profilesStore.add(toSave);
+          })
+        );
+        console.log('Profiles added successfully!');
+      } catch (e) {
+        tx.abort();
+        console.log(e);
+        console.log(e.stack);
+      }
     });
   },
 
@@ -57,24 +72,24 @@ export default {
   },
 
   [types.SAVE_OR_SKIP_LINK](state, payload) {
-    let profile = findProfile(state, payload.targetId);
-    if (payload.action === 'save') {
-      Profile.saveLink(profile, payload.link);
-    }
-    if (payload.action === 'skip') {
-      Profile.skipLink(profile, payload.link);
-    }
+    // let profile = findProfile(state, payload.targetId);
+    // if (payload.action === 'save') {
+    //   Profile.saveLink(profile, payload.link);
+    // }
+    // if (payload.action === 'skip') {
+    //   Profile.skipLink(profile, payload.link);
+    // }
     dbPromise.then(function(db) {
       let storeName = 'links';
       var tx = db.transaction(storeName, 'readwrite');
       var store = tx.objectStore(storeName);
+      let link = {
+        url: payload.link.url,
+        saved: payload.action === 'save',
+        profileId: payload.targetId,
+      };
       return Promise.all(
-        [payload.link].map(function(item) {
-          let link = {
-            url: item.url,
-            saved: payload.action === 'save',
-            profileId: payload.targetId,
-          };
+        [link].map(function(item) {
           if (item.props != null) {
             let propKeys = Object.keys(item.props);
             for (let i = 0; i < propKeys.length; i++) {

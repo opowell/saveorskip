@@ -38,7 +38,12 @@ export default {
       indexedDB.deleteDatabase('saveorskip');
     },
     fetchProfiles() {
-      this.$store.dispatch('fetchProfiles');
+      chrome.runtime.sendMessage({
+        action: 'storeDispatch',
+        storeAction: 'fetchProfiles',
+        storePayload: {},
+      });
+      // this.$store.dispatch('fetchProfiles');
     },
   },
 };

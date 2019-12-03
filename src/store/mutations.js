@@ -27,16 +27,25 @@ let dbPromise = openDB(dbName, 1, {
 });
 
 export default {
-  [types.FETCH_PROFILES](state, payload) {
-    openDB(dbName, 1, {
-      upgrade(db, oldVersion, newVersion, transaction) {
-        let STORE_NAME = 'profiles';
-        var objectStore = transaction.objectStore(STORE_NAME);
-        objectStore.getAll().onsuccess = function(event) {
-          console.log(JSON.stringify(event.target.result));
-        };
-      },
-    });
+  async [types.FETCH_PROFILES](state, payload) {
+    let STORE_NAME = 'profiles';
+    const db = await openDB(dbName, 1);
+    const tx = db.transaction(STORE_NAME);
+    const store = tx.objectStore(STORE_NAME);
+    const values = await store.getAll();
+    console.log(JSON.stringify(values));
+    state.profiles.splice(0, state.profiles.length);
+    for (let i = 0; i < values.length; i++) {
+      state.profiles.push(values[i]);
+    }
+    await tx.done;
+    //     upgrade(db, oldVersion, newVersion, transaction) {
+    //   var objectStore = transaction.objectStore(STORE_NAME);
+    //   objectStore.getAll().onsuccess = function(event) {
+    //     console.log(JSON.stringify(event.target.result));
+    //   };
+    // },
+    // });
   },
 
   [types.ADD_PROFILE](state, payload) {
@@ -50,7 +59,7 @@ export default {
         await Promise.all(
           [profile].map(function(item) {
             let toSave = {
-              id: state.profiles.length,
+              // id: state.profiles.length,
               name: item.name,
             };
             console.log('Adding profile:', toSave);

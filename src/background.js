@@ -218,7 +218,7 @@ let storeDispatch = function(action, payload) {
 };
 
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
-  console.log('message received from ' + trimmedUrl(sender.url) + ': ' + request);
+  console.log('message received from ' + trimmedUrl(sender.url) + ': ' + JSON.stringify(request));
 
   let action = request;
   if (request.action != null) {

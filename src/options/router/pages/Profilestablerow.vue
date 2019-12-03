@@ -43,9 +43,15 @@ export default {
   },
   computed: {
     numLinks() {
+      if (this.profile.links == null) {
+        return 0;
+      }
       return Object.keys(this.profile.links).length;
     },
     numSources: function() {
+      if (this.profile.sources == null) {
+        return 0;
+      }
       return Object.keys(this.profile.sources).length;
     },
   },

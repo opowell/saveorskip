@@ -39,11 +39,13 @@ export default {
   },
   methods: {
     addProfile: function() {
-      chrome.runtime.sendMessage({
-        action: 'storeDispatch',
-        storeAction: 'addProfile',
-        storePayload: this.profileInput,
-      });
+      console.log('vue action, add profile');
+      this.$store.dispatch('addProfile', this.profileInput);
+      // chrome.runtime.sendMessage({
+      //   action: 'storeDispatch',
+      //   storeAction: 'addProfile',
+      //   storePayload: this.profileInput,
+      // });
       this.profileInput = '';
     },
   },

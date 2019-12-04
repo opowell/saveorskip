@@ -8,7 +8,7 @@
       <li><router-link :to='{ name: "scrapers" }'>Scrapers</router-link></li>
     </ol>
     <button @click="resetDB">Reset DB</button>
-    <button @click="fetchProfiles">Fetch profiles</button>
+    <!-- <button @click="fetchProfiles">Fetch profiles</button> -->
   </div>
 </template>
 
@@ -37,14 +37,14 @@ export default {
     resetDB() {
       indexedDB.deleteDatabase('saveorskip');
     },
-    fetchProfiles() {
-      chrome.runtime.sendMessage({
-        action: 'storeDispatch',
-        storeAction: 'fetchProfiles',
-        storePayload: {},
-      });
-      // this.$store.dispatch('fetchProfiles');
-    },
+    // fetchProfiles() {
+    //   chrome.runtime.sendMessage({
+    //     action: 'storeDispatch',
+    //     storeAction: 'fetchProfiles',
+    //     storePayload: {},
+    //   });
+    //   // this.$store.dispatch('fetchProfiles');
+    // },
   },
 };
 </script>

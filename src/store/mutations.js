@@ -39,18 +39,10 @@ export default {
       state.profiles.push(values[i]);
     }
     await tx.done;
-    //     upgrade(db, oldVersion, newVersion, transaction) {
-    //   var objectStore = transaction.objectStore(STORE_NAME);
-    //   objectStore.getAll().onsuccess = function(event) {
-    //     console.log(JSON.stringify(event.target.result));
-    //   };
-    // },
-    // });
   },
 
   [types.ADD_PROFILE](state, payload) {
     let profile = new Profile(payload);
-    state.profiles.push(profile);
     dbPromise.then(async function(db) {
       let storeName = 'profiles';
       var tx = db.transaction(storeName, 'readwrite');
@@ -59,13 +51,13 @@ export default {
         await Promise.all(
           [profile].map(function(item) {
             let toSave = {
-              // id: state.profiles.length,
               name: item.name,
             };
             console.log('Adding profile:', toSave);
             return profilesStore.add(toSave);
           })
         );
+        state.profiles.push(profile);
         console.log('Profiles added successfully!');
       } catch (e) {
         tx.abort();
@@ -158,12 +150,26 @@ export default {
   },
 
   [types.DELETE_PROFILE](state, payload) {
-    for (let i = 0; i < state.profiles.length; i++) {
-      if (state.profiles[i].name === payload.profileId) {
-        state.profiles.splice(i, 1);
-        return;
+    dbPromise.then(async function(db) {
+      let storeName = 'profiles';
+      var tx = db.transaction(storeName, 'readwrite');
+      var profilesStore = tx.objectStore(storeName);
+      try {
+        console.log('Remove profile:' + payload.profileId);
+        await profilesStore.delete(payload.profileId);
+        for (let i = 0; i < state.profiles.length; i++) {
+          if (state.profiles[i].id === payload.profileId) {
+            state.profiles.splice(i, 1);
+            break;
+          }
+        }
+        console.log('Profile removed successfully!');
+      } catch (e) {
+        tx.abort();
+        console.log(e);
+        console.log(e.stack);
       }
-    }
+    });
   },
 
   [types.RENAME_PROFILE](state, payload) {

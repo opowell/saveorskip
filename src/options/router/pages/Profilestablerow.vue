@@ -36,7 +36,7 @@ export default {
         action: 'storeDispatch',
         storeAction: 'deleteProfile',
         storePayload: {
-          profileId: this.profile.name,
+          profileId: this.profile.id,
         },
       });
     },

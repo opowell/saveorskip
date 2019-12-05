@@ -21,11 +21,12 @@
              :sort-by.sync="sortBy"
              :sort-desc.sync="sortDesc"
     >
-      <template slot="HEAD_select" slot-scope="data">
+      <template slot="HEAD_select">
           <!-- We use click.native.stop here to prevent 'sort-changed' or 'head-clicked' events -->
           <b-form-checkbox @click.native.stop />
       </template>
-      <template slot="HEAD_saved" slot-scope="data">
+      <!-- <template slot="HEAD_saved" slot-scope="data"> -->
+      <template slot="HEAD_saved">
           <i class="fas fa-star"></i>
       </template>
       
@@ -51,6 +52,7 @@
 
 <script>
 export default {
+  props: ['links'],
   data() {
     return {
       fields: [
@@ -67,53 +69,18 @@ export default {
 
       profile: {},
       profileId: '',
-      links: [],
     };
-  },
-  watch: {
-    '$route.params.id': function(id) {
-      this.fetchData();
-    },
-  },
-  created: function() {
-    this.fetchData();
   },
 
   methods: {
     addLink: function() {
-      chrome.runtime.sendMessage({
-        action: 'storeDispatch',
-        storeAction: 'saveOrSkipLink',
-        storePayload: {
-          targetId: this.$route.params.id,
-          action: 'save',
-          link: { url: this.filter },
-        },
-      });
-    },
-
-    openInNewTab: function(url) {
-      window.open('http://' + url, '_blank');
-    },
-
-    fetchData: function() {
-      this.profileId = this.$route.params.id;
-      this.profile = null;
-      let profiles = this.$store.state.profiles;
-      for (let i = 0; i < profiles.length; i++) {
-        if (profiles[i].name === this.profileId) {
-          this.profile = profiles[i];
-          break;
-        }
-      }
-      this.links.push(
-        ...this.$store.dbPromise.then(function(db) {
-          var tx = db.transaction('links', 'readonly');
-          var store = tx.objectStore('links');
-          var index = store.index('profileId');
-          return index.get(profileId);
-        })
-      );
+      let link = {
+        targetId: this.$route.params.id,
+        action: 'save',
+        link: { url: this.filter },
+      };
+      this.$store.dispatch('saveOrSkipLink', link);
+      this.links.push(link);
     },
 
     removeLink: function(url) {
@@ -152,26 +119,6 @@ export default {
     },
   },
   computed: {
-    crumbs: function() {
-      return [
-        {
-          text: 'Home',
-          href: '#/',
-        },
-        {
-          text: 'Profiles',
-          href: '#/profiles',
-        },
-        {
-          text: this.profileId,
-          href: '#/profile/' + this.profileId,
-        },
-        {
-          text: 'Links',
-          to: '{ name: "profileLinks", params: { id: this.profileId }}',
-        },
-      ];
-    },
     sortOptions() {
       // Create an options list from our fields
       return this.fields.filter(f => f.sortable).map(f => {

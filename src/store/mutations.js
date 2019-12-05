@@ -36,6 +36,7 @@ export default {
     console.log(JSON.stringify(values));
     state.profiles.splice(0, state.profiles.length);
     for (let i = 0; i < values.length; i++) {
+      values[i].numLinks = await db.countFromIndex('links', 'profileId', values[i].id);
       state.profiles.push(values[i]);
     }
     await tx.done;
@@ -61,6 +62,38 @@ export default {
         console.log('Profiles added successfully!');
       } catch (e) {
         tx.abort();
+        console.log(e);
+        console.log(e.stack);
+      }
+    });
+  },
+
+  [types.LOAD_PROFILE](state, payload) {
+    state.profile = null;
+    let profiles = state.profiles;
+    for (let i = 0; i < profiles.length; i++) {
+      if (profiles[i].id === payload.profileId) {
+        state.profile = profiles[i];
+        return;
+      }
+    }
+  },
+
+  [types.LOAD_LINKS](state, payload) {
+    state.links.splice(0, state.links.length);
+    dbPromise.then(async function(db) {
+      let storeName = 'links';
+      try {
+        console.log('Get links: Profile.id=' + payload.profileId);
+        let out = await db.getAllFromIndex(storeName, 'profileId', payload.profileId);
+        console.log('found ' + out.length + ' links');
+        if (out == null) {
+          return;
+        }
+        for (let i = 0; i < out.length; i++) {
+          state.links.push(out[i]);
+        }
+      } catch (e) {
         console.log(e);
         console.log(e.stack);
       }
@@ -173,12 +206,28 @@ export default {
   },
 
   [types.RENAME_PROFILE](state, payload) {
-    for (let i = 0; i < state.profiles.length; i++) {
-      if (state.profiles[i].name === payload.profileId) {
-        state.profiles[i].name = payload.newName;
-        return;
+    dbPromise.then(async function(db) {
+      let storeName = 'profiles';
+      var tx = db.transaction(storeName, 'readwrite');
+      // var profilesStore = tx.objectStore(storeName);
+      try {
+        console.log('Rename profile:' + payload.profileId);
+        let profile = await db.get('profiles', payload.profileId);
+        profile.name = payload.newName;
+        await db.put('profiles', profile);
+        for (let i = 0; i < state.profiles.length; i++) {
+          if (state.profiles[i].name === payload.profileId) {
+            state.profiles[i].name = payload.newName;
+            return;
+          }
+        }
+        console.log('Profile renamed successfully!');
+      } catch (e) {
+        console.log(e);
+        console.log(e.stack);
+        tx.abort();
       }
-    }
+    });
   },
 
   [types.RENAME_SOURCE](state, payload) {

@@ -36,7 +36,7 @@ export default {
       this.profile = null;
       let profiles = this.$store.state.profiles;
       for (let i = 0; i < profiles.length; i++) {
-        if (profiles[i].name === this.profileId) {
+        if (profiles[i].id === this.profileId) {
           this.profile = profiles[i];
           break;
         }

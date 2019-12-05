@@ -1,20 +1,23 @@
 <template>
   <tr>
-      <td>
+      <!-- <td>
         <button @click='deleteProfile'>x</button>
+      </td> -->
+      <td>
+        {{profile.id}}
       </td>
       <td>
-        <router-link :to='{ name: "profile", params: { id: profile.name }}'>
+        <router-link :to='{ name: "profile", params: { id: profile.id }}'>
           {{profile.name}}
         </router-link>
       </td>
       <td>
-        <router-link :to='{ name: "profileLinks", params: { id: profile.name }}'>
-          {{ numLinks }}
+        <router-link :to='{ name: "profileLinks", params: { id: profile.id }}'>
+          {{ profile.numLinks }}
         </router-link>
       </td>
       <td>
-        <router-link :to='{ name: "profileSources", params: { id: profile.name }}'>
+        <router-link :to='{ name: "profileSources", params: { id: profile.id }}'>
           {{ numSources }}
         </router-link>
       </td>

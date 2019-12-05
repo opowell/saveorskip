@@ -20,13 +20,8 @@ export default {
   data: function() {
     return {
       profiles: this.$store.state.profiles,
-      headers: ['', 'Name', 'Links', 'Sources'],
+      headers: ['Id', 'Name', 'Links', 'Sources'],
     };
-  },
-  computed: {
-    profilesComp() {
-      return this.$store.state.profiles;
-    },
   },
 };
 </script>

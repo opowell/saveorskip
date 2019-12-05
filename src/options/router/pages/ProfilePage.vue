@@ -1,15 +1,15 @@
 <template>
   <div>
       <b-breadcrumb :items="crumbs"/>
-      <h2>{{$route.params.id}}</h2>
+      <h2>{{profile == null ? '' : profile.name}} ({{profileId}})</h2>
       <div>
         <button @click='renameProfile'>rename</button>
         <button @click='duplicateProfile'>duplicate</button>
         <button @click='deleteProfile'>delete</button>
       </div>
       <ol>
-      <li><router-link :to='{ name: "profileLinks", params: { id: profile.name }}'>links ({{numLinks}})</router-link></li>
-      <li><router-link :to='{ name: "profileSources", params: { id: profile.name }}'>sources ({{numSources}})</router-link></li>
+      <li><router-link :to='{ name: "profileLinks", params: { id: profileId }}'>links ({{numLinks}})</router-link></li>
+      <li><router-link :to='{ name: "profileSources", params: { id: profileId }}'>sources ({{numSources}})</router-link></li>
       </ol>
   </div>
 </template>
@@ -23,14 +23,8 @@ export default {
       this.fetchData();
     },
   },
-  created: function() {
+  created() {
     this.fetchData();
-  },
-  data() {
-    return {
-      profile: {},
-      profileId: '',
-    };
   },
   methods: {
     deleteProfile: function() {
@@ -40,16 +34,8 @@ export default {
       this.$router.push({ name: 'profiles' });
     },
 
-    fetchData: function() {
-      this.profileId = this.$route.params.id;
-      this.profile = null;
-      let profiles = this.$store.state.profiles;
-      for (let i = 0; i < profiles.length; i++) {
-        if (profiles[i].name === this.profileId) {
-          this.profile = profiles[i];
-          break;
-        }
-      }
+    fetchData() {
+      this.$store.dispatch('loadProfile', { profileId: this.$route.params.id });
     },
 
     renameProfile: function() {
@@ -58,10 +44,10 @@ export default {
         return;
       }
       this.$store.dispatch('renameProfile', {
-        profileId: this.$route.params.id,
+        profileId: this.profile.id,
         newName: newName,
       });
-      this.$router.push(newName);
+      // this.$router.push(newName);
     },
 
     duplicateProfile: function() {
@@ -72,13 +58,23 @@ export default {
     },
   },
   computed: {
+    profileId() {
+      return this.profile == null ? '' : this.profile.id;
+    },
+    profile() {
+      return this.$store.state.profile;
+    },
     numLinks: function() {
-      if (this.profile.links == null) {
+      if (this.profile == null) {
         return 0;
       }
-      return Object.keys(this.profile.links).length;
+      return this.profile.numLinks;
+      // return Object.keys(this.profile.links).length;
     },
     numSources: function() {
+      if (this.profile == null) {
+        return 0;
+      }
       if (this.profile.sources == null) {
         return 0;
       }
@@ -95,7 +91,7 @@ export default {
           href: '#/profiles',
         },
         {
-          text: this.profileId,
+          text: this.profileId + '',
           href: '#/profile/' + this.profileId,
         },
       ];

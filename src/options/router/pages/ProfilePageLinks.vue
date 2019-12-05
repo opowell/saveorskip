@@ -2,7 +2,7 @@
   <div>
     <b-breadcrumb :items="crumbs"/>
     <h2>Links ({{numLinks}})</h2>
-    <ppl-table></ppl-table>
+    <ppl-table :links='links'></ppl-table>
   </div>
 </template>
 
@@ -17,37 +17,21 @@ export default {
     PplTable,
   },
   watch: {
-    '$route.params.id': function(id) {
+    '$route.params.id': function() {
       this.fetchData();
     },
   },
   created: function() {
     this.fetchData();
   },
-  data() {
-    return {
-      profile: {},
-      profileId: '',
-      links: [],
-    };
-  },
   methods: {
     fetchData: function() {
-      this.profileId = this.$route.params.id;
-      let profileId = this.profileId;
-      this.profile = null;
-      let profiles = this.$store.state.profiles;
-      for (let i = 0; i < profiles.length; i++) {
-        if (profiles[i].name === this.profileId) {
-          this.profile = profiles[i];
-          break;
-        }
-      }
+      this.$store.dispatch('loadLinks', { profileId: this.$route.params.id });
     },
   },
   computed: {
-    links: function() {
-      return this.profile == null ? {} : this.profile.links;
+    links() {
+      return this.$store.state.links;
     },
     numLinks: function() {
       return Object.keys(this.links).length;
@@ -63,12 +47,12 @@ export default {
           href: '#/profiles',
         },
         {
-          text: this.profileId,
-          href: '#/profile/' + this.profileId,
+          text: this.$route.params.id,
+          href: '#/profile/' + this.$route.params.id,
         },
         {
           text: 'Links',
-          to: '{ name: "profileLinks", params: { id: this.profileId }}',
+          to: '{ name: "profileLinks", params: { id: this.$route.params.id }}',
         },
       ];
     },

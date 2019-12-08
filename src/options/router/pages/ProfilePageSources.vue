@@ -32,18 +32,13 @@ export default {
   },
   methods: {
     fetchData: function() {
-      this.profileId = this.$route.params.id;
-      this.profile = null;
-      let profiles = this.$store.state.profiles;
-      for (let i = 0; i < profiles.length; i++) {
-        if (profiles[i].id === this.profileId) {
-          this.profile = profiles[i];
-          break;
-        }
-      }
+      this.$store.dispatch('loadSources', { profileId: this.$route.params.id });
     },
   },
   computed: {
+    sources() {
+      return this.$store.state.sources;
+    },
     crumbs: function() {
       return [
         {

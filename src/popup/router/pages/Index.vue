@@ -48,11 +48,11 @@
         <div class='menu-item' :title='nextLink'>Next Link: {{nextLink}}</div>
         <div class='menu-divider'></div>
         <div class='menu-item'>Target:
-            <select id='target-select' v-model='selectTargetId' @change='setTarget'>
+            <select id='target-select' @change='setTarget'>
                 <option v-for='profile in profiles' 
-                    :key='profile.name' 
-                    :value='profile.name'
-                    :selected='profile.name == targetId'
+                    :key='profile.id' 
+                    :value='profile.id'
+                    :selected='profile.id == targetId'
                 >
                     {{profile.name}}
                 </option>
@@ -69,18 +69,23 @@ export default {
   data() {
     return {
       selectTargetId: this.$store.state.targetId,
-      options: ['save', 'skip', 'delete'],
+      // linkStatus: 'neither',
     };
+  },
+  created() {
+    this.$store.dispatch('fetchProfiles');
+    this.$store.dispatch('setCurUrlLinkStatus');
   },
   computed: {
     linkStatus() {
-      return this.$store.getters.curLinkStatus;
+      // return this.$store.getters.getUrlLinkStatus(this.$store.state.curLink.url);
+      return this.$store.state.curUrlAsLink;
     },
     linkSaved() {
-      return this.linkStatus === 'saved';
+      return this.linkStatus === true;
     },
     linkSkipped() {
-      return this.linkStatus === 'not saved';
+      return this.linkStatus === false;
     },
     linkNeither() {
       return this.linkStatus === 'neither';
@@ -106,12 +111,6 @@ export default {
     target() {
       return this.$store.getters.curTarget;
     },
-    // curUrl() {
-    //   return this.$store.state.curLink.url;
-    // },
-    // curTitle() {
-    //   return this.$store.state.curLink.title;
-    // },
     nextLink() {
       return this.$store.state.nextSuggestion;
     },
@@ -127,12 +126,8 @@ export default {
         },
       });
     },
-    setTarget() {
-      chrome.runtime.sendMessage({
-        action: 'storeDispatch',
-        storeAction: 'setTarget',
-        storePayload: this.selectTargetId,
-      });
+    setTarget(event) {
+      this.$store.dispatch('setTarget', event.target.value);
     },
     save() {
       chrome.runtime.sendMessage('save');
@@ -150,19 +145,28 @@ export default {
       chrome.runtime.sendMessage('skipAndGo');
     },
     saveAsSource(save) {
-      chrome.runtime.sendMessage({
-        action: 'storeDispatch',
-        storeAction: 'addSources',
-        storePayload: {
-          targetId: this.targetId,
-          sources: [
-            {
-              url: this.$store.state.curLink.url,
-              saved: save,
-            },
-          ],
-        },
+      this.$store.dispatch('addSources', {
+        targetId: this.targetId,
+        sources: [
+          {
+            url: this.$store.state.curLink.url,
+            saved: save,
+          },
+        ],
       });
+      // chrome.runtime.sendMessage({
+      //   action: 'storeDispatch',
+      //   storeAction: 'addSources',
+      //   storePayload: {
+      //     targetId: this.targetId,
+      //     sources: [
+      //       {
+      //         url: this.$store.state.curLink.url,
+      //         saved: save,
+      //       },
+      //     ],
+      //   },
+      // });
     },
     showOptions() {
       chrome.runtime.openOptionsPage();

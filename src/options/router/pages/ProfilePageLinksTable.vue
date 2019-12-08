@@ -30,9 +30,6 @@
           <i class="fas fa-star"></i>
       </template>
       
-      <template slot='select' slot-scope="data">
-          <b-form-checkbox @click.native.stop :value="data.column" v-model="selected"/>
-      </template>
       <template slot='saved' slot-scope='data'>
         <i @click='toggleSaved(data.item)' class="fa-star" v-bind:class='{fas: data.item.saved, far: !data.item.saved}'></i>
       </template>
@@ -56,7 +53,6 @@ export default {
   data() {
     return {
       fields: [
-        { key: 'select' },
         { key: 'saved', sortable: true },
         { key: 'title', label: 'Title', sortable: true, class: 'nowrap' },
         { key: 'url', label: 'Url', sortable: true, class: 'nowrap' },

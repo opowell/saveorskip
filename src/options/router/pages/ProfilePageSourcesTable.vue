@@ -33,9 +33,6 @@
       </template>
 
 
-      <template slot='select' slot-scope="data">
-          <b-form-checkbox @click.native.stop :value="data.column" v-model="selected"/>
-      </template>
       <template slot="links" slot-scope="data">{{Object.keys(data.item.scrapedLinks).length}}</template>
       <template slot='saved' slot-scope='data'>
           <i @click='setSaved(true, data.item.url)' class="fa-star" style='color: green' v-bind:class='{fas: data.item.saved, far: !data.item.saved}'></i>
@@ -61,10 +58,10 @@
 
 <script>
 export default {
+  props: ['sources'],
   data() {
     return {
       fields: [
-        { key: 'select' },
         { key: 'saved', sortable: true },
         { key: 'skipped', sortable: true },
         { key: 'points', label: 'Points', sortable: true },
@@ -93,20 +90,18 @@ export default {
   },
 
   methods: {
-    addSource: function() {
-      chrome.runtime.sendMessage({
-        action: 'storeDispatch',
-        storeAction: 'addSources',
-        storePayload: {
-          sources: [
-            {
-              url: this.filter,
-              points: 0,
-            },
-          ],
-          targetId: this.profileId,
-        },
-      });
+    addSource() {
+      let sourceData = {
+        sources: [
+          {
+            url: this.filter,
+            points: 0,
+          },
+        ],
+        targetId: this.profileId,
+      };
+      this.$store.dispatch('addSources', sourceData);
+      this.sources.push(sourceData.sources[0]);
     },
 
     openInNewTab: function(url) {
@@ -150,15 +145,14 @@ export default {
     },
   },
   computed: {
-    sources: function() {
-      let out = [];
-      if (this.profile == null) {
-        return out;
-      }
-      for (let i in this.profile.sources) {
-        out.push(this.profile.sources[i]);
-      }
-      return out;
+    profileId() {
+      return this.profile == null ? '' : this.profile.id;
+    },
+    profile() {
+      return this.$store.state.profile;
+    },
+    sources() {
+      return this.$store.state.sources;
     },
     crumbs: function() {
       return [
@@ -171,12 +165,12 @@ export default {
           href: '#/profiles',
         },
         {
-          text: this.id,
-          href: '#/profile/' + this.id,
+          text: this.profileId + '',
+          href: '#/profile/' + this.profileId,
         },
         {
           text: 'Sources',
-          to: '{ name: "profileSources", params: { id: this.id }}',
+          to: '{ name: "profileSources", params: { id: this.profileId }}',
         },
       ];
     },

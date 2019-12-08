@@ -1,7 +1,7 @@
 {
   "name": "saveorskip",
-  "version": "1.0.3",
-  "description": "Save or skip pages you visit, and get new recommendations based on your previous saves.",
+  "version": "1.0.4",
+  "description": "Save pages you visit. Get recommendations based on your previous saves.",
   "author": "opowell <opowell@gmail.com>",
   "scripts": {
     "lint": "eslint --ext .js,.vue src",

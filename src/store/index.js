@@ -1,6 +1,6 @@
 import Vue from 'vue';
 import Vuex from 'vuex';
-// import VuexPersistence from 'vuex-persist';
+import VuexPersistence from 'vuex-persist';
 
 import * as getters from './getters';
 import mutations from './mutations';
@@ -8,9 +8,17 @@ import * as actions from './actions';
 
 Vue.use(Vuex);
 
-// const vuexLocal = new VuexPersistence({
-//   storage: window.localForage,
-// });
+const vuexLocal = new VuexPersistence({
+  key: 'saveorskip',
+  storage: window.localStorage,
+  reducer: function(state) {
+    return {
+      activeTabId: state.activeTabId,
+      curLink: state.curLink,
+      targetId: state.targetId,
+    };
+  },
+});
 
 export default new Vuex.Store({
   state: {
@@ -37,6 +45,7 @@ export default new Vuex.Store({
       url: '',
       title: '',
     },
+    curUrlAsLink: null,
     curSuggestion: null,
     curSuggestionTabId: null,
     profileDuplicate: null,
@@ -52,5 +61,5 @@ export default new Vuex.Store({
   getters,
   mutations,
   actions,
-  // plugins: [vuexLocal.plugin],
+  plugins: [vuexLocal.plugin],
 });

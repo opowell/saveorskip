@@ -1,4 +1,5 @@
 import store from './store';
+import Vue from 'vue';
 
 global.browser = require('webextension-polyfill');
 
@@ -9,7 +10,7 @@ function saveOrSkip(gotoNext, action) {
   storeDispatch('saveOrSkipLink', {
     link: store.state.curLink,
     action: action,
-    targetId: store.getters.curTarget.name,
+    targetId: store.state.targetId,
   });
   let cb = null;
   if (gotoNext === true) {
@@ -22,7 +23,10 @@ function saveOrSkipLink(gotoNext, action, link) {
   storeDispatch('saveOrSkipLink', {
     link: link,
     action: action,
-    targetId: store.getters.curTarget.name,
+    targetId: store.state.targetId,
+  });
+  Vue.nextTick(function() {
+    this.$store.dispatch('setCurUrlLinkStatus');
   });
   let cb = null;
   if (gotoNext === true) {
@@ -36,7 +40,7 @@ function saveSources(sourcesToSave, callback) {
   if (sourcesToSave == null) return;
   storeDispatch('addSources', {
     sources: sourcesToSave,
-    targetId: store.getters.curTarget.name,
+    targetId: store.state.targetId,
   });
   if (callback != null) {
     callback();
@@ -210,11 +214,11 @@ chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
 // Mutate store, and inform other pages of mutation.
 let storeDispatch = function(action, payload) {
   store.dispatch(action, payload);
-  chrome.runtime.sendMessage({
-    action: 'storeDispatch',
-    storeAction: action,
-    storePayload: payload,
-  });
+  // chrome.runtime.sendMessage({
+  //   action: 'storeDispatch',
+  //   storeAction: action,
+  //   storePayload: payload,
+  // });
 };
 
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {

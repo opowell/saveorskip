@@ -35,7 +35,9 @@ export default {
     },
 
     fetchData() {
-      this.$store.dispatch('loadProfile', { profileId: this.$route.params.id });
+      this.$store.dispatch('loadProfile', {
+        profileId: this.$route.params.id,
+      });
     },
 
     renameProfile: function() {
@@ -44,7 +46,7 @@ export default {
         return;
       }
       this.$store.dispatch('renameProfile', {
-        profileId: this.profile.id,
+        profileId: this.profileId,
         newName: newName,
       });
       // this.$router.push(newName);

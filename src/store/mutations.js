@@ -1,97 +1,70 @@
 import * as types from './mutation-types';
 import Profile from '../models/Profile';
 import Source from '../models/Source';
-import { openDB } from 'idb';
-import store from '../store/index.js';
-const dbName = 'saveorskip';
-
-let dbPromise = openDB(dbName, 1, {
-  upgrade(db, oldVersion, newVersion, transaction) {
-    store.state.dbPromise = this;
-    if (oldVersion === 0) {
-      console.log('Creating stores');
-
-      db.createObjectStore('profiles', { keyPath: 'id', autoIncrement: true });
-
-      let linksStore = db.createObjectStore('links', { keyPath: ['profileId', 'url'] });
-      linksStore.createIndex('saved', 'saved', { unique: false });
-      linksStore.createIndex('profileId', 'profileId', { unique: false });
-      linksStore.createIndex('url', 'url', { unique: false });
-
-      let sourcesStore = db.createObjectStore('sources', { keyPath: ['profileId', 'url'] });
-      sourcesStore.createIndex('profileId', 'profileId');
-      sourcesStore.createIndex('saved', 'saved');
-      sourcesStore.createIndex('url', 'url');
-    }
-  },
-});
+import { dbPromise, STORE_PROFILES, STORE_LINKS, STORE_SOURCES, STORE_LINKS_PROFILEID } from './Constants.ts';
+import { trimmedUrl } from './Utils.ts';
 
 export default {
-  async [types.FETCH_PROFILES](state, payload) {
-    let STORE_NAME = 'profiles';
-    const db = await openDB(dbName, 1);
-    const tx = db.transaction(STORE_NAME);
-    const store = tx.objectStore(STORE_NAME);
-    const values = await store.getAll();
-    console.log(JSON.stringify(values));
+  [types.FETCH_PROFILES](state, payload) {
     state.profiles.splice(0, state.profiles.length);
-    for (let i = 0; i < values.length; i++) {
-      values[i].numLinks = await db.countFromIndex('links', 'profileId', values[i].id);
-      state.profiles.push(values[i]);
+    for (let i = 0; i < payload.length; i++) {
+      state.profiles.push(payload[i]);
     }
-    await tx.done;
+  },
+
+  [types.SET_CUR_URL_LINK_STATUS](state, payload) {
+    state.curUrlAsLink = payload;
   },
 
   [types.ADD_PROFILE](state, payload) {
     let profile = new Profile(payload);
+    state.profiles.push(profile);
+  },
+
+  [types.LOAD_PROFILE](state, payload) {
+    state.profile = null;
     dbPromise.then(async function(db) {
-      let storeName = 'profiles';
-      var tx = db.transaction(storeName, 'readwrite');
-      var profilesStore = tx.objectStore(storeName);
       try {
-        await Promise.all(
-          [profile].map(function(item) {
-            let toSave = {
-              name: item.name,
-            };
-            console.log('Adding profile:', toSave);
-            return profilesStore.add(toSave);
-          })
-        );
-        state.profiles.push(profile);
-        console.log('Profiles added successfully!');
+        let out = await db.get(STORE_PROFILES, payload.profileId - 0);
+        if (out != null) {
+          out.numLinks = await db.countFromIndex(STORE_LINKS, 'profileId', out.id);
+        }
+        state.profile = out;
       } catch (e) {
-        tx.abort();
         console.log(e);
         console.log(e.stack);
       }
     });
   },
 
-  [types.LOAD_PROFILE](state, payload) {
-    state.profile = null;
-    let profiles = state.profiles;
-    for (let i = 0; i < profiles.length; i++) {
-      if (profiles[i].id === payload.profileId) {
-        state.profile = profiles[i];
-        return;
-      }
-    }
-  },
-
   [types.LOAD_LINKS](state, payload) {
     state.links.splice(0, state.links.length);
     dbPromise.then(async function(db) {
-      let storeName = 'links';
       try {
-        console.log('Get links: Profile.id=' + payload.profileId);
-        let out = await db.getAllFromIndex(storeName, 'profileId', payload.profileId);
-        console.log('found ' + out.length + ' links');
+        let out = await db.getAllFromIndex(STORE_LINKS, STORE_LINKS_PROFILEID, payload.profileId - 0);
         if (out == null) {
           return;
         }
         for (let i = 0; i < out.length; i++) {
           state.links.push(out[i]);
+        }
+      } catch (e) {
+        console.log(e);
+        console.log(e.stack);
+      }
+    });
+  },
+
+  [types.LOAD_SOURCES](state, payload) {
+    state.sources.splice(0, state.sources.length);
+    dbPromise.then(async function(db) {
+      try {
+        let out = await db.getAllFromIndex(STORE_SOURCES, 'profileId', payload.profileId);
+        if (out == null) {
+          return;
+        }
+        for (let i = 0; i < out.length; i++) {
+          state.sources.push(out[i]);
         }
       } catch (e) {
         console.log(e);
@@ -106,32 +79,26 @@ export default {
   },
 
   [types.SAVE_OR_SKIP_LINK](state, payload) {
-    // let profile = findProfile(state, payload.targetId);
-    // if (payload.action === 'save') {
-    //   Profile.saveLink(profile, payload.link);
-    // }
-    // if (payload.action === 'skip') {
-    //   Profile.skipLink(profile, payload.link);
-    // }
     dbPromise.then(function(db) {
-      let storeName = 'links';
+      let storeName = STORE_LINKS;
       var tx = db.transaction(storeName, 'readwrite');
       var store = tx.objectStore(storeName);
       let link = {
         url: payload.link.url,
+        title: payload.link.title,
         saved: payload.action === 'save',
-        profileId: payload.targetId,
+        profileId: payload.targetId - 0,
       };
       return Promise.all(
         [link].map(function(item) {
-          if (item.props != null) {
-            let propKeys = Object.keys(item.props);
+          if (payload.props != null) {
+            let propKeys = Object.keys(payload.props);
             for (let i = 0; i < propKeys.length; i++) {
-              link[propKeys[i]] = item.props[i];
+              item[propKeys[i]] = payload.props[i];
             }
           }
           console.log('Storing link:', item);
-          return store.add(item);
+          return store.put(item);
         })
       )
         .catch(function(e) {
@@ -145,14 +112,11 @@ export default {
   },
 
   [types.ADD_SOURCES](state, payload) {
-    let profile = findProfile(state, payload.targetId);
-    Profile.addSources(profile, payload.sources);
     dbPromise.then(function(db) {
-      let storeName = 'sources';
-      var tx = db.transaction(storeName, 'readwrite');
-      var store = tx.objectStore(storeName);
+      var tx = db.transaction(STORE_SOURCES, 'readwrite');
+      var store = tx.objectStore(STORE_SOURCES);
       return Promise.all(
-        [payload.sources].map(function(item) {
+        payload.sources.map(function(item) {
           item.profileId = payload.targetId;
           console.log('Storing source:', item);
           return store.add(item);
@@ -163,7 +127,7 @@ export default {
           console.log(e);
         })
         .then(function() {
-          console.log('Source "' + payload.source.url + '" stored successfully.');
+          console.log('Sources "' + payload.sources + '" stored successfully.');
         });
     });
   },
@@ -184,11 +148,9 @@ export default {
 
   [types.DELETE_PROFILE](state, payload) {
     dbPromise.then(async function(db) {
-      let storeName = 'profiles';
-      var tx = db.transaction(storeName, 'readwrite');
-      var profilesStore = tx.objectStore(storeName);
+      var tx = db.transaction(STORE_PROFILES, 'readwrite');
+      var profilesStore = tx.objectStore(STORE_PROFILES);
       try {
-        console.log('Remove profile:' + payload.profileId);
         await profilesStore.delete(payload.profileId);
         for (let i = 0; i < state.profiles.length; i++) {
           if (state.profiles[i].id === payload.profileId) {
@@ -196,7 +158,6 @@ export default {
             break;
           }
         }
-        console.log('Profile removed successfully!');
       } catch (e) {
         tx.abort();
         console.log(e);
@@ -207,21 +168,18 @@ export default {
 
   [types.RENAME_PROFILE](state, payload) {
     dbPromise.then(async function(db) {
-      let storeName = 'profiles';
-      var tx = db.transaction(storeName, 'readwrite');
+      var tx = db.transaction(STORE_PROFILES, 'readwrite');
       // var profilesStore = tx.objectStore(storeName);
       try {
-        console.log('Rename profile:' + payload.profileId);
-        let profile = await db.get('profiles', payload.profileId);
+        let profile = await db.get(STORE_PROFILES, payload.profileId);
         profile.name = payload.newName;
-        await db.put('profiles', profile);
+        await db.put(STORE_PROFILES, profile);
         for (let i = 0; i < state.profiles.length; i++) {
           if (state.profiles[i].name === payload.profileId) {
             state.profiles[i].name = payload.newName;
             return;
           }
         }
-        console.log('Profile renamed successfully!');
       } catch (e) {
         console.log(e);
         console.log(e.stack);
@@ -334,17 +292,6 @@ export default {
     state.nextSuggestion = payload.url;
   },
 };
-
-function trimmedUrl(url) {
-  if (url.includes('://')) {
-    url = url.substring(url.indexOf('://') + '://'.length);
-  }
-  if (url.endsWith('/')) {
-    url = url.substring(0, url.length - 1);
-  }
-
-  return url;
-}
 
 function findProfile(state, id) {
   let profile = null;

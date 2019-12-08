@@ -8,6 +8,10 @@ export const setCurUrl = ({ commit }, payload) => {
   commit(types.SET_CUR_URL, payload);
 };
 
+export const setCurUrlLinkStatus = ({ commit }, payload) => {
+  commit(types.SET_CUR_URL_LINK_STATUS, payload);
+};
+
 export const setUrlToScrape = ({ commit }, payload) => {
   commit(types.SET_URL_TO_SCRAPE, payload);
 };

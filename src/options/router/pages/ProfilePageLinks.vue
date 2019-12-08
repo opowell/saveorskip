@@ -36,6 +36,12 @@ export default {
     numLinks: function() {
       return Object.keys(this.links).length;
     },
+    profileId() {
+      return this.$route.params.id;
+    },
+    profile() {
+      return this.$store.state.profile;
+    },
     crumbs: function() {
       return [
         {
@@ -47,8 +53,8 @@ export default {
           href: '#/profiles',
         },
         {
-          text: this.$route.params.id,
-          href: '#/profile/' + this.$route.params.id,
+          text: this.profileId + '',
+          href: '#/profile/' + this.profileId,
         },
         {
           text: 'Links',

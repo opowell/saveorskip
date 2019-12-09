@@ -1,5 +1,6 @@
 import store from './store';
 import Vue from 'vue';
+import * as idb from './store/idb.js';
 
 global.browser = require('webextension-polyfill');
 
@@ -7,11 +8,11 @@ global.browser = require('webextension-polyfill');
  * gotoNext - whether or not to move to a new page after saving.
  **/
 function saveOrSkip(gotoNext, action) {
-  storeDispatch('saveOrSkipLink', {
-    link: store.state.curLink,
-    action: action,
-    targetId: store.state.targetId,
-  });
+  // idb.saveOrSkipLink({
+  //   link: store.state.curLink,
+  //   action: action,
+  //   targetId: store.state.targetId,
+  // });
   let cb = null;
   if (gotoNext === true) {
     cb = showNextPage;
@@ -19,21 +20,18 @@ function saveOrSkip(gotoNext, action) {
   saveSourcesOfUrl(store.state.curLink.url, cb, action);
 }
 
-function saveOrSkipLink(gotoNext, action, link) {
-  storeDispatch('saveOrSkipLink', {
-    link: link,
-    action: action,
-    targetId: store.state.targetId,
-  });
-  Vue.nextTick(function() {
-    this.$store.dispatch('setCurUrlLinkStatus');
-  });
-  let cb = null;
-  if (gotoNext === true) {
-    cb = showNextPage;
-  }
-  saveSourcesOfUrl(link.url, cb, action);
-}
+// function saveOrSkipLink(gotoNext, action, link) {
+//   idb.saveOrSkipLink({
+//     link: link,
+//     action: action,
+//     targetId: store.state.targetId,
+//   });
+//   let cb = null;
+//   if (gotoNext === true) {
+//     cb = showNextPage;
+//   }
+//   saveSourcesOfUrl(link.url, cb, action);
+// }
 
 // Save a list of sources to storage.
 function saveSources(sourcesToSave, callback) {
@@ -230,17 +228,17 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
   }
 
   switch (action) {
-    case 'openAndScrape':
-      let url = request.url;
-      storeDispatch('setUrlToScrape', url);
-      saveOrSkipLink(
-        {
-          url: request.url,
-          title: sender.title,
-        },
-        false
-      );
-      break;
+    // case 'openAndScrape':
+    //   let url = request.url;
+    //   storeDispatch('setUrlToScrape', url);
+    //   saveOrSkipLink(
+    //     {
+    //       url: request.url,
+    //       title: sender.title,
+    //     },
+    //     false
+    //   );
+    //   break;
     case 'storeDispatch':
       storeDispatch(request.storeAction, request.storePayload);
       break;

@@ -65,6 +65,9 @@
 </template>
 
 <script>
+
+import * as idb from '../../../store/idb.js';
+
 export default {
   data() {
     return {
@@ -73,8 +76,8 @@ export default {
     };
   },
   created() {
-    this.$store.dispatch('fetchProfiles');
-    this.$store.dispatch('setCurUrlLinkStatus');
+    idb.fetchProfiles();
+    idb.setCurUrlLinkStatus();
   },
   computed: {
     linkStatus() {
@@ -117,35 +120,42 @@ export default {
   },
   methods: {
     deleteSource() {
-      chrome.runtime.sendMessage({
-        action: 'storeDispatch',
-        storeAction: 'removeSource',
-        storePayload: {
+      store.dispatch('removeSource',
+        {
           targetId: this.targetId,
           url: this.$store.state.curLink.url,
-        },
-      });
+        })
+      }
     },
     setTarget(event) {
-      this.$store.dispatch('setTarget', event.target.value);
+      store.dispatch('setTarget', event.target.value);
     },
     save() {
-      chrome.runtime.sendMessage('save');
+      idb.saveOrSkipLink({
+        link: this.$store.state.curLink,
+        action: 'save',
+        targetId: this.targetId,
+      });
     },
     skip() {
-      chrome.runtime.sendMessage('skip');
-    },
+      idb.saveOrSkipLink({
+        link: this.$store.state.curLink,
+        action: 'not save',
+        targetId: this.targetId,
+      });    },
     saveAndGo() {
-      chrome.runtime.sendMessage('saveAndGo');
+      this.save();
+      chrome.runtime.sendMessage('go');
     },
     go() {
       chrome.runtime.sendMessage('go');
     },
     skipAndGo() {
-      chrome.runtime.sendMessage('skipAndGo');
+      this.skip();
+      chrome.runtime.sendMessage('go');
     },
     saveAsSource(save) {
-      this.$store.dispatch('addSources', {
+      idb.addSources({
         targetId: this.targetId,
         sources: [
           {
@@ -154,33 +164,15 @@ export default {
           },
         ],
       });
-      // chrome.runtime.sendMessage({
-      //   action: 'storeDispatch',
-      //   storeAction: 'addSources',
-      //   storePayload: {
-      //     targetId: this.targetId,
-      //     sources: [
-      //       {
-      //         url: this.$store.state.curLink.url,
-      //         saved: save,
-      //       },
-      //     ],
-      //   },
-      // });
     },
     showOptions() {
       chrome.runtime.openOptionsPage();
     },
     removeLink() {
-      chrome.runtime.sendMessage({
-        action: 'storeDispatch',
-        storeAction: 'removeLink',
-        storePayload: {
-          targetId: this.targetId,
+      idb.removeLink({
+          targetId: this.targetId-0,
           url: this.$store.state.curLink.url,
-        },
       });
-      chrome.runtime.sendMessage('removeLink');
     },
   },
 };

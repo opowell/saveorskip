@@ -24,10 +24,6 @@ export const saveOrSkipLink = ({ commit }, payload) => {
   commit(types.SAVE_OR_SKIP_LINK, payload);
 };
 
-export const removeLink = ({ commit }, payload) => {
-  commit(types.REMOVE_LINK, payload);
-};
-
 export const addSources = ({ commit }, payload) => {
   commit(types.ADD_SOURCES, payload);
 };

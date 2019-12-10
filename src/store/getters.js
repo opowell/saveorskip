@@ -1,5 +1,5 @@
 import { dbPromise, STORE_SOURCES, STORE_LINKS } from './Constants.ts';
-import { trimmedUrl } from './Utils.ts';
+import { trimmedUrl } from '../Utils.js';
 
 export const curTarget = state => {
   for (let i = 0; i < state.profiles.length; i++) {

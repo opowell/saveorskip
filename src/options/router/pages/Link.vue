@@ -7,6 +7,8 @@
 </template>
 
 <script>
+import * as idb from '../../../store/idb.js';
+
 export default {
   name: 'LinkDiv',
   props: ['initialLink'],
@@ -22,24 +24,16 @@ export default {
   },
   methods: {
     removeLink: function() {
-      chrome.runtime.sendMessage({
-        action: 'storeDispatch',
-        storeAction: 'removeLink',
-        storePayload: {
-          url: this.link.url,
-          targetId: this.$route.params.id,
-        },
+      idb.removeLink({
+        url: this.link.url,
+        targetId: this.$route.params.id,
       });
     },
     toggleSaved: function() {
-      chrome.runtime.sendMessage({
-        action: 'storeDispatch',
-        storeAction: 'saveOrSkipLink',
-        storePayload: {
-          link: this.link.url,
-          action: this.link.saved ? 'skip' : 'save',
-          targetId: this.$route.params.id,
-        },
+      idb.saveOrSkipLink({
+        link: this.link.url,
+        action: this.link.saved ? 'skip' : 'save',
+        targetId: this.$route.params.id,
       });
     },
   },

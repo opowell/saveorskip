@@ -57,6 +57,8 @@
 </template>
 
 <script>
+import * as idb from '../../../store/idb.js';
+
 export default {
   props: ['sources'],
   data() {
@@ -75,20 +77,8 @@ export default {
       sortDesc: true,
       filter: null,
       selected: [],
-
-      profile: {},
-      profileId: '',
     };
   },
-  watch: {
-    '$route.params.id': function(id) {
-      this.fetchData();
-    },
-  },
-  created: function() {
-    this.fetchData();
-  },
-
   methods: {
     addSource() {
       let sourceData = {
@@ -108,39 +98,19 @@ export default {
       window.open('http://' + url, '_blank');
     },
 
-    fetchData: function() {
-      this.profileId = this.$route.params.id;
-      this.profile = null;
-      let profiles = this.$store.state.profiles;
-      for (let i = 0; i < profiles.length; i++) {
-        if (profiles[i].name === this.profileId) {
-          this.profile = profiles[i];
-          break;
-        }
-      }
-    },
-
     removeSource: function(sourceId) {
-      chrome.runtime.sendMessage({
-        action: 'storeDispatch',
-        storeAction: 'removeSource',
-        storePayload: {
-          url: sourceId,
-          targetId: this.profileId,
-        },
+      idb.removeSource({
+        url: sourceId,
+        targetId: this.profileId,
       });
       this.$parent.fetchData();
     },
 
     setSaved: function(saved, sourceId) {
-      chrome.runtime.sendMessage({
-        action: 'storeDispatch',
-        storeAction: 'setSourceSaved',
-        storePayload: {
-          source: sourceId,
-          saved: saved,
-          targetId: this.$route.params.id,
-        },
+      idb.setSourceSaved({
+        source: sourceId,
+        saved: saved,
+        targetId: this.$route.params.id,
       });
     },
   },
@@ -150,9 +120,6 @@ export default {
     },
     profile() {
       return this.$store.state.profile;
-    },
-    sources() {
-      return this.$store.state.sources;
     },
     crumbs: function() {
       return [

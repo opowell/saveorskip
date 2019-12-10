@@ -9,6 +9,7 @@
 <script>
 import LinkDiv from './Link.vue';
 import PplTable from './ProfilePageLinksTable.vue';
+import * as idb from '../../../store/idb.js';
 
 export default {
   name: 'ProfilePage',
@@ -26,7 +27,7 @@ export default {
   },
   methods: {
     fetchData: function() {
-      this.$store.dispatch('loadLinks', { profileId: this.$route.params.id });
+      idb.loadLinks({ profileId: this.$route.params.id });
     },
   },
   computed: {

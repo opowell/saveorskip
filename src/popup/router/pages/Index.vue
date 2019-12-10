@@ -65,7 +65,6 @@
 </template>
 
 <script>
-
 import * as idb from '../../../store/idb.js';
 
 export default {
@@ -120,12 +119,10 @@ export default {
   },
   methods: {
     deleteSource() {
-      store.dispatch('removeSource',
-        {
-          targetId: this.targetId,
-          url: this.$store.state.curLink.url,
-        })
-      }
+      store.dispatch('removeSource', {
+        targetId: this.targetId,
+        url: this.$store.state.curLink.url,
+      });
     },
     setTarget(event) {
       store.dispatch('setTarget', event.target.value);
@@ -142,7 +139,8 @@ export default {
         link: this.$store.state.curLink,
         action: 'not save',
         targetId: this.targetId,
-      });    },
+      });
+    },
     saveAndGo() {
       this.save();
       chrome.runtime.sendMessage('go');
@@ -170,8 +168,8 @@ export default {
     },
     removeLink() {
       idb.removeLink({
-          targetId: this.targetId-0,
-          url: this.$store.state.curLink.url,
+        targetId: this.targetId - 0,
+        url: this.$store.state.curLink.url,
       });
     },
   },

@@ -1,5 +1,6 @@
 import Vue from 'vue';
 import App from './App';
+import * as idb from '../store/idb.js';
 import store from '../store';
 import router from './router';
 
@@ -17,20 +18,6 @@ window.vue = new Vue({
   router,
   render: h => h(App),
   mounted() {
-    this.$store.dispatch('fetchProfiles');
+    idb.fetchProfiles();
   },
-});
-
-chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
-  console.log('message received from ' + sender.url + ': ' + JSON.stringify(request));
-  let action = request;
-  if (request.action != null) {
-    action = request.action;
-  }
-
-  switch (action) {
-    case 'storeDispatch':
-      store.dispatch(request.storeAction, request.storePayload);
-      break;
-  }
 });

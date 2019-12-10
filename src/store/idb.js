@@ -1,6 +1,6 @@
 import store from './index.js';
 import { dbPromise, STORE_LINKS, STORE_PROFILES, STORE_LINKS_PROFILEID, STORE_SOURCES_PROFILEID, STORE_SOURCES } from './Constants.ts';
-import { trimmedUrl } from './Utils.ts';
+import { trimmedUrl } from '../Utils.js';
 import Profile from '../models/Profile.js';
 import * as types from './mutation-types.js';
 
@@ -10,6 +10,7 @@ export function loadProfile(payload) {
       let out = await db.get(STORE_PROFILES, payload.profileId - 0);
       if (out != null) {
         out.numLinks = await db.countFromIndex(STORE_LINKS, 'profileId', out.id);
+        out.numSources = await db.countFromIndex(STORE_SOURCES, 'profileId', out.id);
       }
       store.dispatch('loadProfile', out);
     } catch (e) {
@@ -26,7 +27,7 @@ export function loadSources(payload) {
       if (out == null) {
         return;
       }
-      store.dispatch('loadSources', out);
+      store.commit(types.LOAD_SOURCES, out);
     } catch (e) {
       console.log(e);
       console.log(e.stack);
@@ -86,10 +87,16 @@ export function addSources(payload) {
     var tx = db.transaction(STORE_SOURCES, 'readwrite');
     var store = tx.objectStore(STORE_SOURCES);
     return Promise.all(
-      payload.sources.map(function(item) {
-        item.profileId = payload.targetId;
-        console.log('Storing source:', item);
-        return store.add(item);
+      payload.sources.map(async function(item) {
+        let storeItem = await store.get(STORE_SOURCES, [payload.targetId - 0, item.url]);
+        if (storeItem == null) {
+          item.profileId = payload.targetId - 0;
+          storeItem = item;
+        } else {
+          storeItem.points += item.points;
+        }
+        console.log('Storing source:', storeItem);
+        return store.put(item);
       })
     )
       .catch(function(e) {
@@ -97,8 +104,31 @@ export function addSources(payload) {
         console.log(e);
       })
       .then(function() {
-        console.log('Sources "' + payload.sources + '" stored successfully.');
+        console.log('Sources "' + JSON.stringify(payload.sources) + '" stored successfully.');
       });
+  });
+}
+
+export async function setSourceSaved(payload) {
+  await dbPromise.then(async function(db) {
+    let storeName = STORE_SOURCES;
+    let link = {
+      url: trimmedUrl(payload.link.url),
+      title: payload.link.title,
+      saved: payload.action === 'save',
+      profileId: payload.targetId - 0,
+    };
+    if (payload.props != null) {
+      let propKeys = Object.keys(payload.props);
+      for (let i = 0; i < propKeys.length; i++) {
+        link[propKeys[i]] = payload.props[i];
+      }
+    }
+    console.log('Storing source:', link);
+    await db.put(storeName, link);
+    console.log('Source "' + payload.link.url + '" stored successfully.');
+    await setCurUrlSourceStatus();
+    // chrome.runtime.sendMessage('save');
   });
 }
 
@@ -120,8 +150,6 @@ export async function saveOrSkipLink(payload) {
     console.log('Storing link:', link);
     await db.put(storeName, link);
     console.log('Link "' + payload.link.url + '" stored successfully.');
-    let x = await db.get(storeName, [link.profileId, link.url]);
-    console.log(x);
     await setCurUrlLinkStatus();
     chrome.runtime.sendMessage('save');
   });
@@ -132,6 +160,14 @@ export async function removeLink(payload) {
     let storeName = STORE_LINKS;
     await db.delete(storeName, [payload.targetId, payload.url]);
     await setCurUrlLinkStatus();
+  });
+}
+
+export async function removeSource(payload) {
+  await dbPromise.then(async function(db) {
+    let storeName = STORE_SOURCES;
+    await db.delete(storeName, [payload.targetId, payload.url]);
+    await setCurUrlSourceStatus();
   });
 }
 
@@ -160,7 +196,7 @@ export function addProfile(payload) {
   });
 }
 
-export async function setCurUrlLinkStatus(payload) {
+export async function setCurUrlLinkStatus() {
   let url = store.state.curLink.url;
   console.log('setting current url as link: ' + store.state.targetId + '/' + url);
   if (store.state.targetId == null) {
@@ -182,6 +218,32 @@ export async function setCurUrlLinkStatus(payload) {
         store.commit(types.SET_CUR_URL_LINK_STATUS, 'neither');
       } else {
         store.commit(types.SET_CUR_URL_LINK_STATUS, link.saved);
+      }
+    } catch (e) {
+      console.log(e);
+      console.log(e.stack);
+    }
+  });
+}
+
+export async function setCurUrlSourceStatus() {
+  let url = store.state.curLink.url;
+  if (store.state.targetId == null) {
+    store.commit(types.SET_CUR_URL_SOURCE_STATUS, 'neither');
+    return;
+  }
+  if (url == null) {
+    store.commit(types.SET_CUR_URL_SOURCE_STATUS, 'neither');
+    return;
+  }
+  url = trimmedUrl(url);
+  dbPromise.then(async function(db) {
+    try {
+      let link = await db.get(STORE_SOURCES, [store.state.targetId - 0, url]);
+      if (link == null) {
+        store.commit(types.SET_CUR_URL_SOURCE_STATUS, 'neither');
+      } else {
+        store.commit(types.SET_CUR_URL_SOURCE_STATUS, link.saved);
       }
     } catch (e) {
       console.log(e);

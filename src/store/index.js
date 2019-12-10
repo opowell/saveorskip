@@ -46,6 +46,7 @@ export default new Vuex.Store({
       title: '',
     },
     curUrlAsLink: null,
+    curUrlAsSource: null,
     curSuggestion: null,
     curSuggestionTabId: null,
     profileDuplicate: null,

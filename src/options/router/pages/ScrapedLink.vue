@@ -6,6 +6,8 @@
 </template>
 
 <script>
+import * as idb from '../../../store/idb.js';
+
 export default {
   name: 'ScrapedLinkDiv',
   props: ['initialLink'],
@@ -16,13 +18,9 @@ export default {
   },
   methods: {
     removeLink: function() {
-      chrome.runtime.sendMessage({
-        action: 'storeDispatch',
-        storeAction: 'removeLink',
-        storePayload: {
-          url: this.link.url,
-          targetId: this.$route.params.id,
-        },
+      idb.removeLink({
+        url: this.link.url,
+        targetId: this.$route.params.id,
       });
     },
   },

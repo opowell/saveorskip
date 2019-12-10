@@ -15,6 +15,8 @@
 </template>
 
 <script>
+import * as idb from '../../../store/idb.js';
+
 export default {
   name: 'ProfilePage',
   components: {},
@@ -35,7 +37,7 @@ export default {
     },
 
     fetchData() {
-      this.$store.dispatch('loadProfile', {
+      idb.loadProfile({
         profileId: this.$route.params.id,
       });
     },
@@ -71,16 +73,12 @@ export default {
         return 0;
       }
       return this.profile.numLinks;
-      // return Object.keys(this.profile.links).length;
     },
     numSources: function() {
       if (this.profile == null) {
         return 0;
       }
-      if (this.profile.sources == null) {
-        return 0;
-      }
-      return Object.keys(this.profile.sources).length;
+      return this.profile.numSources;
     },
     crumbs: function() {
       return [

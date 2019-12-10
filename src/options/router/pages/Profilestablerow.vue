@@ -18,13 +18,15 @@
       </td>
       <td>
         <router-link :to='{ name: "profileSources", params: { id: profile.id }}'>
-          {{ numSources }}
+          {{ profile.numSources }}
         </router-link>
       </td>
   </tr>
 </template>
 
 <script>
+import * as idb from '../../../store/idb.js';
+
 export default {
   name: 'Profilestablerow',
   props: {
@@ -35,12 +37,8 @@ export default {
   },
   methods: {
     deleteProfile: function() {
-      chrome.runtime.sendMessage({
-        action: 'storeDispatch',
-        storeAction: 'deleteProfile',
-        storePayload: {
-          profileId: this.profile.id,
-        },
+      idb.deleteProfile({
+        profileId: this.profile.id,
       });
     },
   },

@@ -1,6 +1,7 @@
 import store from './store';
-import Vue from 'vue';
 import * as idb from './store/idb.js';
+import * as types from './store/mutation-types.js';
+import { trimmedUrl, joinArray } from './Utils.js';
 
 global.browser = require('webextension-polyfill');
 
@@ -36,7 +37,7 @@ function saveOrSkip(gotoNext, action) {
 // Save a list of sources to storage.
 function saveSources(sourcesToSave, callback) {
   if (sourcesToSave == null) return;
-  storeDispatch('addSources', {
+  idb.addSources({
     sources: sourcesToSave,
     targetId: store.state.targetId,
   });
@@ -117,7 +118,7 @@ function saveSourcesOfUrl(url, cb, action) {
           }
 
           for (let j = 0; j < response.sources.length; j++) {
-            if (response.sources[j] == store.state.sourceForCurUrl) {
+            if (response.sources[j] === store.state.sourceForCurUrl) {
               response.sources.splice(j, 1);
             }
           }
@@ -135,18 +136,18 @@ function showNextPage() {
   if (store.state.nextSuggestion != null) {
     console.log('next suggestion exists');
     changeActiveTabToUrl(store.state.nextSuggestion);
-    storeDispatch('setCurSuggestion', {
+    store.commit(types.SET_CUR_SUGGESTION, {
       url: store.state.nextSuggestion,
     });
-    storeDispatch('setNextSuggestion', {
+    store.commit(types.SET_NEXT_SUGGESTION, {
       url: null,
     });
-    storeDispatch('setNeedCurSuggestion', {
+    store.commit(types.SET_NEED_CUR_SUGGESTION, {
       value: false,
     });
   } else {
     console.log('no next suggestion');
-    storeDispatch('setNeedCurSuggestion', {
+    store.commit(types.SET_NEED_CUR_SUGGESTION, {
       value: true,
     });
   }
@@ -167,7 +168,7 @@ function loadNextSuggestion() {
   }
 
   console.log('DRAWING SUGGESTION from ' + source.url);
-  storeDispatch('setSourceForCurUrl', {
+  store.commit(types.SET_SOURCE_FOR_CUR_URL, {
     url: trimmedUrl(source.url),
   });
   // If too early to scrape, proceed without scraping.
@@ -181,7 +182,7 @@ function loadNextSuggestion() {
   else {
     console.log('scraping items from ' + source.url);
     let newURL = 'http://' + trimmedUrl(source.url);
-    storeDispatch('setCurUrl', {
+    store.commit(types.SET_CUR_URL, {
       url: trimmedUrl(newURL),
     });
     openUrl(newURL, true);
@@ -189,35 +190,27 @@ function loadNextSuggestion() {
 }
 
 chrome.tabs.onActivated.addListener(function(activeInfo) {
-  store.dispatch('setActiveTabId', {
+  store.commit(types.SET_ACTIVE_TAB_ID, {
     tabId: activeInfo.tabId,
   });
   chrome.tabs.get(activeInfo.tabId, function(tab) {
-    storeDispatch('setCurUrl', {
+    store.commit(types.SET_CUR_URL, {
       url: tab.url,
       title: tab.title,
     });
+    idb.setCurUrlLinkStatus();
   });
 });
 
-chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
-  if (tabId === store.activeTabId && changeInfo.url != null) {
-    storeDispatch('setCurUrl', {
-      url: changeInfo.url,
+chrome.tabs.onUpdated.addListener(async function(tabId, changeInfo, tab) {
+  if (tabId === store.state.activeTabId && tab.url != null) {
+    store.commit(types.SET_CUR_URL, {
+      url: tab.url,
       title: tab.title,
     });
+    await idb.setCurUrlLinkStatus();
   }
 });
-
-// Mutate store, and inform other pages of mutation.
-let storeDispatch = function(action, payload) {
-  store.dispatch(action, payload);
-  // chrome.runtime.sendMessage({
-  //   action: 'storeDispatch',
-  //   storeAction: action,
-  //   storePayload: payload,
-  // });
-};
 
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
   console.log('message received from ' + trimmedUrl(sender.url) + ': ' + JSON.stringify(request));
@@ -239,9 +232,6 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
     //     false
     //   );
     //   break;
-    case 'storeDispatch':
-      storeDispatch(request.storeAction, request.storePayload);
-      break;
     case 'showNextPage':
       showNextPage();
       break;
@@ -249,17 +239,15 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
       if (sender.tab.url === store.state.urlToScrape) {
         saveSourcesOfUrl(sender.tab.url);
       } else if (sender.tab.id !== store.state.curSuggestionTabId) {
-        console.log('not current suggestion tab: ' + store.state.curSuggestionTab);
-        chrome.tabs.query({ active: true }, function(tabs) {
-          if (trimmedUrl(tabs[0].url) === trimmedUrl(sender.tab.url)) {
-            storeDispatch('setCurUrl', {
-              url: sender.tab.url,
-            });
-            storeDispatch('setActiveTabId', {
-              tabId: sender.tab.id,
-            });
-          }
-        });
+        if (sender.tab.active) {
+          store.commit(types.SET_CUR_URL, {
+            url: sender.tab.url,
+          });
+          store.commit(types.SET_ACTIVE_TAB_ID, {
+            tabId: sender.tab.id,
+          });
+          idb.setCurUrlLinkStatus();
+        }
       } else {
         saveAsSource(sender.tab);
       }
@@ -341,16 +329,16 @@ function getLinksCB(links) {
       if (store.state.needCurSuggestion) {
         console.log('saving cur suggestion as ' + link.url);
         changeActiveTabToUrl(link.url);
-        storeDispatch('setSourceForCurUrl', {
+        store.commit(types.SET_SOURCE_FOR_CUR_URL, {
           url: sourceName,
         });
-        storeDispatch('setNeedCurSuggestion', {
+        store.commit(types.SET_NEED_CUR_SUGGESTION, {
           value: false,
         });
         loadNextSuggestion();
       } else {
         console.log('saving next suggestion as ' + link.url);
-        storeDispatch('setNextSuggestion', {
+        store.commit(types.SET_NEXT_SUGGESTION, {
           url: link.url,
         });
       }
@@ -420,13 +408,14 @@ function drawRandomElFromObject(object, scoreFn) {
   return selected;
 }
 
+// eslint-disable-next-line no-unused-vars
 function scoreFnHot(src) {
   if (src.points < 1) {
     return 0;
   }
 
   let now = new Date();
-  if (src.nextScrape != null && src.scrapedLinks != null && new Date(src.nextScrape) > now && src.scrapedLinks.length == 0) {
+  if (src.nextScrape != null && src.scrapedLinks != null && new Date(src.nextScrape) > now && src.scrapedLinks.length === 0) {
     return 0;
   }
 
@@ -439,7 +428,8 @@ function scoreFnJustPoints(src) {
   }
 
   let now = new Date();
-  if (src.nextScrape != null && src.scrapedLinks != null && new Date(src.nextScrape) > now && src.scrapedLinks.length == 0) {
+  // eslint-disable-next-line prettier/prettier
+  if (src.nextScrape != null && src.scrapedLinks != null && new Date(src.nextScrape) > now && src.scrapedLinks.length === 0) {
     return 0;
   }
 
@@ -468,24 +458,24 @@ function objContainsLink(links, linkToFind) {
 }
 
 // Sorted alphabetically in storage.
-function Source(url) {
-  return {
-    firstSaved: new Date().toJSON(),
-    lastSaved: new Date().toJSON(),
-    lastScraped: null,
-    nextScrape: new Date().toJSON(),
-    points: 0,
-    scrapedLinks: [],
-    url: url,
-  };
-}
+// function Source(url) {
+//   return {
+//     firstSaved: new Date().toJSON(),
+//     lastSaved: new Date().toJSON(),
+//     lastScraped: null,
+//     nextScrape: new Date().toJSON(),
+//     points: 0,
+//     scrapedLinks: [],
+//     url: url,
+//   };
+// }
 
 // Open URL and get suggestion from it.
 function openUrl(newURL, getSuggestion) {
   console.log('creating new tab: ' + newURL);
   chrome.tabs.create({ url: newURL, active: false }, function(tab) {
     console.log('tab created: ' + newURL);
-    store.dispatch('setCurSuggestionTabId', {
+    store.commit(types.SET_CUR_SUGGESTION_TAB_ID, {
       tabId: tab.id,
     });
   });
@@ -498,40 +488,12 @@ function changeActiveTabToUrl(newURL) {
       console.log('no active tab, aborting');
       return;
     }
-    store.dispatch('setCurSuggestion', {
+    store.commit(types.SET_CUR_SUGGESTION, {
       url: trimmedUrl(newURL),
     });
     chrome.tabs.update(activeTab.id, { url: 'http://' + store.state.curSuggestion });
   });
 }
 
-function trimmedUrl(url) {
-  if (url == null) {
-    debugger;
-    console.log('error trying to trim url');
-  }
-
-  if (url.includes == null) {
-    debugger;
-    console.log('error trying to trim url, url.includes is not defined');
-  }
-
-  if (url.includes('://')) {
-    url = url.substring(url.indexOf('://') + '://'.length);
-  }
-  if (url.endsWith('/')) {
-    url = url.substring(0, url.length - 1);
-  }
-
-  return url;
-}
-
-function joinArray(array) {
-  let out = '';
-  for (let i = 0; i < array.length; i++) {
-    out += JSON.stringify(array[i]) + '\n';
-  }
-  return out;
-}
 // SETTINGS
 let scoreFn = scoreFnJustPoints;

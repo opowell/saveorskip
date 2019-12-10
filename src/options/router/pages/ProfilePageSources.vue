@@ -2,13 +2,14 @@
   <div>
       <b-breadcrumb :items="crumbs"/>
       <h2>Sources</h2>
-      <pps-table></pps-table>
+      <pps-table :sources='sources'></pps-table>
   </div>
 </template>
 
 <script>
 import SourceDiv from './Source.vue';
 import PpsTable from './ProfilePageSourcesTable.vue';
+import * as idb from '../../../store/idb.js';
 
 export default {
   name: 'ProfilePage',
@@ -17,27 +18,30 @@ export default {
     PpsTable,
   },
   watch: {
-    '$route.params.id': function(id) {
+    '$route.params.id': function() {
       this.fetchData();
     },
   },
   created: function() {
     this.fetchData();
   },
-  data() {
-    return {
-      profile: {},
-      profileId: '',
-    };
-  },
   methods: {
     fetchData: function() {
-      this.$store.dispatch('loadSources', { profileId: this.$route.params.id });
+      idb.loadSources({ profileId: this.$route.params.id });
     },
   },
   computed: {
     sources() {
       return this.$store.state.sources;
+    },
+    numSources: function() {
+      return Object.keys(this.sources).length;
+    },
+    profileId() {
+      return this.$route.params.id;
+    },
+    profile() {
+      return this.$store.state.profile;
     },
     crumbs: function() {
       return [
@@ -50,7 +54,7 @@ export default {
           href: '#/profiles',
         },
         {
-          text: this.profileId,
+          text: this.profileId + '',
           href: '#/profile/' + this.profileId,
         },
         {

@@ -48,6 +48,8 @@
 </template>
 
 <script>
+import * as idb from '../../../store/idb.js';
+
 export default {
   props: ['links'],
   data() {
@@ -75,42 +77,30 @@ export default {
         action: 'save',
         link: { url: this.filter },
       };
-      this.$store.dispatch('saveOrSkipLink', link);
+      idb.saveOrSkipLink(link);
       this.links.push(link);
     },
 
     removeLink: function(url) {
-      chrome.runtime.sendMessage({
-        action: 'storeDispatch',
-        storeAction: 'removeLink',
-        storePayload: {
-          url: url,
-          targetId: this.profileId,
-        },
+      idb.removeLink({
+        url: url,
+        targetId: this.profileId,
       });
       this.$parent.fetchData();
     },
     toggleSaved: function(link) {
-      chrome.runtime.sendMessage({
-        action: 'storeDispatch',
-        storeAction: 'saveOrSkipLink',
-        storePayload: {
-          link: link.url,
-          action: link.saved ? 'skip' : 'save',
-          targetId: this.$route.params.id,
-        },
+      idb.saveOrSkipLink({
+        link: link.url,
+        action: link.saved ? 'skip' : 'save',
+        targetId: this.$route.params.id,
       });
     },
 
     setSaved: function(saved, sourceId) {
-      chrome.runtime.sendMessage({
-        action: 'storeDispatch',
-        storeAction: 'setSourceSaved',
-        storePayload: {
-          source: sourceId,
-          saved: saved,
-          targetId: this.$route.params.id,
-        },
+      idb.setSourceSaved({
+        source: sourceId,
+        saved: saved,
+        targetId: this.$route.params.id,
       });
     },
   },

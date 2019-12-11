@@ -39,6 +39,10 @@ export default {
     }
   },
 
+  [types.LOAD_LINK](state, payload) {
+    state.link = payload;
+  },
+
   [types.LOAD_SOURCES](state, payload) {
     state.sources.splice(0, state.sources.length);
     for (let i = 0; i < payload.length; i++) {

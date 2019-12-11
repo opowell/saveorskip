@@ -50,6 +50,21 @@ export function loadLinks(payload) {
   });
 }
 
+export function loadLink({ profileId, linkId }) {
+  dbPromise.then(async function(db) {
+    try {
+      let out = await db.get(STORE_LINKS, [profileId - 0, linkId]);
+      if (out == null) {
+        return;
+      }
+      store.commit(types.LOAD_LINK, out);
+    } catch (e) {
+      console.log(e);
+      console.log(e.stack);
+    }
+  });
+}
+
 export function fetchProfiles() {
   dbPromise.then(async function(db) {
     const tx = db.transaction(STORE_PROFILES);
@@ -140,6 +155,7 @@ export async function saveOrSkipLink(payload) {
       title: payload.link.title,
       saved: payload.action === 'save',
       profileId: payload.targetId - 0,
+      timeSaved: new Date(),
     };
     if (payload.props != null) {
       let propKeys = Object.keys(payload.props);

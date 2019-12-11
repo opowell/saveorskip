@@ -4,6 +4,7 @@ import ProfilesPage from './pages/ProfilesPage';
 import AccountPage from './pages/AccountPage';
 import ScrapersPage from './pages/ScrapersPage';
 import SourcePage from './pages/SourcePage';
+import LinkPage from './pages/LinkPage';
 import ProfilePageLinks from './pages/ProfilePageLinks';
 import ProfilePageSources from './pages/ProfilePageSources';
 
@@ -32,6 +33,11 @@ export default [
     path: '/profile/:profileId/sources/:sourceId',
     component: SourcePage,
     name: 'source',
+  },
+  {
+    path: '/profile/:profileId/link/:linkId',
+    component: LinkPage,
+    name: 'link',
   },
   {
     path: '/profiles',

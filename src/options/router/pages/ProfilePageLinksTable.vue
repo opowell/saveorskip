@@ -13,13 +13,16 @@
     </b-row>
 
     <!-- Main table element -->
-    <b-table show-empty
-             stacked="md"
-             :items="links"
-             :fields="fields"
-             :filter="filter"
-             :sort-by.sync="sortBy"
-             :sort-desc.sync="sortDesc"
+    <b-table 
+      show-empty
+      hover
+      stacked="md"
+      :items="links"
+      :fields="fields"
+      :filter="filter"
+      :sort-by.sync="sortBy"
+      :sort-desc.sync="sortDesc"
+      @row-clicked="openLink"
     >
       <template slot="HEAD_select">
           <!-- We use click.native.stop here to prevent 'sort-changed' or 'head-clicked' events -->
@@ -34,7 +37,7 @@
         <i @click='toggleSaved(data.item)' class="fa-star" v-bind:class='{fas: data.item.saved, far: !data.item.saved}'></i>
       </template>
 
-      <template slot="actions" slot-scope="data">
+      <template slot='actions' slot-scope="data">
         <span style='display: flex;'>
             <i class='fas fa-trash' @click='removeLink(data.item.url)'></i>
             <router-link :to='{ name: "link", params: { profileId: profileId, linkId: data.item.url }}'>
@@ -56,6 +59,7 @@ export default {
     return {
       fields: [
         { key: 'saved', sortable: true },
+        { key: 'timeSaved', label: 'Time saved', sortable: true, class: 'nowrap' },
         { key: 'title', label: 'Title', sortable: true, class: 'nowrap' },
         { key: 'url', label: 'Url', sortable: true, class: 'nowrap' },
         { key: 'actions', label: '' },
@@ -64,14 +68,11 @@ export default {
       sortDesc: true,
       filter: null,
       selected: [],
-
-      profile: {},
-      profileId: '',
     };
   },
 
   methods: {
-    addLink: function() {
+    addLink() {
       let link = {
         targetId: this.$route.params.id,
         action: 'save',
@@ -81,22 +82,27 @@ export default {
       this.links.push(link);
     },
 
-    removeLink: function(url) {
+    openLink(item, index, event) {
+      debugger;
+      this.$router.push({ name: 'link', params: { profileId: this.profileId, linkId: item.url } });
+    },
+
+    removeLink(url) {
       idb.removeLink({
         url: url,
         targetId: this.profileId,
       });
       this.$parent.fetchData();
     },
-    toggleSaved: function(link) {
+    toggleSaved(link) {
       idb.saveOrSkipLink({
         link: link.url,
         action: link.saved ? 'skip' : 'save',
-        targetId: this.$route.params.id,
+        targetId: this.profileId,
       });
     },
 
-    setSaved: function(saved, sourceId) {
+    setSaved(saved, sourceId) {
       idb.setSourceSaved({
         source: sourceId,
         saved: saved,
@@ -105,6 +111,9 @@ export default {
     },
   },
   computed: {
+    profileId() {
+      return this.$route.params.id;
+    },
     sortOptions() {
       // Create an options list from our fields
       return this.fields.filter(f => f.sortable).map(f => {

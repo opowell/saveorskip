@@ -38,6 +38,7 @@ export default new Vuex.Store({
     profiles: [],
     links: [],
     sources: [],
+    link: null,
 
     // Id of current target.
     targetId: '',

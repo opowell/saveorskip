@@ -1,49 +1,39 @@
 <template>
-  <b-container style='margin-left: 0px;'>
+  <b-container style="margin-left: 0px;">
     <!-- User Interface controls -->
     <b-row>
       <b-col class="my-1">
-          <b-input-group>
-            <b-form-input v-model="filter" placeholder="Add / filter" />
-            <b-input-group-append>
-              <b-btn variant='primary' :disabled="!filter" @click="addLink">Add</b-btn>
-            </b-input-group-append>
-          </b-input-group>
+        <b-input-group style="align-items: center;">
+          <b-form-input v-model="filter" placeholder="Add / filter" />
+          <b-input-group-append>
+            <b-btn variant="primary" :disabled="!filter" @click="addLink">Add</b-btn>
+          </b-input-group-append>
+        </b-input-group>
       </b-col>
     </b-row>
 
     <!-- Main table element -->
-    <b-table 
-      show-empty
-      hover
-      stacked="md"
-      :items="links"
-      :fields="fields"
-      :filter="filter"
-      :sort-by.sync="sortBy"
-      :sort-desc.sync="sortDesc"
-      @row-clicked="openLink"
-    >
+    <b-table show-empty hover stacked="md" :items="links" :fields="fields" :filter="filter" :sort-by.sync="sortBy" :sort-desc.sync="sortDesc" @row-clicked="openLink">
       <template slot="HEAD_select">
-          <!-- We use click.native.stop here to prevent 'sort-changed' or 'head-clicked' events -->
-          <b-form-checkbox @click.native.stop />
+        <!-- We use click.native.stop here to prevent 'sort-changed' or 'head-clicked' events -->
+        <b-form-checkbox @click.native.stop />
       </template>
       <!-- <template slot="HEAD_saved" slot-scope="data"> -->
       <template slot="HEAD_saved">
-          <i class="fas fa-star"></i>
-      </template>
-      
-      <template slot='saved' slot-scope='data'>
-        <i @click='toggleSaved(data.item)' class="fa-star" v-bind:class='{fas: data.item.saved, far: !data.item.saved}'></i>
+        <i class="fas fa-star"></i>
       </template>
 
-      <template slot='actions' slot-scope="data">
-        <span style='display: flex;'>
-            <i class='fas fa-trash' @click='removeLink(data.item.url)'></i>
-            <router-link :to='{ name: "link", params: { profileId: profileId, linkId: data.item.url }}'>
-                <i class="fas fa-pen"></i>
-            </router-link>
-            <i class="fas fa-external-link-alt" @click='openInNewTab(data.item.url)'></i>
+      <template slot="saved" slot-scope="data">
+        <i @click="toggleSaved(data.item)" class="fa-star" v-bind:class="{ fas: data.item.saved, far: !data.item.saved }"></i>
+      </template>
+
+      <template slot="actions" slot-scope="data">
+        <span style="display: flex;">
+          <i class="fas fa-trash" @click="removeLink(data.item.url)"></i>
+          <router-link :to="{ name: 'link', params: { profileId: profileId, linkId: data.item.url } }">
+            <i class="fas fa-pen"></i>
+          </router-link>
+          <i class="fas fa-external-link-alt" @click="openInNewTab(data.item.url)"></i>
         </span>
       </template>
     </b-table>
@@ -83,7 +73,6 @@ export default {
     },
 
     openLink(item, index, event) {
-      debugger;
       this.$router.push({ name: 'link', params: { profileId: this.profileId, linkId: item.url } });
     },
 
@@ -116,9 +105,11 @@ export default {
     },
     sortOptions() {
       // Create an options list from our fields
-      return this.fields.filter(f => f.sortable).map(f => {
-        return { text: f.label, value: f.key };
-      });
+      return this.fields
+        .filter(f => f.sortable)
+        .map(f => {
+          return { text: f.label, value: f.key };
+        });
     },
   },
 };

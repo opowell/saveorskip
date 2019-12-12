@@ -65,6 +65,30 @@ export function loadLink({ profileId, linkId }) {
   });
 }
 
+export function deleteLink({ profileId, linkId }) {
+  dbPromise.then(async function(db) {
+    try {
+      await db.delete(STORE_LINKS, [profileId - 0, linkId]);
+      store.commit(types.LOAD_LINK, undefined);
+    } catch (e) {
+      console.log(e);
+      console.log(e.stack);
+    }
+  });
+}
+
+export function saveLink(link) {
+  link.profileId = link.profileId - 0;
+  dbPromise.then(async function(db) {
+    try {
+      await db.put(STORE_LINKS, link);
+    } catch (e) {
+      console.log(e);
+      console.log(e.stack);
+    }
+  });
+}
+
 export function fetchProfiles() {
   dbPromise.then(async function(db) {
     const tx = db.transaction(STORE_PROFILES);

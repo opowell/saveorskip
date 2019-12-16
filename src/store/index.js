@@ -29,14 +29,11 @@ export default new Vuex.Store({
     profileInput: '',
 
     // Set of profiles.
-    profile: {
-      id: '',
-      name: '',
-      numLinks: 0,
-      links: [],
-    },
+    profile: null,
+    profileStats: null,
     profiles: [],
     links: [],
+    source: null,
     sources: [],
     link: null,
 

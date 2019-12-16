@@ -1,21 +1,18 @@
 <template>
   <div>
-      <b-breadcrumb :items="crumbs"/>
-      <h2>Sources</h2>
-      <pps-table :sources='sources'></pps-table>
+    <b-breadcrumb :items="crumbs" />
+    <ppl-table :links="links"></ppl-table>
   </div>
 </template>
 
 <script>
-import SourceDiv from './Source.vue';
-import PpsTable from './ProfilePageSourcesTable.vue';
+import PplTable from '../components/ProfilePageLinksTable.vue';
 import * as idb from '../../../store/idb.js';
 
 export default {
-  name: 'ProfilePage',
+  name: 'ProfileLinks',
   components: {
-    SourceDiv,
-    PpsTable,
+    PplTable,
   },
   watch: {
     '$route.params.id': function() {
@@ -27,21 +24,25 @@ export default {
   },
   methods: {
     fetchData: function() {
-      idb.loadSources({ profileId: this.$route.params.id });
+      idb.loadLinks({ profileId: this.$route.params.id });
+      idb.loadProfile({ profileId: this.$route.params.id });
     },
   },
   computed: {
-    sources() {
-      return this.$store.state.sources;
+    links() {
+      return this.$store.state.links;
     },
-    numSources: function() {
-      return Object.keys(this.sources).length;
+    numLinks: function() {
+      return Object.keys(this.links).length;
     },
     profileId() {
       return this.$route.params.id;
     },
     profile() {
       return this.$store.state.profile;
+    },
+    profileName() {
+      return this.profile == null ? '' : this.profile.name;
     },
     crumbs: function() {
       return [
@@ -54,12 +55,12 @@ export default {
           href: '#/profiles',
         },
         {
-          text: this.profileId + '',
+          text: this.profileName + ' (' + this.profileId + ')',
           href: '#/profile/' + this.profileId,
         },
         {
-          text: 'Sources',
-          to: '{ name: "profileSources", params: { id: this.profileId }}',
+          text: 'Links',
+          to: '{ name: "profileLinks", params: { id: this.$route.params.id }}',
         },
       ];
     },

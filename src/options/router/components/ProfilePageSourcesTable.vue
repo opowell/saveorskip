@@ -1,58 +1,49 @@
 <template>
-  <b-container style='margin-left: 0px;'>
+  <b-container style="margin-left: 0px;">
     <!-- User Interface controls -->
     <b-row>
       <b-col class="my-1">
-          <b-input-group>
-            <b-form-input v-model="filter" placeholder="Add / filter" />
-            <b-input-group-append>
-              <b-btn variant='primary' :disabled="!filter" @click="addSource">Add</b-btn>
-            </b-input-group-append>
-          </b-input-group>
+        <b-input-group>
+          <b-form-input v-model="filter" placeholder="Add / filter" />
+          <b-input-group-append>
+            <b-btn variant="primary" :disabled="!filter" @click="addSource">Add</b-btn>
+          </b-input-group-append>
+        </b-input-group>
       </b-col>
     </b-row>
 
     <!-- Main table element -->
-    <b-table show-empty
-             stacked="md"
-             :items="sources"
-             :fields="fields"
-             :filter="filter"
-             :sort-by.sync="sortBy"
-             :sort-desc.sync="sortDesc"
-    >
+    <b-table hover show-empty stacked="md" :items="sources" :fields="fields" :filter="filter" :sort-by.sync="sortBy" :sort-desc.sync="sortDesc" @row-clicked="openSource">
       <template slot="HEAD_select" slot-scope="data">
-          <!-- We use click.native.stop here to prevent 'sort-changed' or 'head-clicked' events -->
-          <b-form-checkbox @click.native.stop />
+        <!-- We use click.native.stop here to prevent 'sort-changed' or 'head-clicked' events -->
+        <b-form-checkbox @click.native.stop />
       </template>
       <template slot="HEAD_saved" slot-scope="data">
-          <i class="fas fa-star" style='color: green'></i>
+        <i class="fas fa-star" style="color: green"></i>
       </template>
       <template slot="HEAD_skipped" slot-scope="data">
-          <i class="fas fa-star" style='color: red'></i>
+        <i class="fas fa-star" style="color: red"></i>
       </template>
 
-
-      <template slot="links" slot-scope="data">{{Object.keys(data.item.scrapedLinks).length}}</template>
-      <template slot='saved' slot-scope='data'>
-          <i @click='setSaved(true, data.item.url)' class="fa-star" style='color: green' v-bind:class='{fas: data.item.saved, far: !data.item.saved}'></i>
+      <template slot="links" slot-scope="data">{{ Object.keys(data.item.scrapedLinks).length }}</template>
+      <template slot="saved" slot-scope="data">
+        <i @click="setSaved(true, data.item.url)" class="fa-star" style="color: green" v-bind:class="{ fas: data.item.saved, far: !data.item.saved }"></i>
       </template>
 
-      <template slot='skipped' slot-scope='data'>
-        <i @click='setSaved(false, data.item.url)' class="fa-star" style='color: red' v-bind:class='{fas: !data.item.saved, far: data.item.saved}'></i>
+      <template slot="skipped" slot-scope="data">
+        <i @click="setSaved(false, data.item.url)" class="fa-star" style="color: red" v-bind:class="{ fas: !data.item.saved, far: data.item.saved }"></i>
       </template>
 
       <template slot="actions" slot-scope="data">
-        <span style='display: flex;'>
-            <i class='fas fa-trash' @click='removeSource(data.item.url)'></i>
-            <router-link :to='{ name: "source", params: { profileId: profileId, sourceId: data.item.url }}'>
-                <i class="fas fa-pen"></i>
-            </router-link>
-            <i class="fas fa-external-link-alt" @click='openInNewTab(data.item.url)'></i>
+        <span style="display: flex;">
+          <i class="fas fa-trash" @click="removeSource(data.item.url)"></i>
+          <router-link :to="{ name: 'source', params: { profileId: profileId, sourceId: data.item.url } }">
+            <i class="fas fa-pen"></i>
+          </router-link>
+          <i class="fas fa-external-link-alt" @click="openInNewTab(data.item.url)"></i>
         </span>
       </template>
     </b-table>
-
   </b-container>
 </template>
 
@@ -71,7 +62,6 @@ export default {
         { key: 'lastScraped', label: 'Last scraped', sortable: true, class: 'nowrap' },
         { key: 'nextScrape', label: 'Next scrape', sortable: true, class: 'nowrap' },
         { key: 'url', label: 'Url', sortable: true, class: 'nowrap' },
-        { key: 'actions', label: '' },
       ],
       sortBy: 'points',
       sortDesc: true,
@@ -113,6 +103,9 @@ export default {
         targetId: this.$route.params.id,
       });
     },
+    openSource(item, index, event) {
+      this.$router.push({ name: 'source', params: { profileId: this.profileId, sourceId: item.url } });
+    },
   },
   computed: {
     profileId() {
@@ -121,31 +114,13 @@ export default {
     profile() {
       return this.$store.state.profile;
     },
-    crumbs: function() {
-      return [
-        {
-          text: 'Home',
-          href: '#/',
-        },
-        {
-          text: 'Profiles',
-          href: '#/profiles',
-        },
-        {
-          text: this.profileId + '',
-          href: '#/profile/' + this.profileId,
-        },
-        {
-          text: 'Sources',
-          to: '{ name: "profileSources", params: { id: this.profileId }}',
-        },
-      ];
-    },
     sortOptions() {
       // Create an options list from our fields
-      return this.fields.filter(f => f.sortable).map(f => {
-        return { text: f.label, value: f.key };
-      });
+      return this.fields
+        .filter(f => f.sortable)
+        .map(f => {
+          return { text: f.label, value: f.key };
+        });
     },
   },
 };

@@ -1,11 +1,11 @@
 <template>
   <table>
     <thead>
-      <th v-for='header in headers' :key='header'>{{ header }}</th>
-      </thead>
-      <tbody>
-          <profilestablerow v-for='profile in profiles' :profile="profile" :key='profile.name'></profilestablerow>
-      </tbody>
+      <th v-for="header in headers" :key="header">{{ header }}</th>
+    </thead>
+    <tbody>
+      <profilestablerow v-for="profile in profiles" :profile="profile" :key="profile.name"></profilestablerow>
+    </tbody>
   </table>
 </template>
 

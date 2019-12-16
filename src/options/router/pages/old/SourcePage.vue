@@ -1,26 +1,22 @@
 <template>
   <div>
-      <b-breadcrumb :items="crumbs"/>
-      <h2>{{$route.params.sourceId}}</h2>
+    <b-breadcrumb :items="crumbs" />
+    <h2>{{ $route.params.sourceId }}</h2>
+    <div>
+      <button @click="rename">rename</button>
+      <button @click="duplicate">duplicate</button>
+      <button @click="deleteSource">delete</button>
+    </div>
+    <div style="display: flex; flex-direction: column;">
+      <div>Url: <input type="text" v-model="sourceUrlInput" /></div>
+      <div>Points: <input style="width: 50px" type="number" min="0" v-model="sourcePointsInput" /></div>
       <div>
-        <button @click='rename'>rename</button>
-        <button @click='duplicate'>duplicate</button>
-        <button @click='deleteSource'>delete</button>
+        <button>edit</button>
       </div>
-      <div style='display: flex; flex-direction: column;'>
-        <div>
-            Url: <input type='text' v-model='sourceUrlInput'>
-        </div>
-        <div>
-            Points: <input style='width: 50px' type='number' min=0 v-model='sourcePointsInput'>
-            </div>
-        <div>
-            <button>edit</button>
-        </div>
-      </div>
-      <div class='props'>
-        <scraped-link-div v-for='link in source.scrapedLinks' :key='link.url' :initialLink='link'></scraped-link-div>
-      </div>
+    </div>
+    <div class="props">
+      <scraped-link-div v-for="link in source.scrapedLinks" :key="link.url" :initialLink="link"></scraped-link-div>
+    </div>
   </div>
 </template>
 

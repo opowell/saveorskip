@@ -32,6 +32,10 @@ export default {
     state.profile = payload;
   },
 
+  [types.LOAD_PROFILE_STATS](state, payload) {
+    state.profileStats = payload;
+  },
+
   [types.LOAD_LINKS](state, payload) {
     state.links.splice(0, state.links.length);
     for (let i = 0; i < payload.length; i++) {
@@ -41,6 +45,10 @@ export default {
 
   [types.LOAD_LINK](state, payload) {
     state.link = payload;
+  },
+
+  [types.LOAD_SOURCE](state, payload) {
+    state.source = payload;
   },
 
   [types.LOAD_SOURCES](state, payload) {

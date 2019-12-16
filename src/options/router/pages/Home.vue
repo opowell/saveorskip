@@ -1,22 +1,20 @@
 <template>
   <div>
-    <b-breadcrumb :items="crumbs"/>
-    <h2>save or skip</h2>
+    <b-breadcrumb :items="crumbs" />
     <ol>
-      <li><router-link :to='{ name: "profiles" }'>Profiles {{numProfilesText}}</router-link></li>
-      <li><router-link :to='{ name: "account" }'>Account</router-link></li>
-      <li><router-link :to='{ name: "scrapers" }'>Scrapers</router-link></li>
+      <li>
+        <router-link :to="{ name: 'profiles' }">Profiles {{ numProfilesText }}</router-link>
+      </li>
+      <li><router-link :to="{ name: 'account' }">Account</router-link></li>
+      <li><router-link :to="{ name: 'scrapers' }">Scrapers</router-link></li>
     </ol>
     <button @click="resetDB">Reset DB</button>
-    <!-- <button @click="fetchProfiles">Fetch profiles</button> -->
   </div>
 </template>
 
 <script>
-import Profile from './Profile.vue';
-
 export default {
-  name: 'App',
+  name: 'Home',
   computed: {
     crumbs: function() {
       return [

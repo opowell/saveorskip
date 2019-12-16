@@ -1,9 +1,9 @@
 <template>
-    <div>
-        <button @click='removeLink'>x</button>
-        <i @click='toggleSaved' class="fa-star" v-bind:class='{fas: link.saved, far: !link.saved}'></i>
-        <a :href='"http://" + link.url' target='_blank'>{{link.url}}</a>
-    </div>
+  <div>
+    <button @click="removeLink">x</button>
+    <i @click="toggleSaved" class="fa-star" v-bind:class="{ fas: link.saved, far: !link.saved }"></i>
+    <a :href="'http://' + link.url" target="_blank">{{ link.url }}</a>
+  </div>
 </template>
 
 <script>

@@ -7,12 +7,14 @@ import * as types from './mutation-types.js';
 export function loadProfile(payload) {
   dbPromise.then(async function(db) {
     try {
-      let out = await db.get(STORE_PROFILES, payload.profileId - 0);
-      if (out != null) {
-        out.numLinks = await db.countFromIndex(STORE_LINKS, 'profileId', out.id);
-        out.numSources = await db.countFromIndex(STORE_SOURCES, 'profileId', out.id);
+      let profile = await db.get(STORE_PROFILES, payload.profileId - 0);
+      store.commit(types.LOAD_PROFILE, profile);
+      if (profile != null) {
+        let stats = {};
+        stats.numLinks = await db.countFromIndex(STORE_LINKS, 'profileId', profile.id);
+        stats.numSources = await db.countFromIndex(STORE_SOURCES, 'profileId', profile.id);
+        store.commit(types.LOAD_PROFILE_STATS, stats);
       }
-      store.dispatch('loadProfile', out);
     } catch (e) {
       console.log(e);
       console.log(e.stack);
@@ -35,14 +37,14 @@ export function loadSources(payload) {
   });
 }
 
-export function loadLinks(payload) {
-  dbPromise.then(async function(db) {
+export async function loadLinks(payload) {
+  await dbPromise.then(async function(db) {
     try {
       let out = await db.getAllFromIndex(STORE_LINKS, STORE_LINKS_PROFILEID, payload.profileId - 0);
       if (out == null) {
         return;
       }
-      store.dispatch('loadLinks', out);
+      store.commit(types.LOAD_LINKS, out);
     } catch (e) {
       console.log(e);
       console.log(e.stack);
@@ -65,6 +67,21 @@ export function loadLink({ profileId, linkId }) {
   });
 }
 
+export function loadSource(key) {
+  dbPromise.then(async function(db) {
+    try {
+      let out = await db.get(STORE_SOURCES, key);
+      if (out == null) {
+        return;
+      }
+      store.commit(types.LOAD_SOURCE, out);
+    } catch (e) {
+      console.log(e);
+      console.log(e.stack);
+    }
+  });
+}
+
 export function deleteLink({ profileId, linkId }) {
   dbPromise.then(async function(db) {
     try {
@@ -77,11 +94,33 @@ export function deleteLink({ profileId, linkId }) {
   });
 }
 
+export function deleteObject(store, key) {
+  dbPromise.then(async function(db) {
+    try {
+      await db.delete(store, key);
+    } catch (e) {
+      console.log(e);
+      console.log(e.stack);
+    }
+  });
+}
+
 export function saveLink(link) {
   link.profileId = link.profileId - 0;
   dbPromise.then(async function(db) {
     try {
       await db.put(STORE_LINKS, link);
+    } catch (e) {
+      console.log(e);
+      console.log(e.stack);
+    }
+  });
+}
+
+export function saveObject(storeName, object) {
+  dbPromise.then(async function(db) {
+    try {
+      await db.put(storeName, object);
     } catch (e) {
       console.log(e);
       console.log(e.stack);
@@ -222,10 +261,8 @@ export function addProfile(payload) {
           let toSave = {
             name: item.name,
           };
-          console.log('Adding profile:', toSave);
           profilesStore.put(toSave);
           store.dispatch('addProfile', toSave);
-          console.log('Profile added successfully!');
         })
       );
     } catch (e) {

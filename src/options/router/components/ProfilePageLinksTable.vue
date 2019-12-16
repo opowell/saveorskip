@@ -57,7 +57,6 @@ export default {
       sortBy: 'saved',
       sortDesc: true,
       filter: null,
-      selected: [],
     };
   },
 

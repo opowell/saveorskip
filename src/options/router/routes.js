@@ -1,57 +1,64 @@
-import HomePage from './pages/HomePage';
-import ProfilePage from './pages/ProfilePage';
-import ProfilesPage from './pages/ProfilesPage';
-import AccountPage from './pages/AccountPage';
-import ScrapersPage from './pages/ScrapersPage';
-import SourcePage from './pages/SourcePage';
-import LinkPage from './pages/LinkPage';
-import ProfilePageLinks from './pages/ProfilePageLinks';
-import ProfilePageSources from './pages/ProfilePageSources';
+import Account from './pages/Account';
+import Home from './pages/Home';
+import Profile from './pages/Profile';
+import ProfileLink from './pages/ProfileLink';
+import ProfileLinks from './pages/ProfileLinks';
+import ProfileSource from './pages/ProfileSource';
+import ProfileSourceLink from './pages/ProfileSourceLink';
+import ProfileSourceLinks from './pages/ProfileSourceLinks';
+import ProfileSources from './pages/ProfileSources';
+import Profiles from './pages/Profiles';
+import Scrapers from './pages/Scrapers';
 
 export default [
   {
+    path: '/account',
+    component: Account,
+    name: 'account',
+  },
+  {
     name: 'home',
     path: '/',
-    component: HomePage,
+    component: Home,
   },
   {
     path: '/profile/:id',
-    component: ProfilePage,
+    component: Profile,
     name: 'profile',
   },
   {
+    path: '/profile/:profileId/link/:linkId',
+    component: ProfileLink,
+    name: 'profileLink',
+  },
+  {
     path: '/profile/:id/links',
-    component: ProfilePageLinks,
+    component: ProfileLinks,
     name: 'profileLinks',
   },
   {
-    path: '/profile/:id/sources',
-    component: ProfilePageSources,
-    name: 'profileSources',
-  },
-  {
-    path: '/profile/:profileId/sources/:sourceId',
-    component: SourcePage,
-    name: 'source',
-  },
-  {
-    path: '/profile/:profileId/link/:linkId',
-    component: LinkPage,
-    name: 'link',
-  },
-  {
     path: '/profiles',
-    component: ProfilesPage,
+    component: Profiles,
     name: 'profiles',
   },
   {
-    path: '/scrapers',
-    component: ScrapersPage,
-    name: 'scrapers',
+    path: '/profile/:profileId/sources/:sourceId',
+    component: ProfileSource,
+    name: 'profileSource',
   },
   {
-    path: '/account',
-    component: AccountPage,
-    name: 'account',
+    path: '/profile/:id/sources',
+    component: ProfileSources,
+    name: 'profileSources',
+  },
+  {
+    path: '/profile/:profileId/sources/:sourceId/links',
+    component: ProfileSourceLinks,
+    name: 'profileSourceLinks',
+  },
+  {
+    path: '/scrapers',
+    component: Scrapers,
+    name: 'scrapers',
   },
 ];

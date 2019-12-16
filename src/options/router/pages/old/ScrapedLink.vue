@@ -1,8 +1,8 @@
 <template>
-    <div>
-        <button @click='removeLink'>x</button>
-        <a :href='"http://" + link' target='_blank'>{{link}}</a>
-    </div>
+  <div>
+    <button @click="removeLink">x</button>
+    <a :href="'http://' + link" target="_blank">{{ link }}</a>
+  </div>
 </template>
 
 <script>

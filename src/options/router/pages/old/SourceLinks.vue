@@ -1,20 +1,17 @@
 <template>
   <div>
-    <b-breadcrumb :items="crumbs"/>
-    <h2>Links ({{numLinks}})</h2>
-    <ppl-table :links='links'></ppl-table>
+    <b-breadcrumb :items="crumbs" />
+    <ppl-table :links="links"></ppl-table>
   </div>
 </template>
 
 <script>
-import LinkDiv from './Link.vue';
 import PplTable from './ProfilePageLinksTable.vue';
 import * as idb from '../../../store/idb.js';
 
 export default {
-  name: 'ProfilePage',
+  name: 'SourceLinks',
   components: {
-    LinkDiv,
     PplTable,
   },
   watch: {
@@ -28,6 +25,7 @@ export default {
   methods: {
     fetchData: function() {
       idb.loadLinks({ profileId: this.$route.params.id });
+      idb.loadProfile({ profileId: this.$route.params.id });
     },
   },
   computed: {
@@ -43,6 +41,9 @@ export default {
     profile() {
       return this.$store.state.profile;
     },
+    profileName() {
+      return this.profile == null ? '' : this.profile.name;
+    },
     crumbs: function() {
       return [
         {
@@ -54,7 +55,7 @@ export default {
           href: '#/profiles',
         },
         {
-          text: this.profileId + '',
+          text: this.profileName + ' (' + this.profileId + ')',
           href: '#/profile/' + this.profileId,
         },
         {

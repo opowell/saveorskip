@@ -1,12 +1,22 @@
 <template>
   <div>
     <b-breadcrumb :items="crumbs" />
-    <objects-table :object="profiles" @create="addProfile" @click="openProfile" :show-del="false" :ineditable-row-names="[]" />
+    <objects-table
+      ref="table"
+      :object="profiles"
+      @create="addProfile"
+      @click="openProfile"
+      :show-del="false"
+      :ineditable-row-names="[]"
+      :itemKeyField="'id'"
+      :itemNameField="'name'"
+    />
   </div>
 </template>
 
 <script>
 import ObjectsTable from '../components/ObjectsTable.vue';
+import * as idb from '../../../store/idb.js';
 
 export default {
   name: 'Profiles',

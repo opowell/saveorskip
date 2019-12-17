@@ -262,7 +262,7 @@ export function addProfile(payload) {
             name: item.name,
           };
           profilesStore.put(toSave);
-          store.dispatch('addProfile', toSave);
+          store.commit(types.ADD_PROFILE, toSave.name);
         })
       );
     } catch (e) {

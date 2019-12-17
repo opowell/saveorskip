@@ -9,7 +9,7 @@ import store from '../store';
 
 export default {
   name: 'App',
-  created() {
+  mounted() {
     chrome.tabs.query({ active: true }, function(tabs) {
       store.dispatch('setCurUrl', { url: tabs[0].url });
     });

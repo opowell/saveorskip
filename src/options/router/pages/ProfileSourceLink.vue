@@ -221,21 +221,3 @@ export default {
   width: 20rem;
 }
 </style>
-
-<style scoped>
-div.props {
-  color: #444;
-  display: flex;
-  font-size: 1rem;
-  flex-direction: column;
-}
-
-div.props > div {
-  padding: 5px;
-}
-
-button {
-  margin: 5px;
-  align-self: center;
-}
-</style>

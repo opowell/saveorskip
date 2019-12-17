@@ -5,8 +5,6 @@ import Vue from 'vue';
 export default class {
   constructor(name) {
     this.name = name;
-    this.links = {};
-    this.sources = {};
   }
 
   static addSources(profile, sources) {

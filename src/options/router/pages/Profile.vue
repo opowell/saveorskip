@@ -1,15 +1,8 @@
 <template>
   <div>
     <b-breadcrumb :items="crumbs" />
-    <div>
-      <button @click="exportProfile">export</button>
-    </div>
-    <div class="display: flex">
-      <router-link :to="{ name: 'profileLinks', params: { id: profileId } }">links ({{ numLinks }})</router-link>
-      <router-link :to="{ name: 'profileSources', params: { id: profileId } }">sources ({{ numSources }})</router-link>
-      saved links: numSavedLinks skipped links: numSkippedLinks suggested sources: numSugSources saved sources: numSavedSources
-    </div>
     <objects-table
+      ref="table"
       :object="profile"
       @create="addProperty"
       :showdel="true"
@@ -17,7 +10,17 @@
       :ineditable-col-names="['id']"
       @save="saveObject"
       :fetchData="fetchData"
-    />
+      :itemKeyField="'name'"
+      :itemNameField="'name'"
+    >
+      <template v-slot:header>
+        <button @click="exportProfile">Export</button>
+      </template>
+      <template v-slot:subpages>
+        <router-link style="margin: 4px; padding: 1px;" :to="{ name: 'profileLinks', params: { id: profileId } }">Links ({{ numLinks }})</router-link>
+        <router-link style="margin: 4px; padding: 1px;" :to="{ name: 'profileSources', params: { id: profileId } }">Sources ({{ numSources }})</router-link>
+      </template>
+    </objects-table>
   </div>
 </template>
 
@@ -45,10 +48,9 @@ export default {
       ],
       filter: null,
       removePropertySelect: null,
-      changesPending: false,
     };
   },
-  created() {
+  mounted() {
     this.fetchData();
   },
   methods: {
@@ -94,32 +96,10 @@ export default {
       link.setAttribute('download', this.profileName + '.csv');
       link.click();
     },
-    // changeFieldName(field, event) {
-    //   let val = this.profile[field];
-    //   delete this.profile[field];
-    //   this.profile[event.target.value] = val;
-    //   this.changesPending = true;
-    // },
-    // changeFieldValue(field, event) {
-    //   this.profile[field] = event.target.value;
-    //   this.changesPending = true;
-    // },
-    // tryToAddProperty() {
-    //   if (this.canAddProperty) {
-    //     this.addProperty();
-    //   }
-    // },
     addProperty(inputStr) {
       Vue.set(this.profile, inputStr, '');
-      this.changesPending = true;
+      this.$refs.table.changesPending = true;
     },
-    // removeProperty() {
-    //   if (this.removePropertySelect == null) {
-    //     return;
-    //   }
-    //   Vue.delete(this.profile, this.removePropertySelect);
-    //   this.changesPending = true;
-    // },
     saveObject() {
       idb.saveObject(STORE_PROFILES, this.profile);
       this.fetchData();
@@ -135,7 +115,7 @@ export default {
       idb.loadProfile({
         profileId: this.$route.params.id,
       });
-      this.changesPending = false;
+      this.$refs.table.changesPending = false;
     },
 
     // duplicateProfile: function() {
@@ -160,18 +140,27 @@ export default {
       return this.$store.state.profile;
     },
     profileName() {
-      return this.profile == null ? '' : this.profile.name;
+      if (this.profile == null) {
+        return '';
+      }
+      if (typeof this.profile.name == 'object') {
+        return JSON.stringify(this.profile.name);
+      }
+      return this.profile.name;
     },
     profileStats() {
       return this.$store.state.profileStats;
     },
-    numLinks: function() {
+    numProps() {
+      return this.profile == null ? 0 : Object.keys(this.profile).length;
+    },
+    numLinks() {
       if (this.profileStats == null) {
         return 0;
       }
       return this.profileStats.numLinks;
     },
-    numSources: function() {
+    numSources() {
       if (this.profileStats == null) {
         return 0;
       }
@@ -216,7 +205,7 @@ export default {
           href: '#/profiles',
         },
         {
-          text: this.profileName + ' (' + this.profileId + ')',
+          text: this.profileName,
           href: '#/profile/' + this.profileId,
         },
       ];
@@ -224,21 +213,3 @@ export default {
   },
 };
 </script>
-
-<style scoped>
-div.props {
-  color: #444;
-  display: flex;
-  font-size: 1rem;
-  flex-direction: column;
-}
-
-div.props > div {
-  padding: 5px;
-}
-
-button {
-  margin: 5px;
-  align-self: center;
-}
-</style>

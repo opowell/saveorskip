@@ -2,38 +2,39 @@
   <div>
     <!-- User Interface controls -->
     <div style="display: flex">
-      <b-input-group v-if="!isObjArray">
-        <b-btn @click="duplicate">duplicate</b-btn>
-        <b-btn @click="deleteObject">delete</b-btn>
-        <b-btn :class="{ 'btn-primary': changesPending }" @click="saveObject">save</b-btn>
-        <b-btn :class="{ 'btn-primary': changesPending }" @click="reset">reset</b-btn>
-      </b-input-group>
-      <b-input-group class="mr-3">
-        <b-form-input v-model="filter" placeholder="Add / filter" v-on:keyup.enter="tryToAddItem" />
-        <b-input-group-append>
-          <b-btn variant="primary" :disabled="!canAddItem" @click="addItem">Add</b-btn>
-        </b-input-group-append>
-      </b-input-group>
-      <b-input-group class="ml-3" style="justify-content: flex-end;">
-        <b-select value-field="key" text-field="name" :options="removableItems" v-model="deleteItemSelect" />
-        <b-input-group-append>
-          <b-btn :disabled="deleteItemSelect == null" @click="deleteItem">Delete...</b-btn>
-        </b-input-group-append>
-      </b-input-group>
+      <b-input v-model="filter" placeholder="Add / filter" v-on:keyup.enter="tryToAddItem" style="max-width: 400px;" />
+      <button :disabled="!canAddItem" @click="addItem">Add</button>
+      <div style="flex: 1 1 auto">&nbsp;</div>
+      <slot name="subpages"></slot>
+      <div style="flex: 1 1 auto">&nbsp;</div>
+      <slot name="header"></slot>
+      <button v-if="!isObjArray" @click="duplicate">Duplicate</button>
+      <button v-if="!isObjArray" @click="deleteObject">Delete</button>
+      <button v-if="!isObjArray" :disabled="!changesPending" :class="{ 'btn-primary': changesPending }" @click="saveObject">Save</button>
+      <button v-if="!isObjArray" @click="reset" :disabled="!changesPending">Reset</button>
     </div>
     <!-- Main table element -->
-    <b-table hover show-empty stacked="md" :items="items" :fields="fieldNames" :filter="filter" @row-clicked="clickItem">
+    <b-table hover show-empty stacked="md" :items="items" :fields="fieldNames" :filter="filter" @row-clicked="clickItem" class="mt-3">
       <template v-slot:cell(name)="data">
-        <div v-if="!canEditCell('name', data.item)">
+        <div v-if="!canEditCell('name', data.item)" class="cell">
           {{ data.value }}
         </div>
-        <input v-else type="text" @change="changeFieldValue(data.value, $event)" :value="data.value" style="width: 100%" />
+        <b-input v-else type="text" @change="changeFieldName(data.item.name, $event)" @keyup="changeFieldName(data.item.name, $event)" :value="data.value" style="width: 100%" />
       </template>
       <template v-slot:cell(value)="data">
-        <div v-if="!canEditCell('value', data.item)">
+        <div v-if="!canEditCell('value', data.item)" class="cell">
           {{ data.value }}
         </div>
-        <input v-else type="text" @change="changeFieldValue(data.value, $event)" :value="data.value" style="width: 100%" />
+        <b-select
+          v-else-if="typeof data.item.value === 'boolean'"
+          @change="changeValue(data.item.name, $event)"
+          @keyup="changeValue(data.item.name, $event)"
+          v-model="data.item.value"
+        >
+          <option value="true">yes</option>
+          <option value="false">no</option>
+        </b-select>
+        <b-input v-else type="text" @keyup="changeFieldValue(data.item.name, $event)" @change="changeFieldValue(data.item.name, $event)" :value="data.value" style="width: 100%" />
       </template>
     </b-table>
   </div>
@@ -44,7 +45,7 @@ import * as idb from '../../../store/idb.js';
 import Vue from 'vue';
 
 export default {
-  props: ['object', 'ineditableRowNames', 'ineditableColNames', 'store', 'fetchData'],
+  props: ['object', 'ineditableRowNames', 'ineditableColNames', 'store', 'fetchData', 'itemKeyField', 'itemNameField'],
   data() {
     return {
       sortDesc: true,
@@ -54,6 +55,39 @@ export default {
     };
   },
   methods: {
+    changeFieldName(field, value) {
+      if (value.target != null) {
+        value = value.target.value;
+      }
+      if (this.ineditableRowNames.includes(value)) {
+        return;
+      }
+      let val = this.object[field];
+      delete this.object[field];
+      this.changesPending = true;
+      if (value !== '') {
+        this.object[value] = val;
+      }
+    },
+    changeFieldValue(field, value) {
+      if (value.target != null) {
+        value = value.target.value;
+      }
+      if (this.ineditableColNames.includes(field)) {
+        return;
+      }
+      Vue.set(this.object, field, value);
+      this.changesPending = true;
+    },
+    valueToString(val) {
+      if (val == null) {
+        return '';
+      }
+      if (typeof val == 'object') {
+        return JSON.stringify(val);
+      }
+      return val;
+    },
     duplicate() {},
     deleteObject() {},
     saveObject() {
@@ -87,7 +121,7 @@ export default {
       this.$emit('click', { item, index, event });
     },
     createNewItem(inputString) {
-      this.$emit('create', { profileId: inputString });
+      this.$emit('create', inputString);
     },
     canEditCell(field, obj) {
       if (this.isObjArray) {
@@ -155,26 +189,45 @@ export default {
           let item = this.object[i];
           for (let a in item) {
             if (!out.includes(a)) {
-              out.push(a);
+              out.push({
+                key: a,
+                label: a,
+                class: 'table-cell',
+                sortable: true,
+              });
             }
           }
         }
       } else {
-        out.push('name');
-        out.push('value');
-      }
-      return out;
-    },
-    removableItems() {
-      let out = [];
-      for (let i in this.object) {
         out.push({
-          key: this.object[i].id,
-          name: this.object[i].name,
+          key: 'name',
+          label: 'Name',
+          class: ['table-cell', 'narrow'],
+          sortable: true,
+        });
+        out.push({
+          key: 'value',
+          label: 'Value',
+          class: 'table-cell',
+          sortable: true,
         });
       }
       return out;
     },
+    // removableItems() {
+    //   let out = [];
+    //   for (let i in this.items) {
+    //     let keyField = this.items[i][this.itemKeyField];
+    //     if (this.ineditableRowNames.includes(keyField)) {
+    //       continue;
+    //     }
+    //     out.push({
+    //       key: keyField,
+    //       name: this.items[i][this.itemNameField],
+    //     });
+    //   }
+    //   return out;
+    // },
     items() {
       let out = [];
       if (Array.isArray(this.object)) {
@@ -184,8 +237,8 @@ export default {
       } else {
         for (let i in this.object) {
           out.push({
-            name: i,
-            value: this.object[i],
+            name: this.valueToString(i),
+            value: this.valueToString(this.object[i]),
           });
         }
       }
@@ -201,5 +254,22 @@ export default {
 .nowrap > div {
   overflow-wrap: break-word;
   max-width: 300px;
+}
+.input-group-append {
+  align-items: baseline;
+}
+</style>
+
+<style>
+.table-cell {
+  vertical-align: baseline !important;
+}
+.narrow {
+  width: 10rem;
+}
+.cell {
+}
+.cursor-pointer {
+  cursor: pointer;
 }
 </style>

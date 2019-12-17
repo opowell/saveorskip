@@ -1,55 +1,35 @@
 <template>
   <div>
     <b-breadcrumb :items="crumbs" />
-    <div>
-      <button>scrape</button>
-      <button @click="deleteLink">delete...</button>
-      <button :class="{ 'btn-primary': changesPending }" @click="saveLink">save</button>
-      <button :class="{ 'btn-primary': changesPending }" @click="reset">reset</button>
-      <button :disabled="removePropertySelect == null" @click="removeProperty">remove property</button>
-      <select v-model="removePropertySelect">
-        <option v-for="fieldName in removableFieldNames" :key="fieldName" :value="fieldName">
-          {{ fieldName }}
-        </option>
-      </select>
-    </div>
-    <div>
-      <b-input-group style="align-items: center;">
-        <b-form-input v-model="filter" placeholder="Add / filter" v-on:keyup.enter="tryToAddProperty" />
-        <b-input-group-append>
-          <b-btn variant="primary" :disabled="!canAddProperty" @click="addProperty">Add</b-btn>
-        </b-input-group-append>
-      </b-input-group>
-    </div>
-    <b-table show-empty hover stacked="md" :items="fields" :fields="fieldDefns" :filter="filter">
-      <template v-slot:cell(name)="data">
-        <div v-if="data.item.name === 'profileId'">profile</div>
-        <div v-else-if="'url' === data.item.name">{{ data.item.name }}</div>
-        <div v-else-if="'saved' === data.item.name">{{ data.item.name }}</div>
-        <input v-else type="text" @change="changeName(data.item.name, $event)" :value="data.item.name" style="width: 100%;" />
+    <objects-table
+      ref="table"
+      :object="link"
+      @create="addProperty"
+      :showdel="true"
+      :ineditable-row-names="['profileId']"
+      :ineditable-col-names="['profileId']"
+      @save="saveLink"
+      :fetchData="fetchData"
+      :itemKeyField="'name'"
+      :itemNameField="'name'"
+    >
+      <template v-slot:header>
+        <button @click="scrapeLink">Scrape</button>
       </template>
-      <template v-slot:cell(value)="data">
-        <select v-if="data.item.name === 'profileId'" @change="changeValue(data.item.name, $event)">
-          <option v-for="profile in profiles" :key="profile.id" value="profile.id" :selected="profile.id == data.item.value">
-            {{ profile.name }}
-          </option>
-        </select>
-        <select v-else-if="data.item.name === 'saved'" @change="changeValue(data.item.name, $event)">
-          <option value="true" :selected="data.item.value == 'true'">yes</option>
-          <option value="false" :selected="data.item.value == 'false'">no</option>
-        </select>
-        <input v-else type="text" @change="changeValue(data.item.name, $event)" :value="data.item.value" style="width: 100%" />
-      </template>
-    </b-table>
+    </objects-table>
   </div>
 </template>
 
 <script>
 import * as idb from '../../../store/idb.js';
 import Vue from 'vue';
+import ObjectsTable from '../components/ObjectsTable.vue';
 
 export default {
   name: 'ProfileLink',
+  components: {
+    ObjectsTable,
+  },
   watch: {
     '$route.params.profileId'(id) {
       this.fetchData();
@@ -58,31 +38,11 @@ export default {
       this.fetchData();
     },
   },
-  data() {
-    return {
-      fieldDefns: [
-        { key: 'name', label: 'Name', sortable: true, class: 'col-name' },
-        { key: 'value', label: 'Value', sortable: true, class: 'col-value' },
-      ],
-      filter: null,
-      removePropertySelect: null,
-      changesPending: false,
-    };
-  },
-  created() {
+  mounted() {
     this.fetchData();
   },
   methods: {
-    changeName(field, event) {
-      let val = this.link[field];
-      delete this.link[field];
-      this.link[event.target.value] = val;
-      this.changesPending = true;
-    },
-    changeValue(field, event) {
-      this.link[field] = event.target.value;
-      this.changesPending = true;
-    },
+    scrapeLink() {},
     tryToAddProperty() {
       if (this.canAddProperty) {
         this.addProperty();
@@ -90,7 +50,7 @@ export default {
     },
     addProperty() {
       Vue.set(this.link, this.filter, '');
-      this.changesPending = true;
+      this.$refs.table.changesPending = true;
     },
     removeProperty() {
       if (this.removePropertySelect == null) {
@@ -199,7 +159,7 @@ export default {
           href: '#/profiles',
         },
         {
-          text: this.profileName + ' (' + this.profileId + ')',
+          text: this.profileName,
           href: '#/profile/' + this.profileId,
         },
         {
@@ -232,10 +192,5 @@ div.props {
 
 div.props > div {
   padding: 5px;
-}
-
-button {
-  margin: 5px;
-  align-self: center;
 }
 </style>

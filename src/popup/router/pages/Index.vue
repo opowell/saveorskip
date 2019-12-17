@@ -1,67 +1,64 @@
 <template>
-    <div id='menu'>
-      <div style='display: flex;'>
-        <span class='menu-tile' @click="saveAndGo">
-          <div class='large-tile'>
-            <i class="far fa-star" style='color: green'></i>
-            <i class="fas fa-arrow-right" style='color: #444;'></i>
-          </div>
-          <div>
-            save and go
-            </div>
-        </span>
-        <span class='menu-tile' @click="skipAndGo">
-          <div class='large-tile'>
-            <i class="far fa-star" style='color: red'></i>
-            <i class="fas fa-arrow-right" style='color: #444;'></i>
-          </div>
-          <div>
-            skip and go
-            </div>
-        </span>
-        <span class='menu-tile' @click="go">
-          <div class='large-tile'>
-            <i class="fas fa-arrow-right" style='color: #444;'></i>
-          </div>
-          <div>
-            go
-            </div>
-        </span>
+  <div id="menu">
+    <div style="display: flex;">
+      <span class="menu-tile" @click="saveAndGo">
+        <div class="large-tile">
+          <i class="far fa-star" style="color: green"></i>
+          <i class="fas fa-arrow-right" style="color: #444;"></i>
         </div>
-        <div class='menu-divider'></div>
-<div style='display: flex;'>
-  Link: 
-  <span class='button-group'>
-    <i class="far fa-star" @click='save' :class='{bgselected: linkSaved}' style='color: green'></i>
-    <i class="far fa-star" @click='skip' :class='{bgselected: linkSkipped}' style='color: red'></i>
-    <i class="fas fa-trash" @click='removeLink' :class='{bgselected: linkNeither}' style='color: grey'></i>
-  </span>
-</div>
-<div style='display: flex;'>
-  Source: 
-  <span class='button-group'>
-    <i class="far fa-star" @click='saveAsSource(true)' :class='{bgselected: sourceSaved}' style='color: green'></i>
-    <i class="far fa-star" @click='saveAsSource(false)' :class='{bgselected: sourceSkipped}' style='color: red'></i>
-    <i class="fas fa-trash" @click='deleteSource' :class='{bgselected: sourceNeither}' style='color: grey'></i>
-  </span>
-</div>
-        <div class='menu-item' :title='nextLink'>Next Link: {{nextLink}}</div>
-        <div class='menu-divider'></div>
-        <div class='menu-item'>Target:
-            <select id='target-select' @change='setTarget'>
-                <option v-for='profile in profiles' 
-                    :key='profile.id' 
-                    :value='profile.id'
-                    :selected='profile.id == targetId'
-                >
-                    {{profile.name}}
-                </option>
-                <option value='__new'>(new)</option>
-            </select>
-            </div>
-        <div class='menu-divider'></div>
-        <div class='menu-item' @click='showOptions'>Manage...</div>
+        <div>
+          save and go
+        </div>
+      </span>
+      <span class="menu-tile" @click="skipAndGo">
+        <div class="large-tile">
+          <i class="far fa-star" style="color: red"></i>
+          <i class="fas fa-arrow-right" style="color: #444;"></i>
+        </div>
+        <div>
+          skip and go
+        </div>
+      </span>
+      <span class="menu-tile" @click="go">
+        <div class="large-tile">
+          <i class="fas fa-arrow-right" style="color: #444;"></i>
+        </div>
+        <div>
+          go
+        </div>
+      </span>
     </div>
+    <div class="menu-divider"></div>
+    <div style="display: flex;">
+      Link:
+      <span class="button-group">
+        <i class="far fa-star" @click="save" :class="{ bgselected: linkSaved }" style="color: green"></i>
+        <i class="far fa-star" @click="skip" :class="{ bgselected: linkSkipped }" style="color: red"></i>
+        <i class="fas fa-trash" @click="removeLink" :class="{ bgselected: linkNeither }" style="color: grey"></i>
+      </span>
+    </div>
+    <div style="display: flex;">
+      Source:
+      <span class="button-group">
+        <i class="far fa-star" @click="saveAsSource(true)" :class="{ bgselected: sourceSaved }" style="color: green"></i>
+        <i class="far fa-star" @click="saveAsSource(false)" :class="{ bgselected: sourceSkipped }" style="color: red"></i>
+        <i class="fas fa-trash" @click="deleteSource" :class="{ bgselected: sourceNeither }" style="color: grey"></i>
+      </span>
+    </div>
+    <div class="menu-item" :title="nextLink">Next Link: {{ nextLink }}</div>
+    <div class="menu-divider"></div>
+    <div class="menu-item">
+      Target:
+      <select id="target-select" @change="setTarget">
+        <option v-for="profile in profiles" :key="profile.id" :value="profile.id" :selected="profile.id == targetId">
+          {{ profile.name }}
+        </option>
+        <option value="__new">(new)</option>
+      </select>
+    </div>
+    <div class="menu-divider"></div>
+    <div class="menu-item" @click="showOptions">Manage...</div>
+  </div>
 </template>
 
 <script>
@@ -74,7 +71,7 @@ export default {
       // linkStatus: 'neither',
     };
   },
-  created() {
+  mounted() {
     idb.fetchProfiles();
     idb.setCurUrlLinkStatus();
   },

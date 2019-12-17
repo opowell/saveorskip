@@ -1,31 +1,50 @@
 <template>
   <div>
     <b-breadcrumb :items="crumbs" />
-    <ppl-table :links="links"></ppl-table>
+    <objects-table ref="table" :object="links" @create="addLink" @click="openLink" :show-del="false" :ineditable-row-names="[]" :itemKeyField="'id'" :itemNameField="'url'" />
   </div>
 </template>
 
 <script>
-import PplTable from '../components/ProfilePageLinksTable.vue';
+import ObjectsTable from '../components/ObjectsTable.vue';
 import * as idb from '../../../store/idb.js';
 
 export default {
   name: 'ProfileLinks',
   components: {
-    PplTable,
+    ObjectsTable,
   },
   watch: {
     '$route.params.id': function() {
       this.fetchData();
     },
   },
-  created: function() {
+  mounted() {
     this.fetchData();
   },
   methods: {
     fetchData: function() {
       idb.loadLinks({ profileId: this.$route.params.id });
       idb.loadProfile({ profileId: this.$route.params.id });
+    },
+    async addLink(inputStr) {
+      let link = {
+        targetId: this.$route.params.id,
+        action: 'save',
+        link: { url: inputStr },
+      };
+      await idb.saveOrSkipLink(link);
+      this.fetchData();
+      // this.links.push(link);
+    },
+    openLink({ item, index, event }) {
+      this.$router.push({
+        name: 'profileLink',
+        params: {
+          profileId: this.profileId,
+          linkId: item.url,
+        },
+      });
     },
   },
   computed: {
@@ -55,7 +74,7 @@ export default {
           href: '#/profiles',
         },
         {
-          text: this.profileName + ' (' + this.profileId + ')',
+          text: this.profileName,
           href: '#/profile/' + this.profileId,
         },
         {
@@ -67,21 +86,3 @@ export default {
   },
 };
 </script>
-
-<style scoped>
-div.props {
-  color: #444;
-  display: flex;
-  font-size: 1rem;
-  flex-direction: column;
-}
-
-div.props > div {
-  padding: 5px;
-}
-
-button {
-  margin: 5px;
-  align-self: center;
-}
-</style>

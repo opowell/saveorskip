@@ -10,6 +10,16 @@ Save pages you visit. Get recommendations based on your previous saves.
 4. Open Extensions page.
 5. Load unpacked --> select contents from step 2.
 
+The extension should now be accessible from the top right of the browser (green icon).
+
+## How to use
+
+1. Visit a website you like.
+2. Click the green icon.
+3. Click "Save and go".
+
+This saves the current link, searches for further recommendations, picks one and then sends you to it.
+
 ## Development
 
 1. Run devtools

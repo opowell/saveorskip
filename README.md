@@ -1,5 +1,7 @@
 # Save or skip
 
+Save pages you visit. Get recommendations based on your previous saves.
+
 ## Installation
 
 1. Download <a href='https://github.com/opowell/saveorskip/raw/master/dist-zip/saveorskip-v1.0.6.zip'>extension</a>.
@@ -22,6 +24,8 @@
 
 1. Compile the extension: `npm run build`
 2. Zip it up: `npm run build-zip`
+3. Commit to Github.
+4. Update README.md download link.
 
 ## Initial development setup
 

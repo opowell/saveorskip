@@ -3,9 +3,10 @@
 ## Installation
 
 1. Download extension as zip file.
-2. In Chrome, turn on Developer mode.
-3. Open Extensions page.
-4. Load unpacked --> select zip file from step 1.
+2. Extract zip file contents.
+3. In Chrome, turn on Developer mode.
+4. Open Extensions page.
+5. Load unpacked --> select contents from step 2.
 
 ## Development
 

@@ -2,7 +2,7 @@
 
 ## Installation
 
-1. Download extension as zip file.
+1. Download <a href='https://github.com/opowell/saveorskip/raw/master/dist-zip/saveorskip-v1.0.6.zip'>extension</a>.
 2. Extract zip file contents.
 3. In Chrome, turn on Developer mode.
 4. Open Extensions page.

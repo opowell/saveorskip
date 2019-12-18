@@ -1,5 +1,8 @@
 <template>
   <div>
+    <b-modal id="deleteProfileModal" title="Delete Profile" @ok="deleteObject">
+      <p class="my-4">Are you sure you want to delete this profile?</p>
+    </b-modal>
     <b-breadcrumb :items="crumbs" />
     <objects-table
       ref="table"
@@ -9,6 +12,7 @@
       :ineditable-col-names="['id']"
       @save="saveObject"
       :fetchData="fetchData"
+      @deleteObject="askDeleteObject"
     >
       <template v-slot:header>
         <button @click="exportProfile">Export</button>
@@ -92,6 +96,9 @@ export default {
       link.setAttribute('download', this.profileName + '.csv');
       link.click();
     },
+    askDeleteObject() {
+      this.$bvModal.show('deleteProfileModal');
+    },
     addProperty(inputStr) {
       Vue.set(this.profile, inputStr, '');
       this.$refs.table.changesPending = true;
@@ -100,7 +107,7 @@ export default {
       idb.saveObject(STORE_PROFILES, this.profile);
       this.fetchData();
     },
-    deleteObject: function() {
+    deleteObject() {
       idb.deleteProfile({
         profileId: this.$route.params.id,
       });

@@ -128,8 +128,8 @@ export function saveObject(storeName, object) {
   });
 }
 
-export function fetchProfiles() {
-  dbPromise.then(async function(db) {
+export async function fetchProfiles() {
+  await dbPromise.then(async function(db) {
     const tx = db.transaction(STORE_PROFILES);
     const profilesStore = tx.objectStore(STORE_PROFILES);
     const values = await profilesStore.getAll();
@@ -143,7 +143,7 @@ export function fetchProfiles() {
       profiles.push(values[i]);
     }
     await tx.done;
-    store.dispatch('fetchProfiles', profiles);
+    await store.dispatch('fetchProfiles', profiles);
   });
 }
 
@@ -177,8 +177,9 @@ export function addSources(payload) {
         tx.abort();
         console.log(e);
       })
-      .then(function() {
+      .then(async function() {
         console.log('Sources "' + JSON.stringify(payload.sources) + '" stored successfully.');
+        await setCurUrlSourceStatus();
       });
   });
 }

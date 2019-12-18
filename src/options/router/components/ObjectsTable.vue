@@ -9,7 +9,7 @@
       <div style="flex: 1 1 auto">&nbsp;</div>
       <slot name="header"></slot>
       <button v-if="!isObjArray" @click="duplicate">Duplicate</button>
-      <button v-if="!isObjArray" @click="deleteObject">Delete</button>
+      <button v-if="!isObjArray" @click="deleteObject">Delete...</button>
       <button v-if="!isObjArray" :disabled="!changesPending" :class="{ 'btn-primary': changesPending }" @click="saveObject">Save</button>
       <button v-if="!isObjArray" @click="reset" :disabled="!changesPending">Reset</button>
     </div>
@@ -106,7 +106,9 @@ export default {
       return val;
     },
     duplicate() {},
-    deleteObject() {},
+    deleteObject() {
+      this.$emit('deleteObject');
+    },
     saveObject() {
       this.$emit('save');
       this.changesPending = false;

@@ -31,8 +31,8 @@
     <div class="menu-divider"></div>
     <div class="menu-item" title="The current profile to save links and sources to.">
       <span style="flex: 1 1 auto;">Profile:&nbsp;</span>
-      <select v-if="profiles.length > 0" id="target-select" @change="setTarget">
-        <option v-for="profile in profiles" :key="profile.id" :value="profile.id" :selected="profile.id == selectedTargetId">
+      <select v-if="profiles.length > 0" id="target-select" @change="setTargetEv">
+        <option v-for="profile in profiles" :key="profile.id" :value="profile.id" :selected="profile.id == targetId">
           {{ profile.name }}
         </option>
       </select>
@@ -63,10 +63,12 @@
 
 <script>
 import * as idb from '../../../store/idb.js';
+import * as types from '../../../store/mutation-types.js';
 
 export default {
   async mounted() {
     await idb.fetchProfiles();
+    console.log('mounted: ' + this.hasTarget + this.profiles.length);
     if (!this.hasTarget && this.profiles != null && this.profiles.length > 0) {
       this.setTarget(this.profiles[0].id);
     }
@@ -123,8 +125,13 @@ export default {
         url: this.$store.state.curLink.url,
       });
     },
-    setTarget(event) {
-      this.$store.dispatch('setTarget', event.target.value);
+    setTargetEv(event) {
+      this.setTarget(event.target.value);
+    },
+    setTarget(profileId) {
+      this.$store.commit(types.SET_TARGET, profileId - 0);
+      idb.setCurUrlLinkStatus();
+      idb.setCurUrlSourceStatus();
     },
     save() {
       idb.saveOrSkipLink({
@@ -153,9 +160,9 @@ export default {
     },
     saveAsSource(save) {
       idb.addSources({
-        targetId: this.targetId,
         sources: [
           {
+            profileId: this.targetId,
             url: this.$store.state.curLink.url,
             saved: save,
           },

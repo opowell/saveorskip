@@ -8,7 +8,6 @@ const { VueLoaderPlugin } = require('vue-loader');
 const { version } = require('./package.json');
 
 const config = {
-  // devtool: 'eval-source-map',
   devtool: 'cheap-module-source-map',
   mode: process.env.NODE_ENV,
   context: __dirname + '/src',
@@ -101,6 +100,10 @@ if (config.mode === 'production') {
       },
     }),
   ]);
+}
+
+if (config.mode === 'development') {
+  config.devtool = 'eval-source-map';
 }
 
 if (process.env.HMR === 'true') {

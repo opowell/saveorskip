@@ -73,7 +73,7 @@ export default {
   },
 
   [types.SET_TARGET](state, payload) {
-    state.targetId = payload;
+    state.targetId = payload - 0;
   },
 
   [types.DELETE_PROFILE](state, payload) {

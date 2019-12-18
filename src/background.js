@@ -37,9 +37,12 @@ function saveOrSkip(gotoNext, action) {
 // Save a list of sources to storage.
 function saveSources(sourcesToSave, callback) {
   if (sourcesToSave == null) return;
+  for (let i in sourcesToSave) {
+    sourcesToSave[i].profileId = store.state.targetId;
+  }
   idb.addSources({
     sources: sourcesToSave,
-    targetId: store.state.targetId,
+    // targetId: store.state.targetId,
   });
   try {
     callback();

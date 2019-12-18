@@ -12,6 +12,7 @@
     >
       <template v-slot:header>
         <button @click="scrape">Scrape</button>
+        <button @click="openLink">Open</button>
       </template>
       <template v-slot:subpages>
         <router-link :to="{ name: 'profileSourceLinks', params: { profileId: profileId, sourceId: sourceId } }">Scraped links ()</router-link>
@@ -24,6 +25,7 @@
 import ObjectsTable from '../components/ObjectsTable.vue';
 import * as idb from '../../../store/idb.js';
 import { STORE_PROFILES } from '../../../store/Constants.ts';
+import * as types from '../../../store/mutation-types.js';
 import Vue from 'vue';
 
 export default {
@@ -40,7 +42,14 @@ export default {
     this.fetchData();
   },
   methods: {
-    scrape() {},
+    async scrape() {
+      await this.$store.commit(types.SET_URL_TO_SCRAPE, this.source.url);
+      this.openLink();
+      chrome.runtime.sendMessage({ action: 'saveSourcesOfUrl', url: this.source.url });
+    },
+    openLink() {
+      window.open('http://' + this.source.url, '_blank');
+    },
     addProperty(inputStr) {
       Vue.set(this.source, inputStr, '');
       this.$refs.table.changesPending = true;

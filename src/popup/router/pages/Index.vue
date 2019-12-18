@@ -31,11 +31,12 @@
     <div class="menu-divider"></div>
     <div class="menu-item" title="The current profile to save links and sources to.">
       <span style="flex: 1 1 auto;">Profile:&nbsp;</span>
-      <select id="target-select" @change="setTarget">
-        <option v-for="profile in profiles" :key="profile.id" :value="profile.id" :selected="profile.id == targetId">
+      <select v-if="profiles.length > 0" id="target-select" @change="setTarget">
+        <option v-for="profile in profiles" :key="profile.id" :value="profile.id" :selected="profile.id == selectedTargetId">
           {{ profile.name }}
         </option>
       </select>
+      <div v-else>----</div>
     </div>
     <div class="menu-divider"></div>
     <div class="menu-item" title="The status of the current link on the target as a link.">
@@ -56,7 +57,7 @@
     </div>
     <div class="menu-item" :title="nextLink">Next Link: {{ nextLink }}</div>
     <div class="menu-divider"></div>
-    <div class="menu-item" @click="showOptions">Manage...</div>
+    <div class="menu-item menu-button" @click="showOptions">Manage...</div>
   </div>
 </template>
 
@@ -64,18 +65,18 @@
 import * as idb from '../../../store/idb.js';
 
 export default {
-  data() {
-    return {
-      selectTargetId: this.$store.state.targetId,
-      // linkStatus: 'neither',
-    };
-  },
-  mounted() {
-    idb.fetchProfiles();
+  async mounted() {
+    await idb.fetchProfiles();
+    if (!this.hasTarget && this.profiles != null && this.profiles.length > 0) {
+      this.setTarget(this.profiles[0].id);
+    }
     idb.setCurUrlLinkStatus();
     idb.setCurUrlSourceStatus();
   },
   computed: {
+    hasTarget() {
+      return this.targetId != null && this.targetId != '';
+    },
     linkStatus() {
       // return this.$store.getters.getUrlLinkStatus(this.$store.state.curLink.url);
       return this.$store.state.curUrlAsLink;
@@ -123,7 +124,6 @@ export default {
       });
     },
     setTarget(event) {
-      console.log('set target to ' + event.target.value);
       this.$store.dispatch('setTarget', event.target.value);
     },
     save() {
@@ -199,7 +199,7 @@ p {
   font-size: 2em;
 }
 
-.menu-item:hover {
+.menu-button:hover {
   background-color: #ccc;
   cursor: pointer;
 }

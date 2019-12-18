@@ -8,7 +8,7 @@
       <li><router-link :to="{ name: 'account' }">Account</router-link></li>
       <li><router-link :to="{ name: 'scrapers' }">Scrapers</router-link></li>
     </ol>
-    <button @click="resetDB">Reset DB</button>
+    <button @click="resetDB">Reset DB...</button>
   </div>
 </template>
 

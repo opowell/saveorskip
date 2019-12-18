@@ -134,6 +134,9 @@ export function fetchProfiles() {
     const profilesStore = tx.objectStore(STORE_PROFILES);
     const values = await profilesStore.getAll();
     let profiles = [];
+    if (values.length === 0) {
+      await addProfile('myProfile');
+    }
     for (let i = 0; i < values.length; i++) {
       values[i].links = await db.countFromIndex(STORE_LINKS, STORE_LINKS_PROFILEID, values[i].id);
       values[i].sources = await db.countFromIndex(STORE_SOURCES, STORE_SOURCES_PROFILEID, values[i].id);

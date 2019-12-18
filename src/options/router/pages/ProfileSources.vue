@@ -1,31 +1,40 @@
 <template>
   <div>
     <b-breadcrumb :items="crumbs" />
-    <pps-table :sources="sources"></pps-table>
+    <objects-table ref="table" :object="sources" @create="addSource" @click="openSource" />
   </div>
 </template>
 
 <script>
-import PpsTable from '../components/ProfilePageSourcesTable.vue';
+import ObjectsTable from '../components/ObjectsTable.vue';
 import * as idb from '../../../store/idb.js';
+import { Source } from '../../../models/Source.js';
 
 export default {
   name: 'ProfilePage',
   components: {
-    PpsTable,
+    ObjectsTable,
   },
   watch: {
     '$route.params.id': function() {
       this.fetchData();
     },
   },
-  created: function() {
+  mounted() {
     this.fetchData();
   },
   methods: {
-    fetchData: function() {
+    fetchData() {
       idb.loadSources({ profileId: this.$route.params.id });
       idb.loadProfile({ profileId: this.$route.params.id });
+    },
+    async addSource(inputStr) {
+      let source = Source(inputStr, this.profileId);
+      await idb.addSources({ sources: [source] });
+      this.fetchData();
+    },
+    openSource({ item, index, event }) {
+      this.$router.push({ name: 'profileSource', params: { profileId: this.profileId, sourceId: item.url } });
     },
   },
   computed: {

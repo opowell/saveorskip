@@ -25,7 +25,7 @@ export function loadProfile(payload) {
 export function loadSources(payload) {
   dbPromise.then(async function(db) {
     try {
-      let out = await db.getAllFromIndex(STORE_SOURCES, 'profileId', payload.profileId);
+      let out = await db.getAllFromIndex(STORE_SOURCES, STORE_SOURCES_PROFILEID, payload.profileId - 0);
       if (out == null) {
         return;
       }
@@ -133,11 +133,10 @@ export function fetchProfiles() {
     const tx = db.transaction(STORE_PROFILES);
     const profilesStore = tx.objectStore(STORE_PROFILES);
     const values = await profilesStore.getAll();
-    console.log(JSON.stringify(values));
     let profiles = [];
     for (let i = 0; i < values.length; i++) {
-      values[i].numLinks = await db.countFromIndex(STORE_LINKS, STORE_LINKS_PROFILEID, values[i].id);
-      values[i].numSources = await db.countFromIndex(STORE_SOURCES, STORE_SOURCES_PROFILEID, values[i].id);
+      values[i].links = await db.countFromIndex(STORE_LINKS, STORE_LINKS_PROFILEID, values[i].id);
+      values[i].sources = await db.countFromIndex(STORE_SOURCES, STORE_SOURCES_PROFILEID, values[i].id);
       profiles.push(values[i]);
     }
     await tx.done;
@@ -163,18 +162,12 @@ export function deleteProfile(payload) {
 export function addSources(payload) {
   dbPromise.then(function(db) {
     var tx = db.transaction(STORE_SOURCES, 'readwrite');
-    var store = tx.objectStore(STORE_SOURCES);
+    var sourcesStore = tx.objectStore(STORE_SOURCES);
     return Promise.all(
       payload.sources.map(async function(item) {
-        let storeItem = await store.get(STORE_SOURCES, [payload.targetId - 0, item.url]);
-        if (storeItem == null) {
-          item.profileId = payload.targetId - 0;
-          storeItem = item;
-        } else {
-          storeItem.points += item.points;
-        }
-        console.log('Storing source:', storeItem);
-        return store.put(item);
+        console.log('Storing source:', item);
+        sourcesStore.put(item);
+        store.commit(types.ADD_SOURCE, item);
       })
     )
       .catch(function(e) {
@@ -265,6 +258,7 @@ export function addProfile(payload) {
           store.commit(types.ADD_PROFILE, toSave.name);
         })
       );
+      fetchProfiles();
     } catch (e) {
       tx.abort();
       console.log(e);

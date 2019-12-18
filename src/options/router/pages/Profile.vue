@@ -5,13 +5,10 @@
       ref="table"
       :object="profile"
       @create="addProperty"
-      :showdel="true"
       :ineditable-row-names="['id', 'name']"
       :ineditable-col-names="['id']"
       @save="saveObject"
       :fetchData="fetchData"
-      :itemKeyField="'name'"
-      :itemNameField="'name'"
     >
       <template v-slot:header>
         <button @click="exportProfile">Export</button>
@@ -65,7 +62,6 @@ export default {
       }
       await idb.loadLinks({ profileId: this.$route.params.id });
       let links = this.$store.state.links;
-      console.log('links: ' + links.length);
       let fieldNames = ['profileId', 'saved', 'url'];
       for (let i = 0; i < links.length; i++) {
         let link = links[i];
@@ -110,31 +106,19 @@ export default {
       });
       this.$router.push({ name: 'profiles' });
     },
-
     fetchData() {
       idb.loadProfile({
         profileId: this.$route.params.id,
       });
       this.$refs.table.changesPending = false;
     },
-
-    // duplicateProfile: function() {
-    //   this.$store.dispatch('duplicateProfile', {
-    //     profileId: this.$route.params.id,
-    //   });
-    //   this.$router.push(this.$store.state.profileDuplicate.name);
-    // },
-    // reset() {
-    //   this.filter = '';
-    //   this.fetchData();
-    // },
   },
   computed: {
     canAddProperty() {
       return this.filter != null && this.filter.length > 0 && (this.profile == null || this.profile[this.filter] == null);
     },
     profileId() {
-      return this.profile == null ? '' : this.profile.id;
+      return this.$route.params.id - 0;
     },
     profile() {
       return this.$store.state.profile;

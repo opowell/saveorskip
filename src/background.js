@@ -41,8 +41,10 @@ function saveSources(sourcesToSave, callback) {
     sources: sourcesToSave,
     targetId: store.state.targetId,
   });
-  if (callback != null) {
+  try {
     callback();
+  } catch (err) {
+    console.log('callback is not a function.');
   }
 }
 
@@ -199,6 +201,7 @@ chrome.tabs.onActivated.addListener(function(activeInfo) {
       title: tab.title,
     });
     idb.setCurUrlLinkStatus();
+    idb.setCurUrlSourceStatus();
   });
 });
 
@@ -209,22 +212,26 @@ chrome.tabs.onUpdated.addListener(async function(tabId, changeInfo, tab) {
       title: tab.title,
     });
     await idb.setCurUrlLinkStatus();
+    await idb.setCurUrlSourceStatus();
   }
 });
 
-chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
-  console.log('message received from ' + trimmedUrl(sender.url) + ': ' + JSON.stringify(request));
+chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
+  console.log('message received from ' + trimmedUrl(sender.url) + ': ' + JSON.stringify(message));
 
-  let action = request;
-  if (request.action != null) {
-    action = request.action;
+  let action = message;
+  if (message.action != null) {
+    action = message.action;
   }
 
   switch (action) {
+    case 'saveSourcesOfUrl':
+      saveSourcesOfUrl(message.url, {}, 'save');
+      break;
     // case 'openAndScrape':
     //   let url = request.url;
     //   storeDispatch('setUrlToScrape', url);
-    //   saveOrSkipLink(
+    //   saveOrSkip(
     //     {
     //       url: request.url,
     //       title: sender.title,
@@ -236,7 +243,10 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
       showNextPage();
       break;
     case 'pageLoaded':
-      if (sender.tab.url === store.state.urlToScrape) {
+      let tUrl = trimmedUrl(sender.tab.url);
+      console.log('tUrl: ' + tUrl);
+      console.log('urlToScrape: ' + store.state.urlToScrape);
+      if (tUrl === store.state.urlToScrape) {
         saveSourcesOfUrl(sender.tab.url);
       } else if (sender.tab.id !== store.state.curSuggestionTabId) {
         if (sender.tab.active) {
@@ -247,6 +257,7 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
             tabId: sender.tab.id,
           });
           idb.setCurUrlLinkStatus();
+          idb.setCurUrlSourceStatus();
         }
       } else {
         saveAsSource(sender.tab);

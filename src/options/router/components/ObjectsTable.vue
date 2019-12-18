@@ -16,13 +16,13 @@
     <!-- Main table element -->
     <b-table hover show-empty stacked="md" :items="items" :fields="fieldNames" :filter="filter" @row-clicked="clickItem" class="mt-3">
       <template v-slot:cell(name)="data">
-        <div v-if="!canEditCell('name', data.item)" class="cell">
+        <div :title="data.value" v-if="!canEditCell('name', data.item)">
           {{ data.value }}
         </div>
         <b-input v-else type="text" @change="changeFieldName(data.item.name, $event)" @keyup="changeFieldName(data.item.name, $event)" :value="data.value" style="width: 100%" />
       </template>
       <template v-slot:cell(value)="data">
-        <div v-if="!canEditCell('value', data.item)" class="cell">
+        <div v-if="!canEditCell('value', data.item)" :title="data.value">
           {{ data.value }}
         </div>
         <b-select
@@ -30,11 +30,28 @@
           @change="changeValue(data.item.name, $event)"
           @keyup="changeValue(data.item.name, $event)"
           v-model="data.item.value"
+          style="width: unset;"
         >
           <option value="true">yes</option>
           <option value="false">no</option>
         </b-select>
-        <b-input v-else type="text" @keyup="changeFieldValue(data.item.name, $event)" @change="changeFieldValue(data.item.name, $event)" :value="data.value" style="width: 100%" />
+        <b-input
+          v-else-if="data.value.length === undefined || data.value.length < 80"
+          class="form-control"
+          style="width: unset;"
+          type="text"
+          @keyup="changeFieldValue(data.item.name, $event)"
+          @change="changeFieldValue(data.item.name, $event)"
+          :value="data.value"
+        />
+        <textarea
+          v-else
+          class="form-control"
+          @keyup="changeFieldValue(data.item.name, $event)"
+          @change="changeFieldValue(data.item.name, $event)"
+          :value="data.value"
+          style="width: 100%"
+        />
       </template>
     </b-table>
   </div>
@@ -45,7 +62,7 @@ import * as idb from '../../../store/idb.js';
 import Vue from 'vue';
 
 export default {
-  props: ['object', 'ineditableRowNames', 'ineditableColNames', 'store', 'fetchData', 'itemKeyField', 'itemNameField'],
+  props: ['object', 'ineditableRowNames', 'ineditableColNames', 'store', 'fetchData'],
   data() {
     return {
       sortDesc: true,
@@ -92,10 +109,12 @@ export default {
     deleteObject() {},
     saveObject() {
       this.$emit('save');
+      this.changesPending = false;
     },
     reset() {
       this.filter = '';
       this.fetchData();
+      this.changesPending = false;
     },
     tryToAddItem() {
       if (this.canAddItem) {
@@ -263,13 +282,17 @@ export default {
 <style>
 .table-cell {
   vertical-align: baseline !important;
+  max-width: 40rem;
 }
 .narrow {
   width: 10rem;
 }
-.cell {
-}
 .cursor-pointer {
   cursor: pointer;
+}
+.table-cell > div {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 </style>

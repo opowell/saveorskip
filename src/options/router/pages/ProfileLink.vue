@@ -5,15 +5,13 @@
       ref="table"
       :object="link"
       @create="addProperty"
-      :showdel="true"
-      :ineditable-row-names="['profileId']"
+      :ineditable-row-names="['profileId', 'url']"
       :ineditable-col-names="['profileId']"
       @save="saveLink"
       :fetchData="fetchData"
-      :itemKeyField="'name'"
-      :itemNameField="'name'"
     >
       <template v-slot:header>
+        <button @click="openLink">Open</button>
         <button @click="scrapeLink">Scrape</button>
       </template>
     </objects-table>
@@ -24,6 +22,7 @@
 import * as idb from '../../../store/idb.js';
 import Vue from 'vue';
 import ObjectsTable from '../components/ObjectsTable.vue';
+import * as types from '../../../store/mutation-types.js';
 
 export default {
   name: 'ProfileLink',
@@ -42,7 +41,14 @@ export default {
     this.fetchData();
   },
   methods: {
-    scrapeLink() {},
+    async scrapeLink() {
+      await this.$store.commit(types.SET_URL_TO_SCRAPE, this.link.url);
+      this.openLink();
+      chrome.runtime.sendMessage({ action: 'saveSourcesOfUrl', url: this.link.url });
+    },
+    openLink() {
+      window.open('http://' + this.link.url, '_blank');
+    },
     tryToAddProperty() {
       if (this.canAddProperty) {
         this.addProperty();

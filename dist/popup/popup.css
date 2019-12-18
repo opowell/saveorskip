@@ -1,37 +1,37 @@
-p[data-v-005b02b2] {
+p[data-v-29d0608a] {
   font-size: 20px;
 }
-.menu-item[data-v-005b02b2] {
+.menu-item[data-v-29d0608a] {
   padding: 5px 5px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   display: flex;
-  align-items: center;
+  align-items: baseline;
 }
-.inline-item[data-v-005b02b2] {
+.inline-item[data-v-29d0608a] {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.large-tile[data-v-005b02b2] {
+.large-tile[data-v-29d0608a] {
   font-size: 2em;
 }
-.menu-item[data-v-005b02b2]:hover {
+.menu-item[data-v-29d0608a]:hover {
   background-color: #ccc;
   cursor: pointer;
 }
-.menu-divider[data-v-005b02b2] {
+.menu-divider[data-v-29d0608a] {
   border-bottom: 1px solid #888;
   margin: 2px 5px;
 }
-#menu[data-v-005b02b2] {
+#menu[data-v-29d0608a] {
   display: flex;
   flex-direction: column;
   white-space: nowrap;
-  width: 300px;
+  max-width: 300px;
 }
-.menu-tile[data-v-005b02b2] {
+.menu-tile[data-v-29d0608a] {
   border: 1px solid #888;
   margin: 1px;
   padding: 5px;
@@ -41,41 +41,41 @@ p[data-v-005b02b2] {
   align-items: center;
   border-radius: 4px;
 }
-.menu-tile[data-v-005b02b2]:hover {
-  background-color: whitesmoke;
+.menu-tile[data-v-29d0608a]:hover {
+  background-color: #f5f5f5;
   border-color: #000;
   cursor: pointer;
 }
-.muted[data-v-005b02b2] {
+.muted[data-v-29d0608a] {
   color: #888;
 }
-.muted[data-v-005b02b2]:hover {
+.muted[data-v-29d0608a]:hover {
   color: #000;
 }
-body[data-v-005b02b2] {
+body[data-v-29d0608a] {
   padding: 0px;
   margin: 0px;
 }
-.button-group[data-v-005b02b2] {
+.button-group[data-v-29d0608a] {
   display: flex;
 }
-.button-group > *[data-v-005b02b2] {
+.button-group > *[data-v-29d0608a] {
   padding: 5px;
   background-color: #bbb;
   cursor: pointer;
 }
-.bgselected[data-v-005b02b2] {
+.bgselected[data-v-29d0608a] {
   background-color: #efefef;
 }
-.button-group > *[data-v-005b02b2]:hover {
+.button-group > *[data-v-29d0608a]:hover {
   background-color: #fff;
 }
-.button-group > *[data-v-005b02b2]:not(:first-child) {
+.button-group > *[data-v-29d0608a]:not(:first-child) {
   border-right: solid 1px #888;
   border-top: solid 1px #888;
   border-bottom: solid 1px #888;
 }
-.button-group > *[data-v-005b02b2]:first-child {
+.button-group > *[data-v-29d0608a]:first-child {
   border-top-left-radius: 4px;
   border-bottom-left-radius: 4px;
   border-left: solid 1px #888;
@@ -83,7 +83,9 @@ body[data-v-005b02b2] {
   border-top: solid 1px #888;
   border-bottom: solid 1px #888;
 }
-.button-group > *[data-v-005b02b2]:last-child {
+.button-group > *[data-v-29d0608a]:last-child {
   border-top-right-radius: 4px;
   border-bottom-right-radius: 4px;
 }
+
+/*# sourceMappingURL=popup.css.map*/

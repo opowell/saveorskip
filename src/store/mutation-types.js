@@ -1,4 +1,5 @@
 export const ADD_PROFILE = 'ADD_PROFILE';
+export const ADD_SOURCE = 'ADD_SOURCE';
 export const ADD_SOURCES = 'ADD_SOURCES';
 export const DELETE_PROFILE = 'DELETE_PROFILE';
 export const DUPLICATE_PROFILE = 'DUPLICATE_PROFILE';

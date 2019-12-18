@@ -1,12 +1,11 @@
-export default class {
-  constructor(url) {
-    this.firstSaved = new Date().toJSON();
-    this.lastSaved = new Date().toJSON();
-    this.lastScraped = null;
-    this.nextScrape = new Date().toJSON();
-    this.points = 0;
-    this.scrapedLinks = [];
-    this.url = url;
-    this.saved = false;
-  }
+export function Source(url, profileId) {
+  let out = {};
+  out.url = url;
+  out.profileId = profileId - 0;
+  out.firstSaved = new Date().toJSON();
+  out.lastSaved = new Date().toJSON();
+  out.nextScrape = new Date().toJSON();
+  out.points = 0;
+  out.saved = false;
+  return out;
 }

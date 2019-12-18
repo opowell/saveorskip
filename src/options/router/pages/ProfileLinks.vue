@@ -1,7 +1,7 @@
 <template>
   <div>
     <b-breadcrumb :items="crumbs" />
-    <objects-table ref="table" :object="links" @create="addLink" @click="openLink" :show-del="false" :ineditable-row-names="[]" :itemKeyField="'id'" :itemNameField="'url'" />
+    <objects-table ref="table" :object="links" @create="addLink" @click="openLink" :show-del="false" :ineditable-row-names="[]" />
   </div>
 </template>
 
@@ -23,7 +23,7 @@ export default {
     this.fetchData();
   },
   methods: {
-    fetchData: function() {
+    fetchData() {
       idb.loadLinks({ profileId: this.$route.params.id });
       idb.loadProfile({ profileId: this.$route.params.id });
     },

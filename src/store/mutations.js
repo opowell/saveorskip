@@ -1,6 +1,6 @@
 import * as types from './mutation-types';
 import Profile from '../models/Profile';
-import Source from '../models/Source';
+import { Source } from '../models/Source';
 import { dbPromise, STORE_PROFILES } from './Constants.ts';
 import { trimmedUrl } from '../Utils.js';
 
@@ -26,6 +26,10 @@ export default {
   [types.ADD_PROFILE](state, payload) {
     let profile = new Profile(payload);
     state.profiles.push(profile);
+  },
+
+  [types.ADD_SOURCE](state, payload) {
+    state.sources.push(payload);
   },
 
   [types.LOAD_PROFILE](state, payload) {
@@ -128,7 +132,7 @@ export default {
   },
 
   [types.SET_URL_TO_SCRAPE](state, payload) {
-    state.urlToScrape = payload;
+    state.urlToScrape = trimmedUrl(payload);
   },
 
   [types.DUPLICATE_PROFILE](state, payload) {
@@ -173,7 +177,7 @@ export default {
     }
 
     let source = profile.sources[payload.sourceId];
-    let copy = new Source(name);
+    let copy = Source(name);
     copy.saved = source.saved;
     copy.lastScraped = source.lastScraped;
     copy.nextScrape = source.nextScrape;

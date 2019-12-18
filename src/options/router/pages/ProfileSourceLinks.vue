@@ -1,32 +1,34 @@
 <template>
   <div>
     <b-breadcrumb :items="crumbs" />
-    <ppl-table :links="links"></ppl-table>
+    <objects-table ref="table" :object="links" @create="addLink" @click="openLink" :ineditable-row-names="[]" />
   </div>
 </template>
 
 <script>
-import PplTable from '../components/ProfilePageLinksTable.vue';
+import ObjectsTable from '../components/ObjectsTable.vue';
 import * as idb from '../../../store/idb.js';
 
 export default {
-  name: 'ProfileLinks',
+  name: 'ProfileSourceLinks',
   components: {
-    PplTable,
+    ObjectsTable,
   },
   watch: {
     '$route.params.id': function() {
       this.fetchData();
     },
   },
-  created: function() {
+  created() {
     this.fetchData();
   },
   methods: {
-    fetchData: function() {
+    fetchData() {
       idb.loadLinks({ profileId: this.$route.params.id });
       idb.loadProfile({ profileId: this.$route.params.id });
     },
+    addLink() {},
+    openLink() {},
   },
   computed: {
     links() {
@@ -44,7 +46,7 @@ export default {
     profileName() {
       return this.profile == null ? '' : this.profile.name;
     },
-    crumbs: function() {
+    crumbs() {
       return [
         {
           text: 'Home',
@@ -55,7 +57,7 @@ export default {
           href: '#/profiles',
         },
         {
-          text: this.profileName + ' (' + this.profileId + ')',
+          text: this.profileName,
           href: '#/profile/' + this.profileId,
         },
         {

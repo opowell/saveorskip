@@ -1,16 +1,7 @@
 <template>
   <div>
     <b-breadcrumb :items="crumbs" />
-    <objects-table
-      ref="table"
-      :object="profiles"
-      @create="addProfile"
-      @click="openProfile"
-      :show-del="false"
-      :ineditable-row-names="[]"
-      :itemKeyField="'id'"
-      :itemNameField="'name'"
-    />
+    <objects-table ref="table" :object="profiles" @create="addProfile" @click="openProfile" :show-del="false" :ineditable-row-names="[]" />
   </div>
 </template>
 

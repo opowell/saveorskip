@@ -1,5 +1,5 @@
 import Link from './Link';
-import Source from './Source';
+import { Source } from './Source';
 import Vue from 'vue';
 
 export default class {
@@ -14,7 +14,7 @@ export default class {
     console.log('adding sources: ' + profile.name + ', ' + JSON.stringify(sources));
     for (let i = 0; i < sources.length; i++) {
       let source = sources[i];
-      var srcObj = profile.sources[source.url] ? profile.sources[source.url] : new Source(source.url);
+      var srcObj = profile.sources[source.url] ? profile.sources[source.url] : Source(source.url);
       srcObj.points = srcObj.points + source.points;
       if (source.saved != null) {
         srcObj.saved = source.saved;

@@ -1,7 +1,7 @@
 <template>
   <div id="menu">
     <div style="display: flex;">
-      <span class="menu-tile" @click="saveAndGo">
+      <span class="menu-tile" @click="saveAndGo" title="Set current link as saved, and go to the next suggestion.">
         <div class="large-tile">
           <i class="far fa-star" style="color: green"></i>
           <i class="fas fa-arrow-right" style="color: #444;"></i>
@@ -10,7 +10,7 @@
           save and go
         </div>
       </span>
-      <span class="menu-tile" @click="skipAndGo">
+      <span class="menu-tile" @click="skipAndGo" title="Set current link as not saved, and go to the next suggestion.">
         <div class="large-tile">
           <i class="far fa-star" style="color: red"></i>
           <i class="fas fa-arrow-right" style="color: #444;"></i>
@@ -19,7 +19,7 @@
           skip and go
         </div>
       </span>
-      <span class="menu-tile" @click="go">
+      <span class="menu-tile" @click="go" title="Go to the next suggestion.">
         <div class="large-tile">
           <i class="fas fa-arrow-right" style="color: #444;"></i>
         </div>
@@ -29,33 +29,32 @@
       </span>
     </div>
     <div class="menu-divider"></div>
-    <div style="display: flex;">
-      Link:
-      <span class="button-group">
-        <i class="far fa-star" @click="save" :class="{ bgselected: linkSaved }" style="color: green"></i>
-        <i class="far fa-star" @click="skip" :class="{ bgselected: linkSkipped }" style="color: red"></i>
-        <i class="fas fa-trash" @click="removeLink" :class="{ bgselected: linkNeither }" style="color: grey"></i>
-      </span>
-    </div>
-    <div style="display: flex;">
-      Source:
-      <span class="button-group">
-        <i class="far fa-star" @click="saveAsSource(true)" :class="{ bgselected: sourceSaved }" style="color: green"></i>
-        <i class="far fa-star" @click="saveAsSource(false)" :class="{ bgselected: sourceSkipped }" style="color: red"></i>
-        <i class="fas fa-trash" @click="deleteSource" :class="{ bgselected: sourceNeither }" style="color: grey"></i>
-      </span>
-    </div>
-    <div class="menu-item" :title="nextLink">Next Link: {{ nextLink }}</div>
-    <div class="menu-divider"></div>
-    <div class="menu-item">
-      Target:
+    <div class="menu-item" title="The current profile to save links and sources to.">
+      <span style="flex: 1 1 auto;">Profile:&nbsp;</span>
       <select id="target-select" @change="setTarget">
         <option v-for="profile in profiles" :key="profile.id" :value="profile.id" :selected="profile.id == targetId">
           {{ profile.name }}
         </option>
-        <option value="__new">(new)</option>
       </select>
     </div>
+    <div class="menu-divider"></div>
+    <div class="menu-item" title="The status of the current link on the target as a link.">
+      <span style="flex: 1 1 auto;">Link:&nbsp;</span>
+      <span class="button-group">
+        <i title="Current link is a saved link." class="far fa-star" @click="save" :class="{ bgselected: linkSaved }" style="color: green"></i>
+        <i title="Current link is a not saved link." class="far fa-star" @click="skip" :class="{ bgselected: linkSkipped }" style="color: red"></i>
+        <i title="Current link is a not a link on the current profile." class="fas fa-trash" @click="removeLink" :class="{ bgselected: linkNeither }" style="color: grey"></i>
+      </span>
+    </div>
+    <div class="menu-item" title="The status of the current link on the target as a source.">
+      <span style="flex: 1 1 auto;">Source:&nbsp;</span>
+      <span class="button-group">
+        <i title="Current link is a saved source." class="far fa-star" @click="saveAsSource(true)" :class="{ bgselected: sourceSaved }" style="color: green"></i>
+        <i title="Current link is a not saved link." class="far fa-star" @click="saveAsSource(false)" :class="{ bgselected: sourceSkipped }" style="color: red"></i>
+        <i title="Current link is a not a source on the current profile." class="fas fa-trash" @click="deleteSource" :class="{ bgselected: sourceNeither }" style="color: grey"></i>
+      </span>
+    </div>
+    <div class="menu-item" :title="nextLink">Next Link: {{ nextLink }}</div>
     <div class="menu-divider"></div>
     <div class="menu-item" @click="showOptions">Manage...</div>
   </div>
@@ -74,6 +73,7 @@ export default {
   mounted() {
     idb.fetchProfiles();
     idb.setCurUrlLinkStatus();
+    idb.setCurUrlSourceStatus();
   },
   computed: {
     linkStatus() {
@@ -90,13 +90,14 @@ export default {
       return this.linkStatus === 'neither';
     },
     sourceStatus() {
-      return this.$store.getters.curSourceStatus;
+      // return this.$store.getters.curSourceStatus;
+      return this.$store.state.curUrlAsSource;
     },
     sourceSaved() {
-      return this.sourceStatus === 'saved';
+      return this.sourceStatus === true;
     },
     sourceSkipped() {
-      return this.sourceStatus === 'not saved';
+      return this.sourceStatus === false;
     },
     sourceNeither() {
       return this.sourceStatus === 'neither';
@@ -116,13 +117,14 @@ export default {
   },
   methods: {
     deleteSource() {
-      store.dispatch('removeSource', {
+      this.$store.dispatch('removeSource', {
         targetId: this.targetId,
         url: this.$store.state.curLink.url,
       });
     },
     setTarget(event) {
-      store.dispatch('setTarget', event.target.value);
+      console.log('set target to ' + event.target.value);
+      this.$store.dispatch('setTarget', event.target.value);
     },
     save() {
       idb.saveOrSkipLink({
@@ -184,7 +186,7 @@ p {
   text-overflow: ellipsis;
   white-space: nowrap;
   display: flex;
-  align-items: center;
+  align-items: baseline;
 }
 
 .inline-item {
@@ -211,7 +213,7 @@ p {
   display: flex;
   flex-direction: column;
   white-space: nowrap;
-  width: 300px;
+  max-width: 300px;
 }
 
 .menu-tile {

@@ -24,6 +24,12 @@ This saves the current link, searches for further recommendations, picks one and
 
 This extension has generic code for finding links on any webpage, however it also contains specialized code for finding links from particular sources. Sites with customized code are:
 
+- literotica.com (www.literotica.com)
+- literotica.com (tags.literotica.com)
+- reddit.com
+- ycombinator.com (news.ycombinator.com)
+- youtube.com
+
 ## Development setup
 
 1. Clone / download this repository.

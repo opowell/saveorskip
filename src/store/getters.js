@@ -3,9 +3,12 @@ import { trimmedUrl } from '../Utils.js';
 
 export const curTarget = state => {
   for (let i = 0; i < state.profiles.length; i++) {
-    if (state.profiles[i].id == state.targetId) {
+    if (state.profiles[i].id === state.targetId) {
       return state.profiles[i];
     }
+  }
+  if (state.profiles.length > 0) {
+    return state.profiles[0];
   }
   return null;
 };

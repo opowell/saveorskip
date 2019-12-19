@@ -41,16 +41,6 @@ export default {
       this.fetchData();
     },
   },
-  data() {
-    return {
-      fieldDefns: [
-        { key: 'name', label: 'Name', sortable: true, class: 'col-name' },
-        { key: 'value', label: 'Value', sortable: true, class: 'col-value' },
-      ],
-      filter: null,
-      removePropertySelect: null,
-    };
-  },
   mounted() {
     this.fetchData();
   },

@@ -1,5 +1,14 @@
 import store from './index.js';
-import { dbPromise, STORE_LINKS, STORE_PROFILES, STORE_LINKS_PROFILEID, STORE_SOURCES_PROFILEID, STORE_SOURCES } from './Constants.ts';
+import {
+  dbPromise,
+  STORE_LINKS,
+  STORE_PROFILES,
+  STORE_LINKS_PROFILEID,
+  STORE_SOURCES_PROFILEID,
+  STORE_SOURCES,
+  STORE_PROFILE_SOURCE_LINKS,
+  STORE_PROFILE_SOURCE_LINKS_INDEX_PROFILEID_SOURCEID,
+} from './Constants.ts';
 import { trimmedUrl } from '../Utils.js';
 import Profile from '../models/Profile.js';
 import * as types from './mutation-types.js';
@@ -52,6 +61,36 @@ export async function loadLinks(payload) {
   });
 }
 
+export async function loadProfileSourceLinks(payload) {
+  await dbPromise.then(async function(db) {
+    try {
+      let out = await db.getAllFromIndex(STORE_PROFILE_SOURCE_LINKS, STORE_PROFILE_SOURCE_LINKS_INDEX_PROFILEID_SOURCEID, [payload.profileId - 0, payload.sourceId]);
+      if (out == null) {
+        return;
+      }
+      store.commit(types.LOAD_PROFILE_SOURCE_LINKS, out);
+    } catch (e) {
+      console.log(e);
+      console.log(e.stack);
+    }
+  });
+}
+
+export function loadProfileSourceLink({ profileId, sourceId, linkId }) {
+  dbPromise.then(async function(db) {
+    try {
+      let out = await db.get(STORE_PROFILE_SOURCE_LINKS, [profileId - 0, sourceId, linkId]);
+      if (out == null) {
+        return;
+      }
+      store.commit(types.LOAD_PROFILE_SOURCE_LINK, out);
+    } catch (e) {
+      console.log(e);
+      console.log(e.stack);
+    }
+  });
+}
+
 export function loadLink({ profileId, linkId }) {
   dbPromise.then(async function(db) {
     try {
@@ -74,6 +113,9 @@ export function loadSource(key) {
       if (out == null) {
         return;
       }
+      let stats = {};
+      stats.numLinks = await db.countFromIndex(STORE_PROFILE_SOURCE_LINKS, STORE_PROFILE_SOURCE_LINKS_INDEX_PROFILEID_SOURCEID, key);
+      store.commit(types.LOAD_PROFILE_SOURCE_STATS, stats);
       store.commit(types.LOAD_SOURCE, out);
     } catch (e) {
       console.log(e);
@@ -174,6 +216,14 @@ export function deleteProfileSource(payload) {
       console.log(e);
       console.log(e.stack);
     }
+  });
+}
+
+export function addProfileSourceLink(payload) {
+  dbPromise.then(function(db) {
+    let storeName = STORE_PROFILE_SOURCE_LINKS;
+    payload.url = trimmedUrl(payload.url);
+    db.put(storeName, payload);
   });
 }
 
@@ -306,7 +356,7 @@ export async function setCurUrlLinkStatus() {
     return;
   }
   url = trimmedUrl(url);
-  dbPromise.then(async function(db) {
+  await dbPromise.then(async function(db) {
     try {
       let link = await db.get(STORE_LINKS, [store.state.targetId - 0, url]);
       if (link == null) {

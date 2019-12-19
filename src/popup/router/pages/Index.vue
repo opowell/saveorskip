@@ -146,14 +146,14 @@ export default {
     },
     saveAndGo() {
       this.save();
-      chrome.runtime.sendMessage('go');
+      this.go();
     },
     go() {
-      chrome.runtime.sendMessage('go');
+      chrome.runtime.sendMessage({ action: 'go', profileId: this.targetId });
     },
     skipAndGo() {
       this.skip();
-      chrome.runtime.sendMessage('go');
+      this.go();
     },
     saveAsSource(save) {
       idb.addSources({

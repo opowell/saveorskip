@@ -69,7 +69,7 @@ export default {
         },
         {
           text: 'Sources',
-          to: '{ name: "profileSources", params: { id: this.profileId }}',
+          to: '{ name: "profileSources", params: { id: this.$route.params.id }}',
         },
       ];
     },

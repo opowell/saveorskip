@@ -42,19 +42,24 @@ export default [
     name: 'profiles',
   },
   {
-    path: '/profile/:profileId/sources/:sourceId',
-    component: ProfileSource,
-    name: 'profileSource',
-  },
-  {
     path: '/profile/:id/sources',
     component: ProfileSources,
     name: 'profileSources',
   },
   {
+    path: '/profile/:profileId/sources/:sourceId',
+    component: ProfileSource,
+    name: 'profileSource',
+  },
+  {
     path: '/profile/:profileId/sources/:sourceId/links',
     component: ProfileSourceLinks,
     name: 'profileSourceLinks',
+  },
+  {
+    path: '/profile/:profileId/sources/:sourceId/links/:linkId',
+    component: ProfileSourceLink,
+    name: 'profileSourceLink',
   },
   {
     path: '/scrapers',

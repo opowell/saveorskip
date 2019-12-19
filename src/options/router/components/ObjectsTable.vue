@@ -1,7 +1,7 @@
 <template>
   <div>
     <!-- User Interface controls -->
-    <div style="display: flex">
+    <div style="display: flex; align-items: baseline;">
       <b-input v-model="filter" placeholder="Add / filter" v-on:keyup.enter="tryToAddItem" style="max-width: 400px;" />
       <button :disabled="!canAddItem" @click="addItem">Add</button>
       <div style="flex: 1 1 auto">&nbsp;</div>
@@ -9,9 +9,9 @@
       <div style="flex: 1 1 auto">&nbsp;</div>
       <slot name="header"></slot>
       <button v-if="!isObjArray" @click="duplicate">Duplicate</button>
-      <button v-if="!isObjArray" @click="deleteObject">Delete...</button>
-      <button v-if="!isObjArray" :disabled="!changesPending" :class="{ 'btn-primary': changesPending }" @click="saveObject">Save</button>
-      <button v-if="!isObjArray" @click="reset" :disabled="!changesPending">Reset</button>
+      <button v-if="!isObjArray" @click="deleteObject" title="Delete this object.">Delete...</button>
+      <button v-if="!isObjArray" title="Save the changes to this object." :disabled="!changesPending" :class="{ 'btn-primary': changesPending }" @click="saveObject">Save</button>
+      <button v-if="!isObjArray" title="Reset this object to its original form" @click="reset" :disabled="!changesPending">Reset</button>
     </div>
     <!-- Main table element -->
     <b-table hover show-empty stacked="md" :items="items" :fields="fieldNames" :filter="filter" @row-clicked="clickItem" class="mt-3">

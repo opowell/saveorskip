@@ -15,8 +15,8 @@
       @deleteObject="askDeleteObject"
     >
       <template v-slot:header>
-        <button @click="openLink">Open</button>
-        <button @click="scrapeLink">Scrape</button>
+        <button @click="openLink" title="Open this link in a new window.">Open</button>
+        <button @click="scrapeLink" title="Open and find sources of this link.">Find sources</button>
       </template>
     </objects-table>
   </div>
@@ -26,7 +26,6 @@
 import * as idb from '../../../store/idb.js';
 import Vue from 'vue';
 import ObjectsTable from '../components/ObjectsTable.vue';
-import * as types from '../../../store/mutation-types.js';
 
 export default {
   name: 'ProfileLink',

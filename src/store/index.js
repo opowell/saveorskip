@@ -25,17 +25,18 @@ export default new Vuex.Store({
     // Active tab id
     activeTabId: '',
 
-    // Input for new profile
-    profileInput: '',
-
     // Set of profiles.
     profile: null,
     profileStats: null,
     profiles: [],
     links: [],
     source: null,
+    profileSourceStats: null,
     sources: [],
     link: null,
+    profileSourceLink: null,
+    profileSourceLinks: [],
+    sourceToScrape: null,
 
     // Id of current target.
     targetId: '',

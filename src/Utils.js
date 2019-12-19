@@ -1,12 +1,10 @@
 export function trimmedUrl(url) {
   if (url == null) {
-    debugger;
-    console.log('error trying to trim url');
+    return null;
   }
 
   if (url.includes == null) {
-    debugger;
-    console.log('error trying to trim url, url.includes is not defined');
+    return url;
   }
 
   if (url.includes('://')) {

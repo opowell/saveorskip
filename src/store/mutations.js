@@ -1,7 +1,6 @@
 import * as types from './mutation-types';
 import Profile from '../models/Profile';
 import { Source } from '../models/Source';
-import { dbPromise, STORE_PROFILES } from './Constants.ts';
 import { trimmedUrl } from '../Utils.js';
 
 /**
@@ -40,6 +39,10 @@ export default {
     state.profileStats = payload;
   },
 
+  [types.LOAD_PROFILE_SOURCE_STATS](state, payload) {
+    state.profileSourceStats = payload;
+  },
+
   [types.LOAD_LINKS](state, payload) {
     state.links.splice(0, state.links.length);
     for (let i = 0; i < payload.length; i++) {
@@ -49,6 +52,10 @@ export default {
 
   [types.LOAD_LINK](state, payload) {
     state.link = payload;
+  },
+
+  [types.LOAD_PROFILE_SOURCE_LINK](state, payload) {
+    state.profileSourceLink = payload;
   },
 
   [types.LOAD_SOURCE](state, payload) {
@@ -94,44 +101,51 @@ export default {
     }
   },
 
-  [types.RENAME_PROFILE](state, payload) {
-    dbPromise.then(async function(db) {
-      var tx = db.transaction(STORE_PROFILES, 'readwrite');
-      // var profilesStore = tx.objectStore(storeName);
-      try {
-        let profile = await db.get(STORE_PROFILES, payload.profileId);
-        profile.name = payload.newName;
-        await db.put(STORE_PROFILES, profile);
-        for (let i = 0; i < state.profiles.length; i++) {
-          if (state.profiles[i].name === payload.profileId) {
-            state.profiles[i].name = payload.newName;
-            return;
-          }
-        }
-      } catch (e) {
-        console.log(e);
-        console.log(e.stack);
-        tx.abort();
-      }
-    });
-  },
+  // [types.RENAME_PROFILE](state, payload) {
+  //   dbPromise.then(async function(db) {
+  //     var tx = db.transaction(STORE_PROFILES, 'readwrite');
+  //     // var profilesStore = tx.objectStore(storeName);
+  //     try {
+  //       let profile = await db.get(STORE_PROFILES, payload.profileId);
+  //       profile.name = payload.newName;
+  //       await db.put(STORE_PROFILES, profile);
+  //       for (let i = 0; i < state.profiles.length; i++) {
+  //         if (state.profiles[i].name === payload.profileId) {
+  //           state.profiles[i].name = payload.newName;
+  //           return;
+  //         }
+  //       }
+  //     } catch (e) {
+  //       console.log(e);
+  //       console.log(e.stack);
+  //       tx.abort();
+  //     }
+  //   });
+  // },
 
-  [types.RENAME_SOURCE](state, payload) {
-    for (let i = 0; i < state.profiles.length; i++) {
-      if (state.profiles[i].name === payload.profileId) {
-        let profile = state.profiles[i];
-        let keys = Object.keys(profile.sources);
-        for (let j = 0; j < keys.length; j++) {
-          if (profile.sources[keys[j]] === payload.sourceId) {
-            let key = keys[j];
-            let source = profile.sources[key];
-            source.url = payload.newName;
-            delete profile.sources[key];
-            profile.sources[payload.newName] = source;
-            return;
-          }
-        }
-      }
+  // [types.RENAME_SOURCE](state, payload) {
+  //   for (let i = 0; i < state.profiles.length; i++) {
+  //     if (state.profiles[i].name === payload.profileId) {
+  //       let profile = state.profiles[i];
+  //       let keys = Object.keys(profile.sources);
+  //       for (let j = 0; j < keys.length; j++) {
+  //         if (profile.sources[keys[j]] === payload.sourceId) {
+  //           let key = keys[j];
+  //           let source = profile.sources[key];
+  //           source.url = payload.newName;
+  //           delete profile.sources[key];
+  //           profile.sources[payload.newName] = source;
+  //           return;
+  //         }
+  //       }
+  //     }
+  //   }
+  // },
+
+  [types.LOAD_PROFILE_SOURCE_LINKS](state, payload) {
+    state.profileSourceLinks.splice(0, state.profileSourceLinks.length);
+    for (let i = 0; i < payload.length; i++) {
+      state.profileSourceLinks.push(payload[i]);
     }
   },
 
@@ -142,6 +156,10 @@ export default {
 
   [types.SET_URL_TO_SCRAPE](state, payload) {
     state.urlToScrape = trimmedUrl(payload);
+  },
+
+  [types.SET_SOURCE_TO_SCRAPE](state, payload) {
+    state.sourceToScrape = trimmedUrl(payload);
   },
 
   [types.DUPLICATE_PROFILE](state, payload) {

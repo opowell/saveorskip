@@ -1,55 +1,37 @@
 <template>
   <div>
+    <b-modal id="deleteModal" title="Delete Link" @ok="deleteObject">
+      <p class="my-4">Are you sure you want to delete this link?</p>
+    </b-modal>
     <b-breadcrumb :items="crumbs" />
-    <div>
-      <button>scrape</button>
-      <button @click="deleteLink">delete...</button>
-      <button :class="{ 'btn-primary': changesPending }" @click="saveLink">save</button>
-      <button :class="{ 'btn-primary': changesPending }" @click="reset">reset</button>
-      <button :disabled="removePropertySelect == null" @click="removeProperty">remove property</button>
-      <select v-model="removePropertySelect">
-        <option v-for="fieldName in removableFieldNames" :key="fieldName" :value="fieldName">
-          {{ fieldName }}
-        </option>
-      </select>
-    </div>
-    <div>
-      <b-input-group style="align-items: center;">
-        <b-form-input v-model="filter" placeholder="Add / filter" v-on:keyup.enter="tryToAddProperty" />
-        <b-input-group-append>
-          <b-btn variant="primary" :disabled="!canAddProperty" @click="addProperty">Add</b-btn>
-        </b-input-group-append>
-      </b-input-group>
-    </div>
-    <b-table show-empty hover stacked="md" :items="fields" :fields="fieldDefns" :filter="filter">
-      <template v-slot:cell(name)="data">
-        <div v-if="data.item.name === 'profileId'">profile</div>
-        <div v-else-if="'url' === data.item.name">{{ data.item.name }}</div>
-        <div v-else-if="'saved' === data.item.name">{{ data.item.name }}</div>
-        <input v-else type="text" @change="changeName(data.item.name, $event)" :value="data.item.name" style="width: 100%;" />
+    <objects-table
+      ref="table"
+      :object="link"
+      @create="addProperty"
+      :ineditable-row-names="['profileId', 'sourceId', 'url']"
+      :ineditable-col-names="['profileId', 'sourceId']"
+      @save="saveLink"
+      :fetchData="fetchData"
+      @deleteObject="askDeleteObject"
+    >
+      <template v-slot:header>
+        <button @click="openLink(true)" title="Open this link in a new window.">Open</button>
+        <button @click="scrapeLink" title="Open and find sources of this link.">Find sources</button>
       </template>
-      <template v-slot:cell(value)="data">
-        <select v-if="data.item.name === 'profileId'" @change="changeValue(data.item.name, $event)">
-          <option v-for="profile in profiles" :key="profile.id" value="profile.id" :selected="profile.id == data.item.value">
-            {{ profile.name }}
-          </option>
-        </select>
-        <select v-else-if="data.item.name === 'saved'" @change="changeValue(data.item.name, $event)">
-          <option value="true" :selected="data.item.value == 'true'">yes</option>
-          <option value="false" :selected="data.item.value == 'false'">no</option>
-        </select>
-        <input v-else type="text" @change="changeValue(data.item.name, $event)" :value="data.item.value" style="width: 100%" />
-      </template>
-    </b-table>
+    </objects-table>
   </div>
 </template>
 
 <script>
 import * as idb from '../../../store/idb.js';
 import Vue from 'vue';
+import ObjectsTable from '../components/ObjectsTable.vue';
 
 export default {
-  name: 'ProfileLink',
+  name: 'ProfileSourceLink',
+  components: {
+    ObjectsTable,
+  },
   watch: {
     '$route.params.profileId'(id) {
       this.fetchData();
@@ -57,47 +39,24 @@ export default {
     '$route.params.linkId'(id) {
       this.fetchData();
     },
+    '$route.params.sourceId'(id) {
+      this.fetchData();
+    },
   },
-  data() {
-    return {
-      fieldDefns: [
-        { key: 'name', label: 'Name', sortable: true, class: 'col-name' },
-        { key: 'value', label: 'Value', sortable: true, class: 'col-value' },
-      ],
-      filter: null,
-      removePropertySelect: null,
-      changesPending: false,
-    };
-  },
-  created() {
+  mounted() {
     this.fetchData();
   },
   methods: {
-    changeName(field, event) {
-      let val = this.link[field];
-      delete this.link[field];
-      this.link[event.target.value] = val;
-      this.changesPending = true;
+    async scrapeLink() {
+      chrome.runtime.sendMessage({ action: 'saveSourcesOfUrl', url: this.link.url });
+      this.openLink({ active: false });
     },
-    changeValue(field, event) {
-      this.link[field] = event.target.value;
-      this.changesPending = true;
-    },
-    tryToAddProperty() {
-      if (this.canAddProperty) {
-        this.addProperty();
-      }
+    openLink({ active }) {
+      chrome.tabs.create({ url: 'http://' + this.link.url, active });
     },
     addProperty() {
       Vue.set(this.link, this.filter, '');
-      this.changesPending = true;
-    },
-    removeProperty() {
-      if (this.removePropertySelect == null) {
-        return;
-      }
-      Vue.delete(this.link, this.removePropertySelect);
-      this.changesPending = true;
+      this.$refs.table.changesPending = true;
     },
     saveLink() {
       idb.deleteLink({
@@ -116,17 +75,21 @@ export default {
       }
       this.fetchData();
     },
-    deleteLink() {
+    askDeleteObject() {
+      this.$bvModal.show('deleteModal');
+    },
+    deleteObject() {
       idb.deleteLink({
         profileId: this.profileId,
         linkId: this.linkId,
       });
-      this.$router.push({ name: 'profileLinks', params: { id: this.profileId } });
+      this.$router.push({ name: 'profileSourceLinks', params: { profileId: this.profileId, sourceId: this.sourceId } });
     },
     fetchData() {
-      idb.loadLink({
-        profileId: this.profileId,
-        linkId: this.linkId,
+      idb.loadProfileSourceLink({
+        profileId: this.$route.params.profileId,
+        sourceId: this.$route.params.sourceId,
+        linkId: this.$route.params.linkId,
       });
       idb.loadProfile({
         profileId: this.$route.params.profileId,
@@ -156,6 +119,9 @@ export default {
       }
       return out;
     },
+    sourceId() {
+      return this.$route.params.sourceId;
+    },
     removableFieldNames() {
       let out = [];
       for (let i in this.fieldNames) {
@@ -177,7 +143,7 @@ export default {
       return this.$route.params.linkId;
     },
     link() {
-      return this.$store.state.link;
+      return this.$store.state.profileSourceLink;
     },
     profileId() {
       return this.$route.params.profileId;
@@ -189,6 +155,10 @@ export default {
       return this.profile == null ? '' : this.profile.name;
     },
     crumbs() {
+      let profileId = encodeURIComponent(this.$route.params.profileId);
+      let sourceId = encodeURIComponent(this.$route.params.sourceId);
+      let linkId = encodeURIComponent(this.$route.params.linkId);
+
       return [
         {
           text: 'Home',
@@ -199,16 +169,24 @@ export default {
           href: '#/profiles',
         },
         {
-          text: this.profileName + ' (' + this.profileId + ')',
-          href: '#/profile/' + this.profileId,
+          text: this.profileName,
+          href: '#/profile/' + profileId,
+        },
+        {
+          text: 'Sources',
+          href: '#/profile/' + profileId + '/sources',
+        },
+        {
+          text: this.$route.params.sourceId,
+          href: '#/profile/' + profileId + '/sources/' + sourceId,
         },
         {
           text: 'Links',
-          href: '#/profile/' + this.profileId + '/links',
+          href: '#/profile/' + profileId + '/sources/' + sourceId + '/links',
         },
         {
-          text: this.linkId,
-          href: '#/profile/' + this.profileId + '/sources/' + this.linkId,
+          text: this.$route.params.linkId,
+          href: '#/profile/' + profileId + '/sources/' + sourceId + '/links/' + linkId,
         },
       ];
     },
@@ -219,5 +197,18 @@ export default {
 <style>
 .col-name {
   width: 20rem;
+}
+</style>
+
+<style scoped>
+div.props {
+  color: #444;
+  display: flex;
+  font-size: 1rem;
+  flex-direction: column;
+}
+
+div.props > div {
+  padding: 5px;
 }
 </style>

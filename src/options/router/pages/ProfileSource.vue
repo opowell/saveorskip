@@ -11,15 +11,15 @@
       @save="saveObject"
       :fetchData="fetchData"
       :ineditable-row-names="['saved', 'skipped', 'profileId', 'url', 'points', 'lastScraped', 'nextScrape']"
-      :ineditable-col-names="['profileId']"
+      :ineditable-col-names="['profileId', 'url']"
       @deleteObject="askDeleteObject"
     >
       <template v-slot:header>
-        <button @click="scrape">Scrape</button>
-        <button @click="openLink">Open</button>
+        <button @click="scrape" title="Open and scrape this source for links.">Scrape</button>
+        <button @click="openLink" title="Open this source in a new tab.">Open</button>
       </template>
       <template v-slot:subpages>
-        <router-link :to="{ name: 'profileSourceLinks', params: { profileId: profileId, sourceId: sourceId } }">Scraped links ()</router-link>
+        <router-link :to="{ name: 'profileSourceLinks', params: { profileId: profileId, sourceId: sourceId } }">Scraped links ({{ numLinks }})</router-link>
       </template>
     </objects-table>
   </div>
@@ -28,11 +28,10 @@
 <script>
 import ObjectsTable from '../components/ObjectsTable.vue';
 import * as idb from '../../../store/idb.js';
-import * as types from '../../../store/mutation-types.js';
 import Vue from 'vue';
 
 export default {
-  name: 'Profile',
+  name: 'Source',
   components: {
     ObjectsTable,
   },
@@ -61,9 +60,7 @@ export default {
       });
     },
     async scrape() {
-      await this.$store.commit(types.SET_URL_TO_SCRAPE, this.source.url);
-      this.openLink();
-      chrome.runtime.sendMessage({ action: 'saveSourcesOfUrl', url: this.source.url });
+      chrome.runtime.sendMessage({ action: 'scrapeSource', url: this.source.url });
     },
     openLink() {
       window.open('http://' + this.source.url, '_blank');
@@ -80,13 +77,20 @@ export default {
       let profileId = this.$route.params.profileId - 0;
       let sourceId = this.$route.params.sourceId;
       idb.loadSource([profileId, sourceId]);
-      idb.loadProfile({
-        profileId,
-      });
+      idb.loadProfile({ profileId });
       this.$refs.table.changesPending = false;
     },
   },
   computed: {
+    profileSourceStats() {
+      return this.$store.state.profileSourceStats;
+    },
+    numLinks() {
+      if (this.profileSourceStats == null) {
+        return '';
+      }
+      return this.profileSourceStats.numLinks;
+    },
     profileId() {
       return this.$route.params.profileId - 0;
     },
@@ -97,7 +101,7 @@ export default {
       if (this.profile == null) {
         return '';
       }
-      if (typeof this.profile.name == 'object') {
+      if (typeof this.profile.name === 'object') {
         return JSON.stringify(this.profile.name);
       }
       return this.profile.name;
@@ -151,15 +155,15 @@ export default {
         },
         {
           text: this.profileName,
-          href: '#/profile/' + this.profileId,
+          href: '#/profile/' + this.$route.params.profileId,
         },
         {
           text: 'Sources',
-          href: '#/profile/' + this.profileId + '/sources',
+          href: '#/profile/' + this.$route.params.profileId + '/sources',
         },
         {
           text: this.sourceId,
-          href: '#/profile/' + this.profileId + '/sources/' + this.sourceId,
+          href: '#/profile/' + this.$route.params.profileId + '/sources/' + this.$route.params.sourceId,
         },
       ];
     },

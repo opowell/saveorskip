@@ -40,17 +40,17 @@ export const deleteProfile = ({ commit }, payload) => {
   commit(types.DELETE_PROFILE, payload);
 };
 
-export const renameProfile = ({ commit }, payload) => {
-  commit(types.RENAME_PROFILE, payload);
-};
+// export const renameProfile = ({ commit }, payload) => {
+//   commit(types.RENAME_PROFILE, payload);
+// };
 
 export const duplicateProfile = ({ commit }, payload) => {
   commit(types.DUPLICATE_PROFILE, payload);
 };
 
-export const renameSource = ({ commit }, payload) => {
-  commit(types.RENAME_SOURCE, payload);
-};
+// export const renameSource = ({ commit }, payload) => {
+//   commit(types.RENAME_SOURCE, payload);
+// };
 
 export const duplicateSource = ({ commit }, payload) => {
   commit(types.DUPLICATE_SOURCE, payload);

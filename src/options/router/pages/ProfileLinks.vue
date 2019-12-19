@@ -1,7 +1,7 @@
 <template>
   <div>
     <b-breadcrumb :items="crumbs" />
-    <objects-table ref="table" :object="links" @create="addLink" @click="openLink" :show-del="false" :ineditable-row-names="[]" />
+    <objects-table ref="table" :object="links" @create="addLink" @click="openLink" />
   </div>
 </template>
 

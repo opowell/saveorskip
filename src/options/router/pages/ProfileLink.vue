@@ -1,5 +1,8 @@
 <template>
   <div>
+    <b-modal id="deleteModal" title="Delete Link" @ok="deleteObject">
+      <p class="my-4">Are you sure you want to delete this link?</p>
+    </b-modal>
     <b-breadcrumb :items="crumbs" />
     <objects-table
       ref="table"
@@ -9,6 +12,7 @@
       :ineditable-col-names="['profileId']"
       @save="saveLink"
       :fetchData="fetchData"
+      @deleteObject="askDeleteObject"
     >
       <template v-slot:header>
         <button @click="openLink">Open</button>
@@ -42,9 +46,8 @@ export default {
   },
   methods: {
     async scrapeLink() {
-      await this.$store.commit(types.SET_URL_TO_SCRAPE, this.link.url);
-      this.openLink();
       chrome.runtime.sendMessage({ action: 'saveSourcesOfUrl', url: this.link.url });
+      this.openLink();
     },
     openLink() {
       window.open('http://' + this.link.url, '_blank');
@@ -82,7 +85,10 @@ export default {
       }
       this.fetchData();
     },
-    deleteLink() {
+    askDeleteObject() {
+      this.$bvModal.show('deleteModal');
+    },
+    deleteObject() {
       idb.deleteLink({
         profileId: this.profileId,
         linkId: this.linkId,

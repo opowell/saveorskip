@@ -162,6 +162,21 @@ export function deleteProfile(payload) {
   });
 }
 
+export function deleteProfileSource(payload) {
+  dbPromise.then(async function(db) {
+    var tx = db.transaction(STORE_SOURCES, 'readwrite');
+    var objStore = tx.objectStore(STORE_SOURCES);
+    try {
+      await objStore.delete([payload.profileId, payload.sourceId]);
+      store.commit(types.DELETE_PROFILE_SOURCE, payload);
+    } catch (e) {
+      tx.abort();
+      console.log(e);
+      console.log(e.stack);
+    }
+  });
+}
+
 export function addSources(payload) {
   dbPromise.then(function(db) {
     var tx = db.transaction(STORE_SOURCES, 'readwrite');
@@ -169,6 +184,10 @@ export function addSources(payload) {
     return Promise.all(
       payload.sources.map(async function(item) {
         console.log('Storing source:', item);
+        let storeItem = await sourcesStore.get([item.profileId, item.url]);
+        if (storeItem != null) {
+          item.points += storeItem.points;
+        }
         sourcesStore.put(item);
         store.commit(types.ADD_SOURCE, item);
       })
@@ -227,6 +246,8 @@ export async function saveOrSkipLink(payload) {
     await db.put(storeName, link);
     console.log('Link "' + payload.link.url + '" stored successfully.');
     await setCurUrlLinkStatus();
+    store.commit(types.SET_CUR_URL, payload.link.url);
+    store.commit(types.SET_URL_TO_SCRAPE, payload.link.url);
     chrome.runtime.sendMessage('save');
   });
 }

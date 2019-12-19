@@ -1,6 +1,6 @@
 <template>
   <div id="menu">
-    <div style="display: flex;">
+    <div style="display: flex; padding-bottom: 2px;">
       <span class="menu-tile" @click="saveAndGo" title="Set current link as saved, and go to the next suggestion.">
         <div class="large-tile">
           <i class="far fa-star" style="color: green"></i>
@@ -28,7 +28,6 @@
         </div>
       </span>
     </div>
-    <div class="menu-divider"></div>
     <div class="menu-item" title="The current profile to save links and sources to.">
       <span style="flex: 1 1 auto;">Profile:&nbsp;</span>
       <select v-if="profiles.length > 0" id="target-select" @change="setTargetEv">
@@ -38,7 +37,6 @@
       </select>
       <div v-else>----</div>
     </div>
-    <div class="menu-divider"></div>
     <div class="menu-item" title="The status of the current link on the target as a link.">
       <span style="flex: 1 1 auto;">Link:&nbsp;</span>
       <span class="button-group">
@@ -56,7 +54,6 @@
       </span>
     </div>
     <div class="menu-item" :title="nextLink">Next Link: {{ nextLink }}</div>
-    <div class="menu-divider"></div>
     <div class="menu-item menu-button" @click="showOptions">Manage...</div>
   </div>
 </template>

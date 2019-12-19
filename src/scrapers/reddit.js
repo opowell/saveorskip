@@ -15,6 +15,8 @@ var sos = {
   },
 };
 
+sos.SUBREDDIT_CLASS = '_19bCWnxeTjqzBElWZfIlJb';
+
 sos.MAX_COMMENTERS = 3;
 
 sos.highlightLinks = false;
@@ -63,18 +65,8 @@ sos.getSources = function(saveOrSkip) {
   ];
   // SUBREDDIT
   let subreddit = null;
-  if (document.getElementsByClassName('s1wtsv0-8').length > 0) {
-    // ON PAGE
-    let els = document.getElementsByClassName('s1wtsv0-8');
-    subreddit = sos.buildUrl(els[0].getAttribute('href'));
-  } else {
-    // ON PREVIEW
-    let els = document.querySelectorAll("[data-test-id='post-content'] [data-click-id='subreddit']");
-    if (els.length > 0) {
-      subreddit = sos.buildUrl(els[0].getAttribute('href'));
-    }
-  }
-
+  let name = document.getElementsByClassName('_19bCWnxeTjqzBElWZfIlJb')[0].innerText;
+  subreddit = sos.buildUrl(name);
   sources.push({
     url: subreddit,
     points: sos[saveOrSkip].SUGGESTIONS_SUBREDDIT,

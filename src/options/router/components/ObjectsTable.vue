@@ -38,7 +38,7 @@
         <b-input
           v-else-if="data.value.length === undefined || data.value.length < 80"
           class="form-control"
-          style="width: unset;"
+          style="width: 25rem;"
           type="text"
           @keyup="changeFieldValue(data.item.name, $event)"
           @change="changeFieldValue(data.item.name, $event)"

@@ -1,5 +1,8 @@
 <template>
   <div>
+    <b-modal id="deleteModal" title="Delete Source" @ok="deleteObject">
+      <p class="my-4">Are you sure you want to delete this source?</p>
+    </b-modal>
     <b-breadcrumb :items="crumbs" />
     <objects-table
       ref="table"
@@ -9,6 +12,7 @@
       :fetchData="fetchData"
       :ineditable-row-names="['saved', 'skipped', 'profileId', 'url', 'points', 'lastScraped', 'nextScrape']"
       :ineditable-col-names="['profileId']"
+      @deleteObject="askDeleteObject"
     >
       <template v-slot:header>
         <button @click="scrape">Scrape</button>
@@ -24,7 +28,6 @@
 <script>
 import ObjectsTable from '../components/ObjectsTable.vue';
 import * as idb from '../../../store/idb.js';
-import { STORE_PROFILES } from '../../../store/Constants.ts';
 import * as types from '../../../store/mutation-types.js';
 import Vue from 'vue';
 
@@ -42,6 +45,21 @@ export default {
     this.fetchData();
   },
   methods: {
+    askDeleteObject() {
+      this.$bvModal.show('deleteModal');
+    },
+    deleteObject() {
+      idb.deleteProfileSource({
+        profileId: this.profileId,
+        sourceId: this.sourceId,
+      });
+      this.$router.push({
+        name: 'profileSources',
+        params: {
+          id: this.$route.params.profileId,
+        },
+      });
+    },
     async scrape() {
       await this.$store.commit(types.SET_URL_TO_SCRAPE, this.source.url);
       this.openLink();
@@ -57,12 +75,6 @@ export default {
     saveObject() {
       idb.saveObject(STORE_SOURCES, this.source);
       this.fetchData();
-    },
-    deleteObject: function() {
-      idb.deleteProfile({
-        profileId: this.$route.params.profileId,
-      });
-      this.$router.push({ name: 'profiles' });
     },
     fetchData() {
       let profileId = this.$route.params.profileId - 0;

@@ -9,6 +9,7 @@ global.browser = require('webextension-polyfill');
  * gotoNext - whether or not to move to a new page after saving.
  **/
 function saveOrSkip(gotoNext, action) {
+  console.log('background: saveOrSkip ' + JSON.stringify(action));
   // idb.saveOrSkipLink({
   //   link: store.state.curLink,
   //   action: action,
@@ -110,7 +111,11 @@ function saveSourcesOfUrl(url, cb, action) {
             saveSources(response.sources, cb);
           } else {
             if (cb != null) {
-              cb();
+              try {
+                cb();
+              } catch (err) {
+                console.log('Scraping sources: Error evaluating callback.');
+              }
             }
           }
         });
@@ -229,7 +234,8 @@ chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
 
   switch (action) {
     case 'saveSourcesOfUrl':
-      saveSourcesOfUrl(message.url, {}, 'save');
+      store.commit(types.SET_URL_TO_SCRAPE, message.url);
+      saveSourcesOfUrl(message.url, null, 'save');
       break;
     // case 'openAndScrape':
     //   let url = request.url;
@@ -248,9 +254,10 @@ chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
     case 'pageLoaded':
       let tUrl = trimmedUrl(sender.tab.url);
       console.log('tUrl: ' + tUrl);
+      console.log('state: ' + JSON.stringify(store.state));
       console.log('urlToScrape: ' + store.state.urlToScrape);
       if (tUrl === store.state.urlToScrape) {
-        saveSourcesOfUrl(sender.tab.url);
+        saveSourcesOfUrl(sender.tab.url, null, 'save');
       } else if (sender.tab.id !== store.state.curSuggestionTabId) {
         if (sender.tab.active) {
           store.commit(types.SET_CUR_URL, {

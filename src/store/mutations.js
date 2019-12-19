@@ -85,6 +85,15 @@ export default {
     }
   },
 
+  [types.DELETE_PROFILE_SOURCE](state, payload) {
+    for (let i = 0; i < state.sources.length; i++) {
+      if (state.sources[i].url === payload.sourceId) {
+        state.sources.splice(i, 1);
+        break;
+      }
+    }
+  },
+
   [types.RENAME_PROFILE](state, payload) {
     dbPromise.then(async function(db) {
       var tx = db.transaction(STORE_PROFILES, 'readwrite');

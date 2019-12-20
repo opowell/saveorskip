@@ -5,8 +5,8 @@
       <li>
         <router-link :to="{ name: 'profiles' }">Profiles {{ numProfilesText }}</router-link>
       </li>
-      <li><router-link :to="{ name: 'account' }">Account</router-link></li>
       <li><router-link :to="{ name: 'scrapers' }">Scrapers</router-link></li>
+      <li><router-link :to="{ name: 'settings' }">Settings</router-link></li>
     </ol>
     <button @click="resetDB">Reset DB...</button>
     <b-card bg-variant="light" title="Welcome" style="max-width: 40rem; margin-top: 1rem;">
@@ -26,7 +26,7 @@
 export default {
   name: 'Home',
   computed: {
-    crumbs: function() {
+    crumbs() {
       return [
         {
           text: 'Home',

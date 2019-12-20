@@ -76,6 +76,19 @@ export async function loadProfileSourceLinks(payload) {
   });
 }
 
+export async function getProfileSourceLink({ profileId, sourceId, linkId }) {
+  let out = null;
+  await dbPromise.then(async function(db) {
+    try {
+      out = await db.get(STORE_PROFILE_SOURCE_LINKS, [profileId - 0, sourceId, linkId]);
+    } catch (e) {
+      console.log(e);
+      console.log(e.stack);
+    }
+  });
+  return out;
+}
+
 export function loadProfileSourceLink({ profileId, sourceId, linkId }) {
   dbPromise.then(async function(db) {
     try {
@@ -147,9 +160,9 @@ export function deleteObject(store, key) {
   });
 }
 
-export function saveLink(link) {
+export async function saveLink(link) {
   link.profileId = link.profileId - 0;
-  dbPromise.then(async function(db) {
+  await dbPromise.then(async function(db) {
     try {
       await db.put(STORE_LINKS, link);
     } catch (e) {
@@ -187,6 +200,34 @@ export async function fetchProfiles() {
     await tx.done;
     await store.dispatch('fetchProfiles', profiles);
   });
+}
+
+export async function getProfileSources(profileId) {
+  let out = null;
+  await dbPromise.then(async function(db) {
+    out = await db.getAllFromIndex(STORE_SOURCES, STORE_SOURCES_PROFILEID, profileId - 0);
+  });
+  return out;
+}
+
+export async function getProfileSourceLinks(profileId, sourceId) {
+  let out = null;
+  await dbPromise.then(async function(db) {
+    out = await db.getAllFromIndex(STORE_PROFILE_SOURCE_LINKS, STORE_PROFILE_SOURCE_LINKS_INDEX_PROFILEID_SOURCEID, [profileId - 0, sourceId]);
+  });
+  return out;
+}
+
+export async function getProfileSourceLinksByTimeScraped(profileId, sourceId) {
+  let out = null;
+  await dbPromise.then(async function(db) {
+    let tx = await db.transaction(STORE_PROFILE_SOURCE_LINKS);
+    let objStore = await tx.objectStore(STORE_PROFILE_SOURCE_LINKS);
+    let index = await objStore.index(STORE_PROFILE_SOURCE_LINKS_INDEX_PROFILEID_SOURCEID);
+    let cursor = await index.openCursor(null, 'prev');
+    out = cursor;
+  });
+  return out;
 }
 
 export function deleteProfile(payload) {

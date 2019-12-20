@@ -8,13 +8,11 @@ global.browser = require('webextension-polyfill');
 /*
  * gotoNext - whether or not to move to a new page after saving.
  **/
-function saveOrSkip(gotoNext, action) {
+async function saveOrSkip(gotoNext, action) {
   console.log('background: saveOrSkip ' + JSON.stringify(action));
-  // idb.saveOrSkipLink({
-  //   link: store.state.curLink,
-  //   action: action,
-  //   targetId: store.state.targetId,
-  // });
+  store.state.curLink.profileId = store.state.targetId;
+  store.state.curLink.saved = action === 'save';
+  await idb.saveLink(store.state.curLink);
   let cb = null;
   if (gotoNext === true) {
     cb = showNextPage;
@@ -181,24 +179,51 @@ async function loadNextSuggestion(profileId) {
   store.commit(types.SET_SOURCE_FOR_CUR_URL, {
     url: trimmedUrl(source.url),
   });
-  // If too early to scrape, proceed without scraping.
-  let now = new Date();
-  console.log('comparing now to next scrape date: ' + now + ' vs. ' + source.nextScrape);
-  if (new Date(source.nextScrape) > now) {
-    console.log('drawing item from previously scraped links: ' + source.url);
-    // getLinksCB();
-    let links = await idb.getProfileSourceLinks(profileId, source.url);
-    // TODO
-  }
-  // Otherwise, open the page and scrape it.
-  else {
-    console.log('scraping items from ' + source.url);
-    let newURL = 'http://' + trimmedUrl(source.url);
-    store.commit(types.SET_CUR_URL, {
-      url: trimmedUrl(newURL),
+  let linksCursor = await idb.getProfileSourceLinksByTimeScraped(profileId, source.url);
+  // openUrl('http://' + linksCursor.value.url);
+  // store.commit(types.SET_CUR_SUGGESTION, {
+  //   url: trimmedUrl(linksCursor.value),
+  // });^
+  let nextUrl = linksCursor.value.url;
+  while (nextUrl === null) {
+    // Check if current link already exists on profile.
+    let storeLink = await idb.getProfileSourceLink({
+      profileId,
+      sourceId: source.url,
+      linkId: linksCursor.value.url,
     });
-    openUrl(newURL, true);
+    let alreadyExists = storeLink != null;
+    if (!alreadyExists) {
+      nextUrl = linksCursor.value.url;
+    } else {
+      try {
+        await linksCursor.continue();
+      } catch (err) {
+        nextUrl = -1;
+      }
+    }
   }
+
+  if (nextUrl !== -1) {
+    changeActiveTabToUrl(linksCursor.value.url);
+  }
+
+  // // If too early to scrape, proceed without scraping.
+  // let now = new Date();
+  // console.log('comparing now to next scrape date: ' + now + ' vs. ' + source.nextScrape);
+  // if (new Date(source.nextScrape) > now) {
+  //   console.log('drawing item from previously scraped links: ' + source.url);
+  //   // getLinksCB();
+  // }
+  // // Otherwise, open the page and scrape it.
+  // else {
+  //   console.log('scraping items from ' + source.url);
+  //   let newURL = 'http://' + trimmedUrl(source.url);
+  //   store.commit(types.SET_CUR_URL, {
+  //     url: trimmedUrl(newURL),
+  //   });
+  //   openUrl(newURL, true);
+  // }
 }
 
 chrome.tabs.onActivated.addListener(function(activeInfo) {
@@ -439,7 +464,7 @@ function drawRandomElFromObject(object, scoreFn) {
     }
     let obj = object[keys[k]];
     try {
-      console.log(selText + ' ' + score + ' - ' + obj.points + ' - ' + obj.scrapedLinks.length + ' - ' + obj.nextScrape + ' - ' + obj.url);
+      console.log(selText + ' ' + score + ' - ' + obj.points + ' - ' + ' - ' + obj.nextScrape + ' - ' + obj.url);
     } catch (err) {
       console.error('ERROR');
     }

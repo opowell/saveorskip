@@ -30,6 +30,7 @@ export default {
     },
     async addSource(inputStr) {
       let source = Source(inputStr, this.profileId);
+      source.points = 1;
       await idb.addSources({ sources: [source] });
       this.fetchData();
     },

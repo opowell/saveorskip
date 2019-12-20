@@ -1,4 +1,4 @@
-import Account from './pages/Account';
+import Settings from './pages/Settings';
 import Home from './pages/Home';
 import Profile from './pages/Profile';
 import ProfileLink from './pages/ProfileLink';
@@ -12,9 +12,9 @@ import Scrapers from './pages/Scrapers';
 
 export default [
   {
-    path: '/account',
-    component: Account,
-    name: 'account',
+    path: '/settings',
+    component: Settings,
+    name: 'settings',
   },
   {
     name: 'home',

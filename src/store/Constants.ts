@@ -9,8 +9,9 @@ export const STORE_SOURCES = 'sources';
 export const STORE_SOURCES_PROFILEID = 'profileId';
 export const STORE_PROFILE_SOURCE_LINKS = 'profile_source_links';
 export const STORE_PROFILE_SOURCE_LINKS_INDEX_PROFILEID_SOURCEID = 'profileId_sourceId';
+export const STORE_PROFILE_SOURCE_LINKS_INDEX_PROFILEID_SOURCEID_TIMESCRAPED = 'profileId_sourceId_timeScraped';
 
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 
 // When anything below changes, increment DB_VERSION. This forces the database schema to be updated.
 export const dbPromise = openDB(DB_NAME, DB_VERSION, {
@@ -33,6 +34,7 @@ export const dbPromise = openDB(DB_NAME, DB_VERSION, {
 
       let profileSourceLinksStore = db.createObjectStore(STORE_PROFILE_SOURCE_LINKS, { keyPath: ['profileId', 'sourceId', 'url'] });
       profileSourceLinksStore.createIndex(STORE_PROFILE_SOURCE_LINKS_INDEX_PROFILEID_SOURCEID, ['profileId', 'sourceId']);
+      profileSourceLinksStore.createIndex(STORE_PROFILE_SOURCE_LINKS_INDEX_PROFILEID_SOURCEID, ['profileId', 'sourceId', 'timeScraped']);
     }
   },
 });

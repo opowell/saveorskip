@@ -173,6 +173,7 @@ async function loadNextSuggestion(profileId) {
 
   if (source == null) {
     console.log('error loading suggestion: no source found');
+    return;
   }
 
   console.log('DRAWING SUGGESTION from ' + source.url);
@@ -184,12 +185,11 @@ async function loadNextSuggestion(profileId) {
   // store.commit(types.SET_CUR_SUGGESTION, {
   //   url: trimmedUrl(linksCursor.value),
   // });^
-  let nextUrl = linksCursor.value.url;
+  let nextUrl = null;
   while (nextUrl === null) {
     // Check if current link already exists on profile.
-    let storeLink = await idb.getProfileSourceLink({
+    let storeLink = await idb.getProfileLink({
       profileId,
-      sourceId: source.url,
       linkId: linksCursor.value.url,
     });
     let alreadyExists = storeLink != null;
@@ -197,6 +197,11 @@ async function loadNextSuggestion(profileId) {
       nextUrl = linksCursor.value.url;
     } else {
       try {
+        await idb.deleteProfileSourceLink({
+          profileId,
+          sourceId: source.url,
+          linkId: linksCursor.value.url,
+        });
         await linksCursor.continue();
       } catch (err) {
         nextUrl = -1;
@@ -325,7 +330,7 @@ chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
 function scrapeSource(url) {
   store.commit(types.SET_URL_TO_SCRAPE, null);
   store.commit(types.SET_SOURCE_TO_SCRAPE, url);
-  window.open('http://' + url, '_blank');
+  chrome.tabs.create({ url: 'http://' + url, active: false });
 }
 
 // Save current tab as a source.
@@ -427,7 +432,8 @@ function drawRandomElFromObject(object, scoreFn) {
   let keys = Object.keys(object);
   let scores = [];
   for (let i = 0; i < keys.length; i++) {
-    let score = scoreFn(object[keys[i]]);
+    let key = keys[i];
+    let score = scoreFn(object[key]);
     scores.push(score);
     if (score > 0) {
       sum = sum + score;
@@ -464,7 +470,7 @@ function drawRandomElFromObject(object, scoreFn) {
     }
     let obj = object[keys[k]];
     try {
-      console.log(selText + ' ' + score + ' - ' + obj.points + ' - ' + ' - ' + obj.nextScrape + ' - ' + obj.url);
+      console.log(selText + ' ' + score + ' - ' + obj.points + ' - ' + obj.nextScrape + ' - ' + obj.url);
     } catch (err) {
       console.error('ERROR');
     }
@@ -488,17 +494,19 @@ function scoreFnHot(src) {
 }
 
 function scoreFnJustPoints(src) {
-  if (src.points < 1) {
+  let p = src.points - 0;
+  if (p < 1) {
     return 0;
   }
 
-  let now = new Date();
-  // eslint-disable-next-line prettier/prettier
-  if (src.nextScrape != null && src.scrapedLinks != null && new Date(src.nextScrape) > now && src.scrapedLinks.length === 0) {
-    return 0;
-  }
+  // TODO: If source is not due to be scraped, and has no scraped links, return 0.
+  // let now = new Date();
+  // // eslint-disable-next-line prettier/prettier
+  // if (src.nextScrape != null && src.scrapedLinks != null && new Date(src.nextScrape) > now && src.scrapedLinks.length === 0) {
+  //   return 0;
+  // }
 
-  return src.points;
+  return p;
 }
 
 // Whether or not an array of links contains a particular link

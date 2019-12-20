@@ -34,7 +34,7 @@ export const dbPromise = openDB(DB_NAME, DB_VERSION, {
 
       let profileSourceLinksStore = db.createObjectStore(STORE_PROFILE_SOURCE_LINKS, { keyPath: ['profileId', 'sourceId', 'url'] });
       profileSourceLinksStore.createIndex(STORE_PROFILE_SOURCE_LINKS_INDEX_PROFILEID_SOURCEID, ['profileId', 'sourceId']);
-      profileSourceLinksStore.createIndex(STORE_PROFILE_SOURCE_LINKS_INDEX_PROFILEID_SOURCEID, ['profileId', 'sourceId', 'timeScraped']);
+      profileSourceLinksStore.createIndex(STORE_PROFILE_SOURCE_LINKS_INDEX_PROFILEID_SOURCEID_TIMESCRAPED, ['profileId', 'sourceId', 'timeScraped']);
     }
   },
 });

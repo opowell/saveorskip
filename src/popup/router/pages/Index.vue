@@ -37,7 +37,7 @@
       </select>
       <div v-else>----</div>
     </div>
-    <div class="menu-item" title="The status of the current link on the target as a link.">
+    <div class="menu-item" title="The status of the current link on the current profile as a link.">
       <span style="flex: 1 1 auto;">Link:&nbsp;</span>
       <span class="button-group">
         <i title="Current link is a saved link." class="far fa-star" @click="save" :class="{ bgselected: linkSaved }" style="color: green"></i>
@@ -45,7 +45,7 @@
         <i title="Current link is a not a link on the current profile." class="fas fa-trash" @click="removeLink" :class="{ bgselected: linkNeither }" style="color: grey"></i>
       </span>
     </div>
-    <div class="menu-item" title="The status of the current link on the target as a source.">
+    <div class="menu-item" title="The status of the current link on the current profile as a source.">
       <span style="flex: 1 1 auto;">Source:&nbsp;</span>
       <span class="button-group">
         <i title="Current link is a saved source." class="far fa-star" @click="saveAsSource(true)" :class="{ bgselected: sourceSaved }" style="color: green"></i>

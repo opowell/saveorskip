@@ -8,6 +8,7 @@ import {
   STORE_SOURCES,
   STORE_PROFILE_SOURCE_LINKS,
   STORE_PROFILE_SOURCE_LINKS_INDEX_PROFILEID_SOURCEID,
+  STORE_PROFILE_SOURCE_LINKS_INDEX_PROFILEID_SOURCEID_TIMESCRAPED,
 } from './Constants.ts';
 import { trimmedUrl } from '../Utils.js';
 import Profile from '../models/Profile.js';
@@ -89,6 +90,19 @@ export async function getProfileSourceLink({ profileId, sourceId, linkId }) {
   return out;
 }
 
+export async function getProfileLink({ profileId, linkId }) {
+  let out = null;
+  await dbPromise.then(async function(db) {
+    try {
+      out = await db.get(STORE_LINKS, [profileId - 0, linkId]);
+    } catch (e) {
+      console.log(e);
+      console.log(e.stack);
+    }
+  });
+  return out;
+}
+
 export function loadProfileSourceLink({ profileId, sourceId, linkId }) {
   dbPromise.then(async function(db) {
     try {
@@ -130,6 +144,17 @@ export function loadSource(key) {
       stats.numLinks = await db.countFromIndex(STORE_PROFILE_SOURCE_LINKS, STORE_PROFILE_SOURCE_LINKS_INDEX_PROFILEID_SOURCEID, key);
       store.commit(types.LOAD_PROFILE_SOURCE_STATS, stats);
       store.commit(types.LOAD_SOURCE, out);
+    } catch (e) {
+      console.log(e);
+      console.log(e.stack);
+    }
+  });
+}
+
+export async function deleteProfileSourceLink({ profileId, sourceId, linkId }) {
+  await dbPromise.then(async function(db) {
+    try {
+      await db.delete(STORE_PROFILE_SOURCE_LINKS, [profileId - 0, sourceId, linkId]);
     } catch (e) {
       console.log(e);
       console.log(e.stack);
@@ -223,8 +248,9 @@ export async function getProfileSourceLinksByTimeScraped(profileId, sourceId) {
   await dbPromise.then(async function(db) {
     let tx = await db.transaction(STORE_PROFILE_SOURCE_LINKS);
     let objStore = await tx.objectStore(STORE_PROFILE_SOURCE_LINKS);
-    let index = await objStore.index(STORE_PROFILE_SOURCE_LINKS_INDEX_PROFILEID_SOURCEID);
-    let cursor = await index.openCursor(null, 'prev');
+    let index = await objStore.index(STORE_PROFILE_SOURCE_LINKS_INDEX_PROFILEID_SOURCEID_TIMESCRAPED, [profileId, sourceId]);
+    let keyRng = IDBKeyRange.bound([profileId, sourceId, new Date(2019, 1)], [profileId, sourceId, new Date()]);
+    let cursor = await index.openCursor(keyRng, 'prev');
     out = cursor;
   });
   return out;
@@ -337,7 +363,12 @@ export async function saveOrSkipLink(payload) {
     await db.put(storeName, link);
     console.log('Link "' + payload.link.url + '" stored successfully.');
     await setCurUrlLinkStatus();
-    store.commit(types.SET_CUR_URL, payload.link.url);
+    store.commit(types.SET_CUR_URL, { url: payload.link.url });
+    chrome.runtime.sendMessage({
+      action: 'storeDispatch',
+      storeAction: types.SET_CUR_URL,
+      storePayload: payload,
+    });
     store.commit(types.SET_URL_TO_SCRAPE, payload.link.url);
     chrome.runtime.sendMessage('save');
   });
@@ -397,15 +428,21 @@ export async function setCurUrlLinkStatus() {
     return;
   }
   url = trimmedUrl(url);
-  await dbPromise.then(async function(db) {
+
+  dbPromise.then(async function(db) {
     try {
+      let payload = 'neither';
       let link = await db.get(STORE_LINKS, [store.state.targetId - 0, url]);
       if (link == null) {
-        console.log('link is null, return neither');
-        store.commit(types.SET_CUR_URL_LINK_STATUS, 'neither');
       } else {
-        store.commit(types.SET_CUR_URL_LINK_STATUS, link.saved);
+        payload = link.saved;
       }
+      store.commit(types.SET_CUR_URL_LINK_STATUS, payload);
+      chrome.runtime.sendMessage({
+        action: 'storeDispatch',
+        storeAction: types.SET_CUR_URL_LINK_STATUS,
+        storePayload: payload,
+      });
     } catch (e) {
       console.log(e);
       console.log(e.stack);

@@ -9,10 +9,11 @@
       :object="profile"
       @create="addProperty"
       :ineditable-row-names="['id', 'name']"
-      :ineditable-col-names="['id']"
+      :ineditable-col-names="['id', 'Links', 'Sources']"
       @save="saveObject"
       :fetchData="fetchData"
       @deleteObject="askDeleteObject"
+      :links="fieldLinks"
     >
       <template v-slot:header>
         <button @click="exportProfile">Export</button>
@@ -111,6 +112,12 @@ export default {
     },
   },
   computed: {
+    fieldLinks() {
+      return {
+        Links: '#/profile/' + this.$route.params.id + '/links',
+        Sources: '#/profile/' + this.$route.params.id + '/sources',
+      };
+    },
     canAddProperty() {
       return this.filter != null && this.filter.length > 0 && (this.profile == null || this.profile[this.filter] == null);
     },

@@ -14,6 +14,9 @@ export default {
   components: {
     ObjectsTable,
   },
+  mounted() {
+    this.fetchData();
+  },
   computed: {
     profiles() {
       return this.$store.state.profiles;
@@ -32,6 +35,9 @@ export default {
     },
   },
   methods: {
+    fetchData() {
+      idb.fetchProfiles();
+    },
     addProfile(inputStr) {
       idb.addProfile(inputStr);
     },

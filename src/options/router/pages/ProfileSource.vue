@@ -10,13 +10,14 @@
       @create="addProperty"
       @save="saveObject"
       :fetchData="fetchData"
-      :ineditable-row-names="['saved', 'skipped', 'profileId', 'url', 'points', 'lastScraped', 'nextScrape']"
-      :ineditable-col-names="['profileId', 'url']"
+      :ineditable-row-names="['saved', 'skipped', 'profileId', 'url', 'points', 'lastScraped', 'nextScrape', 'Scraped links']"
+      :ineditable-col-names="['profileId', 'url', 'Scraped links']"
+      :links="fieldLinks"
       @deleteObject="askDeleteObject"
     >
       <template v-slot:header>
         <button @click="scrape" title="Open and scrape this source for links.">Scrape</button>
-        <button @click="openLink" title="Open this source in a new tab.">Open</button>
+        <button @click="openLink(true)" title="Open this source in a new tab.">Open</button>
       </template>
       <template v-slot:subpages>
         <router-link :to="{ name: 'profileSourceLinks', params: { profileId: profileId, sourceId: sourceId } }">Scraped links ({{ numLinks }})</router-link>
@@ -63,8 +64,8 @@ export default {
     async scrape() {
       chrome.runtime.sendMessage({ action: 'scrapeSource', url: this.source.url });
     },
-    openLink() {
-      window.open('http://' + this.source.url, '_blank');
+    openLink({ active }) {
+      chrome.tabs.create({ url: 'http://' + this.source.url, active });
     },
     addProperty(inputStr) {
       Vue.set(this.source, inputStr, '');
@@ -83,6 +84,11 @@ export default {
     },
   },
   computed: {
+    fieldLinks() {
+      return {
+        'Scraped links': '#/profile/' + this.$route.params.profileId + '/sources/' + encodeURIComponent(this.$route.params.sourceId) + '/links',
+      };
+    },
     profileSourceStats() {
       return this.$store.state.profileSourceStats;
     },
@@ -116,17 +122,17 @@ export default {
     profileStats() {
       return this.$store.state.profileStats;
     },
-    fields() {
-      let out = [];
-      for (let i = 0; i < this.fieldNames.length; i++) {
-        let fieldName = this.fieldNames[i];
-        out.push({
-          name: fieldName,
-          value: this.profile[fieldName],
-        });
-      }
-      return out;
-    },
+    // fields() {
+    //   let out = [];
+    //   for (let i = 0; i < this.fieldNames.length; i++) {
+    //     let fieldName = this.fieldNames[i];
+    //     out.push({
+    //       name: fieldName,
+    //       value: this.profile[fieldName],
+    //     });
+    //   }
+    //   return out;
+    // },
     removableFieldNames() {
       let out = [];
       for (let i in this.fieldNames) {

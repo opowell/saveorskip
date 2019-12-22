@@ -40,10 +40,7 @@ export default new Vuex.Store({
 
     // Id of current target.
     targetId: '',
-    curLink: {
-      url: '',
-      title: '',
-    },
+    curLink: null,
     curUrlAsLink: null,
     curUrlAsSource: null,
     curSuggestion: null,

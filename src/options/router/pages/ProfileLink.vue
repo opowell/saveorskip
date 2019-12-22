@@ -15,7 +15,7 @@
       @deleteObject="askDeleteObject"
     >
       <template v-slot:header>
-        <button @click="openLink" title="Open this link in a new window.">Open</button>
+        <button @click="openLink(true)" title="Open this link in a new window.">Open</button>
         <button @click="scrapeLink" title="Open and find sources of this link.">Find sources</button>
       </template>
     </objects-table>
@@ -46,10 +46,10 @@ export default {
   methods: {
     async scrapeLink() {
       chrome.runtime.sendMessage({ action: 'saveSourcesOfUrl', url: this.link.url });
-      this.openLink();
+      this.openLink({ active: false });
     },
-    openLink() {
-      window.open('http://' + this.link.url, '_blank');
+    openLink({ active }) {
+      chrome.tabs.create({ url: 'http://' + this.link.url, active });
     },
     tryToAddProperty() {
       if (this.canAddProperty) {

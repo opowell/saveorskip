@@ -5,8 +5,6 @@
       <b-input v-model="filter" placeholder="Add / filter" v-on:keyup.enter="tryToAddItem" style="max-width: 400px;" />
       <button :disabled="!canAddItem" @click="addItem">Add</button>
       <div style="flex: 1 1 auto">&nbsp;</div>
-      <slot name="subpages"></slot>
-      <div style="flex: 1 1 auto">&nbsp;</div>
       <slot name="header"></slot>
       <button v-if="!isObjArray" @click="duplicate">Duplicate</button>
       <button v-if="!isObjArray" @click="deleteObject" title="Delete this object.">Delete...</button>
@@ -16,7 +14,10 @@
     <!-- Main table element -->
     <b-table hover show-empty stacked="md" :items="items" :fields="fieldNames" :filter="filter" @row-clicked="clickItem" class="mt-3">
       <template v-slot:cell(name)="data">
-        <div :title="data.value" v-if="!canEditCell('name', data.item)">
+        <a v-if="isLink(data.value)" :title="data.value" :href="links[data.value]">
+          {{ data.value }}
+        </a>
+        <div v-else-if="!canEditCell('name', data.item)" :title="data.value">
           {{ data.value }}
         </div>
         <b-input v-else type="text" @change="changeFieldName(data.item.name, $event)" @keyup="changeFieldName(data.item.name, $event)" :value="data.value" style="width: 100%" />
@@ -62,7 +63,7 @@ import * as idb from '../../../store/idb.js';
 import Vue from 'vue';
 
 export default {
-  props: ['object', 'ineditableRowNames', 'ineditableColNames', 'store', 'fetchData'],
+  props: ['object', 'ineditableRowNames', 'ineditableColNames', 'store', 'fetchData', 'links'],
   data() {
     return {
       sortDesc: true,
@@ -72,6 +73,12 @@ export default {
     };
   },
   methods: {
+    isLink(propertyName) {
+      if (this.links == null) {
+        return false;
+      }
+      return this.links[propertyName] != null;
+    },
     changeFieldName(field, value) {
       if (value.target != null) {
         value = value.target.value;
@@ -210,12 +217,13 @@ export default {
           let item = this.object[i];
           for (let a in item) {
             if (!out.includes(a)) {
-              out.push({
+              let field = {
                 key: a,
                 label: a,
                 class: 'table-cell',
                 sortable: true,
-              });
+              };
+              out.push(field);
             }
           }
         }

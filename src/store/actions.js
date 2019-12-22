@@ -95,3 +95,7 @@ export const loadLinks = ({ commit }, payload) => {
 export const loadProfile = ({ commit }, payload) => {
   commit(types.LOAD_PROFILE, payload);
 };
+
+export const loadProfileStats = ({ commit }, payload) => {
+  commit(types.LOAD_PROFILE_STATS, payload);
+};

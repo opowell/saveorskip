@@ -235,28 +235,40 @@ chrome.tabs.onActivated.addListener(function(activeInfo) {
   store.commit(types.SET_ACTIVE_TAB_ID, {
     tabId: activeInfo.tabId,
   });
-  chrome.tabs.get(activeInfo.tabId, function(tab) {
-    store.commit(types.SET_CUR_URL, {
-      url: tab.url,
-      title: tab.title,
-    });
-    idb.setCurUrlLinkStatus();
-    idb.setCurUrlSourceStatus();
-  });
+  chrome.tabs.sendMessage(activeInfo.tabId, { action: 'getLink' }, getLinkCB);
+  // chrome.tabs.get(activeInfo.tabId, function(tab) {
+  // store.commit(types.SET_CUR_URL, {
+  //   url: tab.url,
+  //   title: tab.title,
+  // });
+  // idb.setCurUrlLinkStatus();
+  // idb.setCurUrlSourceStatus();
+  // });
 });
 
 chrome.tabs.onUpdated.addListener(async function(tabId, changeInfo, tab) {
-  if (tabId === store.state.activeTabId && tab.url != null) {
-    store.commit(types.SET_CUR_URL, {
-      url: tab.url,
-      title: tab.title,
-    });
-    await idb.setCurUrlLinkStatus();
-    await idb.setCurUrlSourceStatus();
+  if (tabId === store.state.activeTabId) {
+    chrome.tabs.sendMessage(tab.id, { action: 'getLink' }, getLinkCB);
   }
+  // if (tabId === store.state.activeTabId && tab.url != null) {
+  //   store.commit(types.SET_CUR_URL, {
+  //     url: tab.url,
+  //     title: tab.title,
+  //   });
+  //   await idb.setSkippedIfNew(store.state.targetId, {url: tab.url, title: tab.title});
+  //   await idb.setCurUrlLinkStatus();
+  //   await idb.setCurUrlSourceStatus();
+  // }
 });
 
-chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
+async function getLinkCB(link) {
+  await idb.setCurLink(link);
+  await idb.setSkippedIfNew(store.state.targetId, link);
+  await idb.setCurUrlLinkStatus();
+  await idb.setCurUrlSourceStatus();
+}
+
+chrome.runtime.onMessage.addListener(async function(message, sender, sendResponse) {
   console.log('message received from ' + trimmedUrl(sender.url) + ': ' + JSON.stringify(message));
 
   let action = message;
@@ -291,14 +303,18 @@ chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
         saveAsSource(sender.tab);
       } else if (sender.tab.id !== store.state.curSuggestionTabId) {
         if (sender.tab.active) {
-          store.commit(types.SET_CUR_URL, {
-            url: sender.tab.url,
-          });
+          // store.commit(types.SET_CUR_URL, {
+          //   url: sender.tab.url,
+          // });
           store.commit(types.SET_ACTIVE_TAB_ID, {
             tabId: sender.tab.id,
           });
-          idb.setCurUrlLinkStatus();
-          idb.setCurUrlSourceStatus();
+          console.log('sender.tab.url: ' + sender.tab.url);
+          console.log('message.link.url: ' + message.link.url);
+          await idb.setCurLink(message.link);
+          await idb.setSkippedIfNew(store.state.targetId, message.link);
+          await idb.setCurUrlLinkStatus();
+          await idb.setCurUrlSourceStatus();
         }
       } else {
         saveAsSource(sender.tab);

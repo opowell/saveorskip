@@ -14,17 +14,38 @@ import { trimmedUrl } from '../Utils.js';
 import Profile from '../models/Profile.js';
 import * as types from './mutation-types.js';
 
+/**
+ * Should not call Vuex store directly. Instead, broadcast messages to all tabs with the corresponding store modification. Tabs then update their own stores (and Vue instances).
+ */
+async function dispatchToStores(fn, payload) {
+  // Call for this page.
+  await store.dispatch(fn, payload);
+
+  // Call for all other pages.
+  chrome.runtime.sendMessage({
+    action: 'storeDispatch',
+    storeAction: fn,
+    storePayload: payload,
+  });
+}
+
+export async function setCurLink(payload) {
+  await dispatchToStores('setCurUrl', payload);
+}
+
 export function loadProfile(payload) {
   dbPromise.then(async function(db) {
     try {
       let profile = await db.get(STORE_PROFILES, payload.profileId - 0);
-      store.commit(types.LOAD_PROFILE, profile);
       if (profile != null) {
         let stats = {};
         stats.numLinks = await db.countFromIndex(STORE_LINKS, 'profileId', profile.id);
         stats.numSources = await db.countFromIndex(STORE_SOURCES, 'profileId', profile.id);
-        store.commit(types.LOAD_PROFILE_STATS, stats);
+        await dispatchToStores('loadProfileStats', stats);
+        profile['Links'] = stats.numLinks;
+        profile['Sources'] = stats.numSources;
       }
+      await dispatchToStores('loadProfile', profile);
     } catch (e) {
       console.log(e);
       console.log(e.stack);
@@ -39,11 +60,33 @@ export function loadSources(payload) {
       if (out == null) {
         return;
       }
+      for (let i = 0; i < out.length; i++) {
+        out[i]['Scraped links'] = await db.countFromIndex(STORE_PROFILE_SOURCE_LINKS, STORE_PROFILE_SOURCE_LINKS_INDEX_PROFILEID_SOURCEID, [out[i].profileId, out[i].url]);
+      }
       store.commit(types.LOAD_SOURCES, out);
     } catch (e) {
       console.log(e);
       console.log(e.stack);
     }
+  });
+}
+
+export async function setSkippedIfNew(profileId, link) {
+  if (link == null || link.url == null) {
+    console.log('no url given');
+    return;
+  }
+  link.url = trimmedUrl(link.url);
+  await dbPromise.then(async function(db) {
+    let storeItem = await db.get(STORE_LINKS, [profileId - 0, link.url]);
+    if (storeItem != null) {
+      return;
+    }
+    await saveOrSkipLink({
+      action: 'skip',
+      targetId: profileId,
+      link,
+    });
   });
 }
 
@@ -142,6 +185,7 @@ export function loadSource(key) {
       }
       let stats = {};
       stats.numLinks = await db.countFromIndex(STORE_PROFILE_SOURCE_LINKS, STORE_PROFILE_SOURCE_LINKS_INDEX_PROFILEID_SOURCEID, key);
+      out['Scraped links'] = stats.numLinks;
       store.commit(types.LOAD_PROFILE_SOURCE_STATS, stats);
       store.commit(types.LOAD_SOURCE, out);
     } catch (e) {
@@ -223,7 +267,7 @@ export async function fetchProfiles() {
       profiles.push(values[i]);
     }
     await tx.done;
-    await store.dispatch('fetchProfiles', profiles);
+    dispatchToStores('fetchProfiles', profiles);
   });
 }
 
@@ -363,13 +407,8 @@ export async function saveOrSkipLink(payload) {
     await db.put(storeName, link);
     console.log('Link "' + payload.link.url + '" stored successfully.');
     await setCurUrlLinkStatus();
-    store.commit(types.SET_CUR_URL, { url: payload.link.url });
-    chrome.runtime.sendMessage({
-      action: 'storeDispatch',
-      storeAction: types.SET_CUR_URL,
-      storePayload: payload,
-    });
-    store.commit(types.SET_URL_TO_SCRAPE, payload.link.url);
+    dispatchToStores('setCurUrl', payload);
+    dispatchToStores('setUrlToScrape', payload.link.url);
     chrome.runtime.sendMessage('save');
   });
 }
@@ -414,6 +453,12 @@ export function addProfile(payload) {
   });
 }
 
+export async function setTarget(profileId) {
+  dispatchToStores(types.SET_TARGET, profileId);
+  setCurUrlLinkStatus();
+  setCurUrlSourceStatus();
+}
+
 export async function setCurUrlLinkStatus() {
   let url = store.state.curLink.url;
   console.log('setting current url as link: ' + store.state.targetId + '/' + url);
@@ -437,12 +482,7 @@ export async function setCurUrlLinkStatus() {
       } else {
         payload = link.saved;
       }
-      store.commit(types.SET_CUR_URL_LINK_STATUS, payload);
-      chrome.runtime.sendMessage({
-        action: 'storeDispatch',
-        storeAction: types.SET_CUR_URL_LINK_STATUS,
-        storePayload: payload,
-      });
+      dispatchToStores('setCurUrlLinkStatus', payload);
     } catch (e) {
       console.log(e);
       console.log(e.stack);

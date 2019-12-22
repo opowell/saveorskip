@@ -53,6 +53,21 @@
         <i title="Current link is a not a source on the current profile." class="fas fa-trash" @click="deleteSource" :class="{ bgselected: sourceNeither }" style="color: grey"></i>
       </span>
     </div>
+    <div class="menu-divider" />
+    <div class="menu-item">Current page</div>
+    <template v-for="(value, name) in curLink">
+      <div v-if="name !== 'links' && name !== 'sources'" class="menu-item" :title="value">
+        <span style="flex: 1 1 auto; margin-right: 10px;">{{ name }}: </span>
+        <span>{{ value }}</span>
+      </div>
+    </template>
+    <div class="menu-divider" />
+    <div class="menu-item">Links</div>
+    <div class="menu-item" style="word-break: break-all; white-space: initial;" v-for="(link, index) in curLink.links" :title="link">{{ index + 1 }}. {{ link }}</div>
+    <div class="menu-divider" />
+    <div class="menu-item">Sources</div>
+    <div class="menu-item" style="word-break: break-all; white-space: initial;" v-for="(source, index) in curLink.sources" :title="source">{{ index + 1 }}. {{ source }}</div>
+    <div class="menu-divider" />
     <div class="menu-item" :title="nextLink">Next Link: {{ nextLink }}</div>
     <div class="menu-item menu-button" @click="showOptions">Manage...</div>
   </div>
@@ -65,7 +80,6 @@ import * as types from '../../../store/mutation-types.js';
 export default {
   async mounted() {
     await idb.fetchProfiles();
-    console.log('mounted: ' + this.hasTarget + this.profiles.length);
     if (!this.hasTarget && this.profiles != null && this.profiles.length > 0) {
       this.setTarget(this.profiles[0].id);
     }
@@ -108,6 +122,9 @@ export default {
     targetId() {
       return this.$store.state.targetId;
     },
+    curLink() {
+      return this.$store.state.curLink;
+    },
     target() {
       return this.$store.getters.curTarget;
     },
@@ -126,9 +143,10 @@ export default {
       this.setTarget(event.target.value);
     },
     setTarget(profileId) {
-      this.$store.commit(types.SET_TARGET, profileId - 0);
-      idb.setCurUrlLinkStatus();
-      idb.setCurUrlSourceStatus();
+      // this.$store.commit(types.SET_TARGET, profileId - 0);
+      // idb.setCurUrlLinkStatus();
+      // idb.setCurUrlSourceStatus();
+      idb.setTarget(profileId - 0);
     },
     save() {
       idb.saveOrSkipLink({

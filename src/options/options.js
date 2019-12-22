@@ -21,3 +21,17 @@ window.vue = new Vue({
     idb.fetchProfiles();
   },
 });
+
+chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
+  console.log('received message: ' + JSON.stringify(request));
+  let action = request;
+  if (request.action != null) {
+    action = request.action;
+  }
+
+  switch (action) {
+    case 'storeDispatch':
+      store.dispatch(request.storeAction, request.storePayload);
+      break;
+  }
+});

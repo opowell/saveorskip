@@ -12,12 +12,13 @@ async function saveOrSkip(gotoNext, action) {
   console.log('background: saveOrSkip ' + JSON.stringify(action));
   store.state.curLink.profileId = store.state.targetId;
   store.state.curLink.saved = action === 'save';
-  await idb.saveLink(store.state.curLink);
-  let cb = null;
+  // await idb.saveLink(store.state.curLink);
+  // let cb = null;
   if (gotoNext === true) {
-    cb = showNextPage;
+    // cb = showNextPage;
+    showNextPage();
   }
-  saveSourcesOfUrl(store.state.curLink.url, cb, action);
+  // saveSourcesOfUrl(store.state.curLink.url, cb, action);
 }
 
 // function saveOrSkipLink(gotoNext, action, link) {
@@ -162,6 +163,15 @@ function showNextPage(profileId) {
   loadNextSuggestion(profileId);
 }
 
+function scrapeIfNecessary(source) {
+  let now = new Date();
+  console.log('comparing now to next scrape date: ' + now + ' vs. ' + source.nextScrape);
+  if (new Date(source.nextScrape) < now) {
+    console.log('scraping items from ' + source.url);
+    scrapeSource(source.url);
+  }
+}
+
 async function loadNextSuggestion(profileId) {
   console.log('Loading next link');
   let sources = await idb.getProfileSources(profileId);
@@ -169,69 +179,53 @@ async function loadNextSuggestion(profileId) {
     console.log('no sources found');
     return;
   }
-  let source = drawRandomElFromObject(sources, scoreFn);
 
-  if (source == null) {
-    console.log('error loading suggestion: no source found');
-    return;
-  }
+  while (true) {
+    let source = drawRandomElFromObject(sources, scoreFn);
+    if (source == null) {
+      console.log('error loading suggestion: no source found');
+      return;
+    }
+    scrapeIfNecessary(source);
 
-  console.log('DRAWING SUGGESTION from ' + source.url);
-  store.commit(types.SET_SOURCE_FOR_CUR_URL, {
-    url: trimmedUrl(source.url),
-  });
-  let linksCursor = await idb.getProfileSourceLinksByTimeScraped(profileId, source.url);
-  // openUrl('http://' + linksCursor.value.url);
-  // store.commit(types.SET_CUR_SUGGESTION, {
-  //   url: trimmedUrl(linksCursor.value),
-  // });^
-  let nextUrl = null;
-  while (nextUrl === null) {
-    // Check if current link already exists on profile.
-    let storeLink = await idb.getProfileLink({
-      profileId,
-      linkId: linksCursor.value.url,
+    console.log('DRAWING SUGGESTION from ' + source.url);
+    store.commit(types.SET_SOURCE_FOR_CUR_URL, {
+      url: trimmedUrl(source.url),
     });
-    let alreadyExists = storeLink != null;
-    if (!alreadyExists) {
-      nextUrl = linksCursor.value.url;
-    } else {
-      try {
-        await idb.deleteProfileSourceLink({
-          profileId,
-          sourceId: source.url,
-          linkId: linksCursor.value.url,
-        });
-        await linksCursor.continue();
-      } catch (err) {
-        nextUrl = -1;
+    let linksCursor = await idb.getProfileSourceLinksByTimeScraped(profileId, source.url);
+    let nextUrl = null;
+    while (nextUrl === null) {
+      // Check if current link already exists on profile.
+      let storeLink = await idb.getProfileLink({
+        profileId,
+        linkId: linksCursor.value.url,
+      });
+      let alreadyExists = storeLink != null;
+      if (!alreadyExists) {
+        nextUrl = linksCursor.value.url;
+      } else {
+        try {
+          await idb.deleteProfileSourceLink({
+            profileId,
+            sourceId: source.url,
+            linkId: linksCursor.value.url,
+          });
+          await linksCursor.continue();
+        } catch (err) {
+          nextUrl = null;
+        }
       }
     }
-  }
 
-  if (nextUrl !== -1) {
-    changeActiveTabToUrl(linksCursor.value.url);
+    if (nextUrl !== null) {
+      changeActiveTabToUrl(linksCursor.value.url);
+      return;
+    }
   }
-
-  // // If too early to scrape, proceed without scraping.
-  // let now = new Date();
-  // console.log('comparing now to next scrape date: ' + now + ' vs. ' + source.nextScrape);
-  // if (new Date(source.nextScrape) > now) {
-  //   console.log('drawing item from previously scraped links: ' + source.url);
-  //   // getLinksCB();
-  // }
-  // // Otherwise, open the page and scrape it.
-  // else {
-  //   console.log('scraping items from ' + source.url);
-  //   let newURL = 'http://' + trimmedUrl(source.url);
-  //   store.commit(types.SET_CUR_URL, {
-  //     url: trimmedUrl(newURL),
-  //   });
-  //   openUrl(newURL, true);
-  // }
 }
 
 chrome.tabs.onActivated.addListener(function(activeInfo) {
+  console.log('tab activated: ' + JSON.stringify(activeInfo));
   store.commit(types.SET_ACTIVE_TAB_ID, {
     tabId: activeInfo.tabId,
   });
@@ -344,34 +338,12 @@ chrome.runtime.onMessage.addListener(async function(message, sender, sendRespons
 });
 
 function scrapeSource(url) {
-  store.commit(types.SET_URL_TO_SCRAPE, null);
   store.commit(types.SET_SOURCE_TO_SCRAPE, url);
   chrome.tabs.create({ url: 'http://' + url, active: false });
 }
 
 // Save current tab as a source.
 function saveAsSource(tab) {
-  // let sources = store.getters.curTarget.sources;
-  // let sourceName = trimmedUrl(tab.url);
-  // let source = sources[sourceName];
-  // if (source == null) {
-  //   debugger;
-  //   return;
-  //   // storeDispatch('addSources', [
-  //   //   {
-  //   //     url: trimmedUrl(tab.url),
-  //   //     points: 2,
-  //   //     saved: false,
-  //   //   },
-  //   // ]);
-  // }
-  // source.lastScraped = new Date().toJSON();
-
-  // // Set earliest time of next scrape.
-  // let now = new Date().getTime();
-  // console.log('current time: ' + new Date(now).toJSON());
-  // source.nextScrape = new Date(now + store.state.scrapeDelayMS).toJSON();
-  // console.log(source.url + ': next scrape not before ' + source.nextScrape);
   chrome.tabs.sendMessage(tab.id, { action: 'getLinks' }, getLinksCB);
 }
 
@@ -389,57 +361,6 @@ async function getLinksCB(links) {
     link.sourceId = store.state.sourceToScrape;
     idb.addProfileSourceLink(link);
   }
-
-  // let sources = store.getters.curTarget.sources;
-  // let targetLinks = store.getters.curTarget.links;
-
-  // let sourceName = trimmedUrl(store.state.sourceForCurUrl);
-  // let source = sources[sourceName];
-
-  // // Store new links on the source.
-  // // Newest links are at the front of the array. Start with oldest links first.
-  // for (let i = links.length - 1; i >= 0; i--) {
-  //   let link = links[i];
-  //   // If the given link is not already on the source, add it (to the start) of the list.
-  //   if (!arrayContainsLink(source.scrapedLinks, link) && !objContainsLink(targetLinks, link)) {
-  //     source.scrapedLinks.unshift(link);
-  //   }
-  // }
-
-  // let updated = false;
-  // for (let i = 0; i < source.scrapedLinks.length; i++) {
-  //   let link = source.scrapedLinks[i];
-  //   console.log('checking sug. link: ' + link.url);
-  //   if (store.state.curSuggestion !== link.url && !objContainsLink(targetLinks, link)) {
-  //     console.log('found new link: ' + link.url);
-  //     if (store.state.needCurSuggestion) {
-  //       console.log('saving cur suggestion as ' + link.url);
-  //       changeActiveTabToUrl(link.url);
-  //       store.commit(types.SET_SOURCE_FOR_CUR_URL, {
-  //         url: sourceName,
-  //       });
-  //       store.commit(types.SET_NEED_CUR_SUGGESTION, {
-  //         value: false,
-  //       });
-  //       loadNextSuggestion();
-  //     } else {
-  //       console.log('saving next suggestion as ' + link.url);
-  //       store.commit(types.SET_NEXT_SUGGESTION, {
-  //         url: link.url,
-  //       });
-  //     }
-  //     updated = true;
-  //     break;
-  //   } else {
-  //     source.scrapedLinks.splice(i, 1);
-  //     i--;
-  //   }
-  // }
-  // // Try again.
-  // if (!updated) {
-  //   console.log('no update found, trying again');
-  //   showNextPage();
-  // }
 }
 
 function drawRandomElFromObject(object, scoreFn) {

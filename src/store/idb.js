@@ -397,12 +397,12 @@ export async function saveOrSkipLink(payload) {
       profileId: payload.targetId - 0,
       timeSaved: new Date(),
     };
-    if (payload.props != null) {
-      let propKeys = Object.keys(payload.props);
-      for (let i = 0; i < propKeys.length; i++) {
-        link[propKeys[i]] = payload.props[i];
-      }
+    // if (payload.props != null) {
+    let propKeys = Object.keys(payload.link);
+    for (let i = 0; i < propKeys.length; i++) {
+      link[propKeys[i]] = payload.link[i];
     }
+    // }
     console.log('Storing link:', link);
     await db.put(storeName, link);
     console.log('Link "' + payload.link.url + '" stored successfully.');

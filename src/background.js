@@ -257,7 +257,8 @@ chrome.tabs.onUpdated.addListener(async function(tabId, changeInfo, tab) {
 
 async function getLinkCB(link) {
   await idb.setCurLink(link);
-  await idb.setSkippedIfNew(store.state.targetId, link);
+  await idb.setSkippedLinkIfNew(store.state.targetId, link);
+  await idb.setSkippedSourceIfNew(store.state.targetId, link);
   await idb.setCurUrlLinkStatus();
   await idb.setCurUrlSourceStatus();
 }
@@ -306,7 +307,8 @@ chrome.runtime.onMessage.addListener(async function(message, sender, sendRespons
           console.log('sender.tab.url: ' + sender.tab.url);
           console.log('message.link.url: ' + message.link.url);
           await idb.setCurLink(message.link);
-          await idb.setSkippedIfNew(store.state.targetId, message.link);
+          await idb.setSkippedLinkIfNew(store.state.targetId, message.link);
+          await idb.setSkippedSourceIfNew(store.state.targetId, message.link);
           await idb.setCurUrlLinkStatus();
           await idb.setCurUrlSourceStatus();
         }
@@ -507,3 +509,8 @@ function changeActiveTabToUrl(newURL) {
 
 // SETTINGS
 let scoreFn = scoreFnJustPoints;
+
+// // Load scrapers
+// import ScraperReddit from './scrapers/reddit.js';
+
+// let reddit = {};

@@ -10,9 +10,28 @@ import {
   STORE_PROFILE_SOURCE_LINKS_INDEX_PROFILEID_SOURCEID,
   STORE_PROFILE_SOURCE_LINKS_INDEX_PROFILEID_SOURCEID_TIMESCRAPED,
 } from './Constants.ts';
-import { trimmedUrl } from '../Utils.js';
+// import { trimmedUrl } from '../Utils.js';
 import Profile from '../models/Profile.js';
 import * as types from './mutation-types.js';
+
+function trimmedUrl(url) {
+  if (url == null) {
+    return null;
+  }
+
+  if (url.includes == null) {
+    return url;
+  }
+
+  if (url.includes('://')) {
+    url = url.substring(url.indexOf('://') + '://'.length);
+  }
+  if (url.endsWith('/')) {
+    url = url.substring(0, url.length - 1);
+  }
+
+  return url;
+}
 
 /**
  * Should not call Vuex store directly. Instead, broadcast messages to all tabs with the corresponding store modification. Tabs then update their own stores (and Vue instances).
@@ -71,21 +90,42 @@ export function loadSources(payload) {
   });
 }
 
-export async function setSkippedIfNew(profileId, link) {
+export async function setSkippedLinkIfNew(profileId, link) {
   if (link == null || link.url == null) {
     console.log('no url given');
     return;
   }
   link.url = trimmedUrl(link.url);
+  let storeItem = null;
   await dbPromise.then(async function(db) {
-    let storeItem = await db.get(STORE_LINKS, [profileId - 0, link.url]);
+    storeItem = await db.get(STORE_LINKS, [profileId - 0, link.url]);
+  });
+
+  if (storeItem != null) {
+    return;
+  }
+  await saveOrSkipLink({
+    action: 'skip',
+    targetId: profileId,
+    link,
+  });
+}
+
+export async function setSkippedSourceIfNew(profileId, source) {
+  if (source == null || source.url == null) {
+    console.log('no url given');
+    return;
+  }
+  source.url = trimmedUrl(source.url);
+  await dbPromise.then(async function(db) {
+    let storeItem = await db.get(STORE_SOURCES, [profileId - 0, source.url]);
     if (storeItem != null) {
       return;
     }
-    await saveOrSkipLink({
+    await saveOrSkipSource({
       action: 'skip',
       targetId: profileId,
-      link,
+      source,
     });
   });
 }
@@ -376,7 +416,8 @@ export async function setSourceSaved(payload) {
     if (payload.props != null) {
       let propKeys = Object.keys(payload.props);
       for (let i = 0; i < propKeys.length; i++) {
-        link[propKeys[i]] = payload.props[i];
+        let propKey = propKeys[i];
+        link[propKey] = payload.props[propKey];
       }
     }
     console.log('Storing source:', link);
@@ -388,21 +429,54 @@ export async function setSourceSaved(payload) {
 }
 
 export async function saveOrSkipLink(payload) {
+  let link = payload.link;
+  link.url = trimmedUrl(link.url);
+  link.saved = payload.action === 'save';
+  link.profileId = payload.targetId - 0;
+  link.timeSaved = new Date();
+
+  let storeObject = null;
+  await dbPromise.then(async function(db) {
+    storeObject = await db.get(STORE_LINKS, [link.profileId, link.url]);
+  });
+
+  if (storeObject != null && storeObject.saved !== link.saved) {
+    let sources = link.sources;
+    if (storeObject.saved && storeObject.sourcesForSave != null) {
+      sources = storeObject.sourcesForSave;
+    } else if (!storeObject.saved && storeObject.sourcesForSkip != null) {
+      sources = storeObject.sourcesForSkip;
+    }
+    for (let i in sources) {
+      let source = sources[i];
+      source.points = -source.points;
+      await saveOrSkipSource({
+        targetId: source.profileId,
+        source,
+        action: storeObject.saved ? 'save' : 'skip',
+      });
+    }
+  }
+
+  // Process sources.
+  let sources = link.sources;
+  if (payload.action === 'save' && link.sourcesForSave != null) {
+    sources = link.sourcesForSave;
+  } else if (payload.action === 'skip' && link.sourcesForSkip != null) {
+    sources = link.sourcesForSkip;
+  }
+  for (let i in sources) {
+    let source = sources[i];
+    await saveOrSkipSource({
+      targetId: payload.targetId,
+      source,
+      action: 'skip', // TODO: check if source exists. update, instead of overwrite.
+    });
+  }
+
+  // Process link itself.
   await dbPromise.then(async function(db) {
     let storeName = STORE_LINKS;
-    let link = {
-      url: trimmedUrl(payload.link.url),
-      title: payload.link.title,
-      saved: payload.action === 'save',
-      profileId: payload.targetId - 0,
-      timeSaved: new Date(),
-    };
-    // if (payload.props != null) {
-    let propKeys = Object.keys(payload.link);
-    for (let i = 0; i < propKeys.length; i++) {
-      link[propKeys[i]] = payload.link[i];
-    }
-    // }
     console.log('Storing link:', link);
     await db.put(storeName, link);
     console.log('Link "' + payload.link.url + '" stored successfully.');
@@ -410,6 +484,32 @@ export async function saveOrSkipLink(payload) {
     dispatchToStores('setCurUrl', payload);
     dispatchToStores('setUrlToScrape', payload.link.url);
     chrome.runtime.sendMessage('save');
+  });
+}
+
+export async function saveOrSkipSource(payload) {
+  let source = payload.source;
+  await dbPromise.then(async function(db) {
+    source.url = trimmedUrl(source.url);
+    source.saved = payload.action === 'save';
+    source.profileId = payload.targetId - 0;
+    source.timeSaved = new Date();
+    // delete source.sources;
+    // delete source.sourcesForSave;
+    // delete source.sourcesForSkip;
+
+    let storeName = STORE_SOURCES;
+    console.log('Storing source:', source);
+    let storeObject = await db.get(storeName, [source.profileId, source.url]);
+    if (storeObject != null) {
+      source.points = source.points - 0 + storeObject.points;
+    }
+    await db.put(storeName, source);
+    console.log('Source "' + source.url + '" stored successfully.');
+    await setCurUrlSourceStatus();
+    // dispatchToStores('setCurUrl', payload);
+    // dispatchToStores('setUrlToScrape', payload.link.url);
+    // chrome.runtime.sendMessage('save');
   });
 }
 

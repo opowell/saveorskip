@@ -19,7 +19,6 @@ sos.SUBREDDIT_CLASS = '_19bCWnxeTjqzBElWZfIlJb';
 
 sos.MAX_COMMENTERS = 3;
 
-sos.highlightLinks = false;
 sos.closeAfterScrape = true;
 
 sos.trimmedUrl = function(url) {
@@ -73,12 +72,6 @@ sos.getLinks = function() {
       continue;
     }
 
-    if (sos.highlightLinks) {
-      linkEl.style.color = 'white';
-      linkEl.style['background-color'] = '#1A73E8';
-      linkEl.style.padding = '3px';
-      linkEl.style.margin = '2px';
-    }
     links.push({
       url: 'http://www.reddit.com' + linkEl.getAttribute('href'),
       title: linkEl.text,
@@ -106,12 +99,16 @@ sos.getPosterName = function() {
 // Get the sources of this page.
 sos.getSources = function(saveOrSkip) {
   console.log('get sources (' + saveOrSkip + ')');
-  let sources = [
-    {
+  let sources = [];
+
+  // REDDIT
+  if (sos.trimmedUrl(window.location.href) !== 'www.reddit.com') {
+    sources.push({
       url: 'www.reddit.com',
       points: sos[saveOrSkip].SUGGESTIONS_DOMAIN,
-    },
-  ];
+    });
+  }
+
   // SUBREDDIT
   try {
     let subreddit = null;
@@ -136,31 +133,33 @@ sos.getSources = function(saveOrSkip) {
     }
   } catch (err) {}
 
-  try {
-    let commenters = document.getElementsByClassName('_23wugcdiaj44hdfugIAlnX');
-    console.log('found ' + commenters.length + ' commenters');
-    // Skip author and logged-in user.
-    let startAt = 2;
-    let skipNames = [];
-    let numFound = 0;
-    skipNames.push(commenters[0].getAttribute('href'));
-    skipNames.push(commenters[1].getAttribute('href'));
-    for (let i = startAt; i < commenters.length; i++) {
-      let commenterLink = sos.buildUrl(commenters[i].getAttribute('href'));
-      if (posterLink !== commenterLink && !skipNames.includes(commenters[i].getAttribute('href'))) {
-        skipNames.push(commenters[i].getAttribute('href'));
-        numFound++;
-        sources.push({
-          url: commenterLink,
-          points: sos[saveOrSkip].SUGGESTIONS_COMMENTER,
-        });
-        if (numFound >= sos.MAX_COMMENTERS) {
-          break;
+  if (sos.isPost()) {
+    try {
+      let commenters = document.getElementsByClassName('_23wugcdiaj44hdfugIAlnX');
+      console.log('found ' + commenters.length + ' commenters');
+      // Skip author and logged-in user.
+      let startAt = 2;
+      let skipNames = [];
+      let numFound = 0;
+      skipNames.push(commenters[0].getAttribute('href'));
+      skipNames.push(commenters[1].getAttribute('href'));
+      for (let i = startAt; i < commenters.length; i++) {
+        let commenterLink = sos.buildUrl(commenters[i].getAttribute('href'));
+        if (posterLink !== commenterLink && !skipNames.includes(commenters[i].getAttribute('href'))) {
+          skipNames.push(commenters[i].getAttribute('href'));
+          numFound++;
+          sources.push({
+            url: commenterLink,
+            points: sos[saveOrSkip].SUGGESTIONS_COMMENTER,
+          });
+          if (numFound >= sos.MAX_COMMENTERS) {
+            break;
+          }
         }
       }
+    } catch (err) {
+      console.log(err);
     }
-  } catch (err) {
-    console.log(err);
   }
 
   console.log('returning sources: ' + sos.objJoin(sources, '\n'));
@@ -216,25 +215,25 @@ sos.getUrlSources = function(targetUrl, sendResponse, saveOrSkip) {
   sendResponse(sources);
 };
 
-var observeDOM = (function() {
-  var MutationObserver = window.MutationObserver || window.WebKitMutationObserver;
+// var observeDOM = (function() {
+//   var MutationObserver = window.MutationObserver || window.WebKitMutationObserver;
 
-  return function(obj, callback) {
-    if (!obj || !obj.nodeType === 1) return; // validation
+//   return function(obj, callback) {
+//     if (!obj || !obj.nodeType === 1) return; // validation
 
-    if (MutationObserver) {
-      // define a new observer
-      var obs = new MutationObserver(function(mutations, observer) {
-        if (mutations[0].addedNodes.length || mutations[0].removedNodes.length) callback(mutations[0]);
-      });
-      // have the observer observe foo for changes in children
-      obs.observe(obj, { childList: true, subtree: true });
-    } else if (window.addEventListener) {
-      obj.addEventListener('DOMNodeInserted', callback, false);
-      obj.addEventListener('DOMNodeRemoved', callback, false);
-    }
-  };
-})();
+//     if (MutationObserver) {
+//       // define a new observer
+//       var obs = new MutationObserver(function(mutations, observer) {
+//         if (mutations[0].addedNodes.length || mutations[0].removedNodes.length) callback(mutations[0]);
+//       });
+//       // have the observer observe foo for changes in children
+//       obs.observe(obj, { childList: true, subtree: true });
+//     } else if (window.addEventListener) {
+//       obj.addEventListener('DOMNodeInserted', callback, false);
+//       obj.addEventListener('DOMNodeRemoved', callback, false);
+//     }
+//   };
+// })();
 
 //   https://stackoverflow.com/questions/3219758/detect-changes-in-the-dom
 // Observe the DOM element for the list of posts:
@@ -277,12 +276,13 @@ sos.pageLoaded = false;
 
 sos.getLink = function() {
   let links = sos.getLinks();
-  let sources = sos.getSources('save');
+  let sourcesForSave = sos.getSources('save');
+  let sourcesForSkip = sos.getSources('skip');
   let out = {
     url: sos.trimmedUrl(location.href),
     title: document.title,
-    abc: 'def',
-    sources,
+    sourcesForSave,
+    sourcesForSkip,
     links,
   };
   if (sos.isRegularPost()) {
@@ -339,7 +339,7 @@ sos.onPageLoad = function() {
   }
 };
 
-// if (sos.isPageWithLinks()) {
+// // if (sos.isPageWithLinks()) {
 setTimeout(sos.onPageLoad, 7000);
 // } else {
 //   sos.onPageLoad();

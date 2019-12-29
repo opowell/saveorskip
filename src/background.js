@@ -272,6 +272,9 @@ chrome.runtime.onMessage.addListener(async function(message, sender, sendRespons
   }
 
   switch (action) {
+    case 'storeDispatch':
+      idb.dispatchToStores(message.storeAction, message.storePayload);
+      break;
     case 'saveSourcesOfUrl':
       store.commit(types.SET_URL_TO_SCRAPE, message.url);
       saveSourcesOfUrl(message.url, null, 'save');
@@ -301,11 +304,10 @@ chrome.runtime.onMessage.addListener(async function(message, sender, sendRespons
           // store.commit(types.SET_CUR_URL, {
           //   url: sender.tab.url,
           // });
+          // idb.setCurLink(sender.tab.url);
           store.commit(types.SET_ACTIVE_TAB_ID, {
             tabId: sender.tab.id,
           });
-          console.log('sender.tab.url: ' + sender.tab.url);
-          console.log('message.link.url: ' + message.link.url);
           await idb.setCurLink(message.link);
           await idb.setSkippedLinkIfNew(store.state.targetId, message.link);
           await idb.setSkippedSourceIfNew(store.state.targetId, message.link);

@@ -13,6 +13,10 @@ export const STORE_PROFILE_SOURCE_LINKS_INDEX_PROFILEID_SOURCEID_TIMESCRAPED = '
 
 const DB_VERSION = 3;
 
+if (!('indexedDB' in window)) {
+  console.log("This browser doesn't support IndexedDB");
+}
+
 // When anything below changes, increment DB_VERSION. This forces the database schema to be updated.
 export const dbPromise = openDB(DB_NAME, DB_VERSION, {
   upgrade(db, oldVersion, newVersion, transaction) {

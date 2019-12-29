@@ -52,6 +52,8 @@ This extension has generic code for finding links on any webpage, however it als
 
 - `npm run watch:dev`
 
+Reload any previously open tabs that you want to test content scripts on.
+
 ## Deployment
 
 1. Compile the extension: `npm run build`
@@ -75,5 +77,5 @@ This extension has generic code for finding links on any webpage, however it als
 Vuex store has separate instances for:
 
 - background.js
-- options.js?
-- popup.js?
+- options.js
+- popup.js

@@ -12,21 +12,36 @@ sos.trimmedUrl = function(url) {
   return url;
 };
 
-sos.getLinks = function(sendResponse) {
+sos.getLinksWithResponse = function(sendResponse) {
+  let links = sos.getLinks();
+  if (sendResponse != null) {
+    sendResponse(links);
+  }
+  if (links.length > 0 && sos.closeAfterScrape) {
+    window.close();
+  }
+};
+
+sos.getLinks = function() {
   let links = [];
   let linkEls = document.querySelectorAll('a');
   for (let i = 0; i < linkEls.length; i++) {
     let url = linkEls[i].getAttribute('href');
+    if (url == null) {
+      continue;
+    }
     url = sos.buildUrl(url);
-    links.push(url);
+    if (!links.includes(url)) {
+      links.push(url);
+    }
   }
-  sendResponse(links);
-  window.close();
+  return links;
 };
 
 sos.buildUrl = function(url) {
   if (!url.includes('://')) {
-    url = sos.trimmedUrl(location.origin) + '/' + sos.trimmedUrl(url);
+    url = sos.trimmedUrl(location.origin) + (url.startsWith('/') ? '' : '/') + sos.trimmedUrl(url);
+    url = sos.trimmedUrl(url);
   } else {
     url = sos.trimmedUrl(url);
   }
@@ -47,24 +62,46 @@ sos.getUrlSources = function(url, sendResponse) {
   sendResponse(sources);
 };
 
-sos.getSources = function(sendResponse) {
+sos.getSources = function() {
   let sources = [];
-  sendResponse({ sources: sources });
+  return sources;
 };
 
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
   console.log('sos received message: ' + request.action);
 
   if (request.action === 'getSources') {
-    sos.getSources(sendResponse);
-  } else if (request.action == 'getUrlSources') {
+    let sources = sos.getSources();
+    sendResponse({ sources });
+  } else if (request.action === 'getUrlSources') {
     sos.getUrlSources(request.url, sendResponse);
-  } else if (request.action == 'getLinks') {
-    sos.getLinks(sendResponse);
+  } else if (request.action === 'getLinks') {
+    sos.getLinksWithResponse(sendResponse);
+  } else if (request.action === 'getLink') {
+    let link = sos.getLink();
+    console.log('got link: ' + JSON.stringify(link));
+    sendResponse(link);
   } else {
     console.log('sos unknown message: ' + request.action);
     sendResponse({}); // Send nothing..
   }
 });
 
-chrome.runtime.sendMessage('pageLoaded');
+sos.getLink = function() {
+  let links = sos.getLinks();
+  let sources = sos.getSources();
+  let out = {
+    url: sos.trimmedUrl(location.href),
+    title: document.title,
+    sources,
+    links,
+  };
+  return out;
+};
+
+let link = sos.getLink();
+
+chrome.runtime.sendMessage({
+  action: 'pageLoaded',
+  link,
+});

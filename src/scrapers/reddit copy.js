@@ -1,3 +1,14 @@
+let scraper = {};
+
+// This page represented as an object: url, title, links, sources and anything else.
+scraper.getObject = function() {};
+// Links of this page, if it were a source.
+scraper.getLinks = function() {};
+// Get sources of the given url, typically this page.
+scraper.getSourcesOf = function(url) {};
+// Get sources of the given page.
+scraper.getSourcesOfSelf = function() {};
+
 var sos = {
   save: {
     SUGGESTIONS_SUBREDDIT: 3,
@@ -257,7 +268,7 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 
   if (request.action === 'getSources') {
     let sources = sos.getSources(request.saveOrSkip);
-    sendResponse({ sources });
+    sendResponse({ sources: sources });
   } else if (request.action === 'getUrlSources') {
     sos.getUrlSources(request.url, sendResponse, request.saveOrSkip);
   } else if (request.action === 'getLinks') {

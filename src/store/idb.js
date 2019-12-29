@@ -36,57 +36,42 @@ function trimmedUrl(url) {
 /**
  * Should not call Vuex store directly. Instead, broadcast messages to all tabs with the corresponding store modification. Tabs then update their own stores (and Vue instances).
  */
-async function dispatchToStores(fn, payload) {
+export async function dispatchToStores(functionName, payload) {
   // Call for this page.
-  await store.dispatch(fn, payload);
+  await store.dispatch(functionName, payload);
 
   // Call for all other pages.
   chrome.runtime.sendMessage({
     action: 'storeDispatch',
-    storeAction: fn,
+    storeAction: functionName,
     storePayload: payload,
   });
 }
 
 export async function setCurLink(payload) {
+  if (payload === null) {
+    debugger;
+  }
   await dispatchToStores('setCurUrl', payload);
 }
 
 export function loadProfile(payload) {
   dbPromise.then(async function(db) {
-    try {
-      let profile = await db.get(STORE_PROFILES, payload.profileId - 0);
-      if (profile != null) {
-        let stats = {};
-        stats.numLinks = await db.countFromIndex(STORE_LINKS, 'profileId', profile.id);
-        stats.numSources = await db.countFromIndex(STORE_SOURCES, 'profileId', profile.id);
-        await dispatchToStores('loadProfileStats', stats);
-        profile['Links'] = stats.numLinks;
-        profile['Sources'] = stats.numSources;
-      }
-      await dispatchToStores('loadProfile', profile);
-    } catch (e) {
-      console.log(e);
-      console.log(e.stack);
-    }
+    let profile = await db.get(STORE_PROFILES, payload.profileId - 0);
+    profile['Links'] = await db.countFromIndex(STORE_LINKS, 'profileId', profile.id);
+    profile['Sources'] = await db.countFromIndex(STORE_SOURCES, 'profileId', profile.id);
+    dispatchToStores('loadProfile', profile);
   });
 }
 
 export function loadSources(payload) {
   dbPromise.then(async function(db) {
-    try {
-      let out = await db.getAllFromIndex(STORE_SOURCES, STORE_SOURCES_PROFILEID, payload.profileId - 0);
-      if (out == null) {
-        return;
-      }
-      for (let i = 0; i < out.length; i++) {
-        out[i]['Scraped links'] = await db.countFromIndex(STORE_PROFILE_SOURCE_LINKS, STORE_PROFILE_SOURCE_LINKS_INDEX_PROFILEID_SOURCEID, [out[i].profileId, out[i].url]);
-      }
-      store.commit(types.LOAD_SOURCES, out);
-    } catch (e) {
-      console.log(e);
-      console.log(e.stack);
+    let out = await db.getAllFromIndex(STORE_SOURCES, STORE_SOURCES_PROFILEID, payload.profileId - 0);
+    for (let i = 0; i < out.length; i++) {
+      // eslint-disable-next-line prettier/prettier
+      out[i]['Scraped links'] = await db.countFromIndex(STORE_PROFILE_SOURCE_LINKS, STORE_PROFILE_SOURCE_LINKS_INDEX_PROFILEID_SOURCEID, [out[i].profileId, out[i].url]);
     }
+    dispatchToStores('loadSources', out);
   });
 }
 
@@ -97,17 +82,16 @@ export async function setSkippedLinkIfNew(profileId, link) {
   }
   link.url = trimmedUrl(link.url);
   let storeItem = null;
-  await dbPromise.then(async function(db) {
+  dbPromise.then(async function(db) {
     storeItem = await db.get(STORE_LINKS, [profileId - 0, link.url]);
-  });
-
-  if (storeItem != null) {
-    return;
-  }
-  await saveOrSkipLink({
-    action: 'skip',
-    targetId: profileId,
-    link,
+    if (storeItem != null) {
+      return;
+    }
+    saveOrSkipLink({
+      action: 'skip',
+      targetId: profileId,
+      link,
+    });
   });
 }
 
@@ -336,6 +320,7 @@ export async function getProfileSourceLinksByTimeScraped(profileId, sourceId) {
     let keyRng = IDBKeyRange.bound([profileId, sourceId, new Date(2019, 1)], [profileId, sourceId, new Date()]);
     let cursor = await index.openCursor(keyRng, 'prev');
     out = cursor;
+    await tx.done;
   });
   return out;
 }
@@ -347,6 +332,7 @@ export function deleteProfile(payload) {
     try {
       await profilesStore.delete(payload.profileId);
       store.dispatch('deleteProfile', payload);
+      await tx.done;
     } catch (e) {
       tx.abort();
       console.log(e);
@@ -362,6 +348,7 @@ export function deleteProfileSource(payload) {
     try {
       await objStore.delete([payload.profileId, payload.sourceId]);
       store.commit(types.DELETE_PROFILE_SOURCE, payload);
+      await tx.done;
     } catch (e) {
       tx.abort();
       console.log(e);
@@ -529,64 +516,57 @@ export async function removeSource(payload) {
   });
 }
 
-export function addProfile(payload) {
+export async function addProfile(payload) {
   let profile = new Profile(payload);
   dbPromise.then(async function(db) {
     var tx = db.transaction(STORE_PROFILES, 'readwrite');
     var profilesStore = tx.objectStore(STORE_PROFILES);
     try {
-      await Promise.all(
-        [profile].map(function(item) {
-          let toSave = {
-            name: item.name,
-          };
-          profilesStore.put(toSave);
-          store.commit(types.ADD_PROFILE, toSave.name);
-        })
-      );
+      let toSave = {
+        name: profile.name,
+      };
+      profilesStore.put(toSave);
+      store.commit(types.ADD_PROFILE, toSave.name);
       fetchProfiles();
     } catch (e) {
       tx.abort();
       console.log(e);
       console.log(e.stack);
     }
+    await tx.done;
   });
 }
 
 export async function setTarget(profileId) {
-  dispatchToStores(types.SET_TARGET, profileId);
+  dispatchToStores('setTarget', profileId);
   setCurUrlLinkStatus();
   setCurUrlSourceStatus();
 }
 
 export async function setCurUrlLinkStatus() {
   let url = store.state.curLink.url;
-  console.log('setting current url as link: ' + store.state.targetId + '/' + url);
+  // console.log('setting status of current page as link: ' + store.state.targetId + '/' + url);
   if (store.state.targetId == null) {
     console.log('no current target');
-    store.commit(types.SET_CUR_URL_LINK_STATUS, 'neither');
+    dispatchToStores(setCurUrlLinkStatus, 'neither');
     return;
   }
   if (url == null) {
     console.log('no link');
-    store.commit(types.SET_CUR_URL_LINK_STATUS, 'neither');
+    dispatchToStores(setCurUrlLinkStatus, 'neither');
     return;
   }
   url = trimmedUrl(url);
 
-  dbPromise.then(async function(db) {
-    try {
-      let payload = 'neither';
-      let link = await db.get(STORE_LINKS, [store.state.targetId - 0, url]);
+  dbPromise.then(function(db) {
+    let payload = 'neither';
+    db.get(STORE_LINKS, [store.state.targetId - 0, url]).then(function(link) {
       if (link == null) {
       } else {
         payload = link.saved;
       }
       dispatchToStores('setCurUrlLinkStatus', payload);
-    } catch (e) {
-      console.log(e);
-      console.log(e.stack);
-    }
+    });
   });
 }
 
@@ -601,17 +581,13 @@ export async function setCurUrlSourceStatus() {
     return;
   }
   url = trimmedUrl(url);
-  dbPromise.then(async function(db) {
-    try {
-      let link = await db.get(STORE_SOURCES, [store.state.targetId - 0, url]);
+  dbPromise.then(function(db) {
+    db.get(STORE_SOURCES, [store.state.targetId - 0, url]).then(function(link) {
       if (link == null) {
         store.commit(types.SET_CUR_URL_SOURCE_STATUS, 'neither');
       } else {
         store.commit(types.SET_CUR_URL_SOURCE_STATUS, link.saved);
       }
-    } catch (e) {
-      console.log(e);
-      console.log(e.stack);
-    }
+    });
   });
 }

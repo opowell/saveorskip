@@ -56,17 +56,19 @@
     <div class="menu-divider" />
     <div class="menu-item">Current page</div>
     <template v-for="(value, name) in curLink">
-      <div v-if="name !== 'links' && name !== 'sources'" class="menu-item" :title="value">
+      <div :key="value" v-if="name !== 'links' && name !== 'sources'" class="menu-item" :title="value">
         <span style="flex: 1 1 auto; margin-right: 10px;">{{ name }}: </span>
         <span>{{ value }}</span>
       </div>
     </template>
     <div class="menu-divider" />
     <div class="menu-item">Links</div>
-    <div class="menu-item" style="word-break: break-all; white-space: initial;" v-for="(link, index) in curLink.links" :title="link">{{ index + 1 }}. {{ link }}</div>
+    <div class="menu-item" style="word-break: break-all; white-space: initial;" v-for="(link, index) in links" :title="link" :key="link.url">{{ index + 1 }}. {{ link }}</div>
     <div class="menu-divider" />
     <div class="menu-item">Sources</div>
-    <div class="menu-item" style="word-break: break-all; white-space: initial;" v-for="(source, index) in curLink.sources" :title="source">{{ index + 1 }}. {{ source }}</div>
+    <div class="menu-item" style="word-break: break-all; white-space: initial;" v-for="(source, index) in sources" :title="source" :key="source.url">
+      {{ index + 1 }}. {{ source }}
+    </div>
     <div class="menu-divider" />
     <div class="menu-item" :title="nextLink">Next Link: {{ nextLink }}</div>
     <div class="menu-item menu-button" @click="showOptions">Manage...</div>
@@ -91,8 +93,13 @@ export default {
       return this.targetId != null && this.targetId != '';
     },
     linkStatus() {
-      // return this.$store.getters.getUrlLinkStatus(this.$store.state.curLink.url);
       return this.$store.state.curUrlAsLink;
+    },
+    links() {
+      return this.curLink == null ? [] : this.curLink.links;
+    },
+    sources() {
+      return this.curLink == null ? [] : this.curLink.sources;
     },
     linkSaved() {
       return this.linkStatus === true;
@@ -104,7 +111,6 @@ export default {
       return this.linkStatus === 'neither';
     },
     sourceStatus() {
-      // return this.$store.getters.curSourceStatus;
       return this.$store.state.curUrlAsSource;
     },
     sourceSaved() {

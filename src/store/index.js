@@ -8,16 +8,19 @@ import * as actions from './actions';
 
 Vue.use(Vuex);
 
+// Store things here that need to be loaded by new pages upon load (i.e. popup).
+const stateReducer = function(state) {
+  return {
+    activeTabId: state.activeTabId,
+    curLink: state.curLink,
+    targetId: state.targetId,
+  };
+};
+
 const vuexLocal = new VuexPersistence({
   key: 'saveorskip',
   storage: window.localStorage,
-  reducer: function(state) {
-    return {
-      activeTabId: state.activeTabId,
-      curLink: state.curLink,
-      targetId: state.targetId,
-    };
-  },
+  reducer: stateReducer,
 });
 
 export default new Vuex.Store({

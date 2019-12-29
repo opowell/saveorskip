@@ -39,7 +39,7 @@
       "js": ["scrapers/reddit.js"]
     },
     {
-      "matches": ["*://*.youtube.com/*"],
+      "matches": ["*://youtube.com/*"],
       "js": ["scrapers/youtube-com.js"]
     },
     {

@@ -1,5 +1,8 @@
 <template>
   <div>
+    <b-modal id="deleteAllModal" title="Reset database" @ok="resetDB">
+      <p class="my-4">Are you sure you want to delete all your data and reset the database?</p>
+    </b-modal>
     <b-breadcrumb :items="crumbs" />
     <ol>
       <li>
@@ -8,7 +11,7 @@
       <li><router-link :to="{ name: 'scrapers' }">Scrapers</router-link></li>
       <li><router-link :to="{ name: 'settings' }">Settings</router-link></li>
     </ol>
-    <button @click="resetDB">Reset DB...</button>
+    <button @click="resetDBPrompt">Reset DB...</button>
     <b-card bg-variant="light" title="Welcome" style="max-width: 40rem; margin-top: 1rem;">
       <b-card-text>
         Save or skip links, and get new link recommendations based on your history.
@@ -23,6 +26,10 @@
 </template>
 
 <script>
+import { DB_NAME, dbPromise } from '../../../store/Constants.ts';
+import * as idb from '../../../store/idb.js';
+import { deleteDB } from 'idb';
+
 export default {
   name: 'Home',
   computed: {
@@ -34,16 +41,32 @@ export default {
         },
       ];
     },
-    numProfiles: function() {
+    numProfiles() {
       return this.$store.state.profiles.length;
     },
-    numProfilesText: function() {
+    numProfilesText() {
       return this.numProfiles > 0 ? '(' + this.numProfiles + ')' : '';
     },
   },
   methods: {
-    resetDB() {
-      indexedDB.deleteDatabase('saveorskip');
+    resetDBPrompt() {
+      this.$bvModal.show('deleteAllModal');
+    },
+    async resetDB() {
+      // await dbPromise.close();
+      // let delDBRequest = window.indexedDB.deleteDatabase(DB_NAME);
+      // delDBRequest.onsuccess = function(event) {
+      //   debugger;
+      //   idb.fetchProfiles();
+      // }
+      // delDBRequest.onerror = function(event) {
+      //   debugger;
+      // }
+      await deleteDB(DB_NAME, {
+        blocked() {
+          debugger;
+        },
+      });
     },
   },
 };

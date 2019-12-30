@@ -39,7 +39,10 @@ export default {
       idb.fetchProfiles();
     },
     addProfile(inputStr) {
-      idb.addProfile(inputStr);
+      let profile = {
+        name: inputStr,
+      };
+      idb.addProfile(profile);
     },
     openProfile({ item, index, event }) {
       this.$router.push({ name: 'profile', params: { id: item.id } });

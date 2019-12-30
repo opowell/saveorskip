@@ -10,18 +10,11 @@
       @create="addProperty"
       @save="saveObject"
       :fetchData="fetchData"
-      :ineditable-row-names="['saved', 'skipped', 'profileId', 'url', 'points', 'lastScraped', 'nextScrape', 'Scraped links']"
-      :ineditable-col-names="['profileId', 'url', 'Scraped links']"
+      :ineditable-row-names="['points', 'consumerId', 'providerId']"
+      :ineditable-col-names="['consumerId', 'providerId']"
       :links="fieldLinks"
       @deleteObject="askDeleteObject"
     >
-      <template v-slot:header>
-        <button @click="scrape" title="Open and scrape this source for links.">Scrape</button>
-        <button @click="openLink(true)" title="Open this source in a new tab.">Open</button>
-      </template>
-      <template v-slot:subpages>
-        <router-link :to="{ name: 'profileSourceLinks', params: { profileId: profileId, sourceId: sourceId } }">Scraped links ({{ numLinks }})</router-link>
-      </template>
     </objects-table>
   </div>
 </template>
@@ -60,12 +53,6 @@ export default {
           id: this.$route.params.profileId,
         },
       });
-    },
-    async scrape() {
-      chrome.runtime.sendMessage({ action: 'scrapeSource', url: this.source.url });
-    },
-    openLink({ active }) {
-      chrome.tabs.create({ url: 'http://' + this.source.url, active });
     },
     addProperty(inputStr) {
       Vue.set(this.source, inputStr, '');

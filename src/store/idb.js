@@ -3,16 +3,15 @@ import {
   dbPromise,
   STORE_LINKS,
   STORE_PROFILES,
-  STORE_LINKS_PROFILEID,
-  STORE_SOURCES_PROFILEID,
   STORE_SOURCES,
-  STORE_PROFILE_SOURCE_LINKS,
-  STORE_PROFILE_SOURCE_LINKS_INDEX_PROFILEID_SOURCEID,
-  STORE_PROFILE_SOURCE_LINKS_INDEX_PROFILEID_SOURCEID_TIMESCRAPED,
+  INDEX_LINKS_PROFILEID,
+  INDEX_SOURCES_CONSUMERID,
+  INDEX_LINKS_PROFILEID_TIMEADDED,
+  STORE_LINKS_TIME_ADDED,
+  STORE_SOURCES_CONSUMERID,
+  STORE_SOURCES_PROVIDERID,
 } from './Constants.ts';
-// import { trimmedUrl } from '../Utils.js';
-import Profile from '../models/Profile.js';
-import * as Source from '../models/Source.js';
+import * as AutoGenProfile from '../models/AutoGenProfile.js';
 import * as types from './mutation-types.js';
 
 function trimmedUrl(url) {
@@ -55,43 +54,43 @@ export async function setCurLink(payload) {
   await setCurUrlSourceStatus();
 }
 
-export function loadProfile(payload) {
-  dbPromise.then(async function(db) {
-    let profile = await db.get(STORE_PROFILES, payload.profileId - 0);
-    profile['Links'] = await db.countFromIndex(STORE_LINKS, 'profileId', profile.id);
-    profile['Sources'] = await db.countFromIndex(STORE_SOURCES, 'profileId', profile.id);
-    dispatchToStores('loadProfile', profile);
-  });
+export async function loadProfile(payload) {
+  let profileId = payload.profileId;
+  if (!isNaN(profileId)) {
+    profileId = profileId - 0;
+  }
+  const db = await dbPromise;
+  let profile = await db.get(STORE_PROFILES, profileId);
+  profile['Links'] = await db.countFromIndex(STORE_LINKS, INDEX_LINKS_PROFILEID, profile.id);
+  profile['Sources'] = await db.countFromIndex(STORE_SOURCES, INDEX_SOURCES_CONSUMERID, profile.id);
+  dispatchToStores('loadProfile', profile);
 }
 
-export function loadSources(payload) {
-  dbPromise.then(async function(db) {
-    let out = await db.getAllFromIndex(STORE_SOURCES, STORE_SOURCES_PROFILEID, payload.profileId - 0);
-    for (let i = 0; i < out.length; i++) {
-      // eslint-disable-next-line prettier/prettier
-      out[i]['Scraped links'] = await db.countFromIndex(STORE_PROFILE_SOURCE_LINKS, STORE_PROFILE_SOURCE_LINKS_INDEX_PROFILEID_SOURCEID, [out[i].profileId, out[i].url]);
-    }
-    dispatchToStores('loadSources', out);
-  });
+export async function loadSources(payload) {
+  let db = await dbPromise;
+  let out = await db.getAllFromIndex(STORE_SOURCES, INDEX_SOURCES_CONSUMERID, payload.profileId - 0);
+  for (let i = 0; i < out.length; i++) {
+    // eslint-disable-next-line prettier/prettier
+    out[i]['Links'] = await db.countFromIndex(STORE_LINKS, INDEX_LINKS_PROFILEID, [out[i].profileId, out[i].url]);
+  }
+  dispatchToStores('loadSources', out);
 }
 
 export async function setSkippedLinkIfNew(profileId, link) {
   if (link == null || link.url == null) {
-    console.log('no url given');
     return;
   }
   link.url = trimmedUrl(link.url);
   let storeItem = null;
-  dbPromise.then(async function(db) {
-    storeItem = await db.get(STORE_LINKS, [profileId - 0, link.url]);
-    if (storeItem != null) {
-      return;
-    }
-    saveOrSkipLink({
-      action: 'skip',
-      targetId: profileId,
-      link,
-    });
+  const db = await dbPromise;
+  storeItem = await db.get(STORE_LINKS, [profileId - 0, link.url]);
+  if (storeItem != null) {
+    return;
+  }
+  saveOrSkipLink({
+    action: 'skip',
+    targetId: profileId,
+    link,
   });
 }
 
@@ -100,25 +99,34 @@ export async function setSkippedSourceIfNew(profileId, source) {
     console.log('no url given');
     return;
   }
-  source.url = trimmedUrl(source.url);
-  await dbPromise.then(async function(db) {
-    let storeItem = await db.get(STORE_SOURCES, [profileId - 0, source.url]);
-    if (storeItem != null) {
-      return;
-    }
-    source.points = 0;
-    await saveOrSkipSource({
-      action: 'skip',
-      targetId: profileId,
-      source,
+  source.id = trimmedUrl(source.url);
+  source.name = source.title;
+  delete source.url;
+  delete source.title;
+  const db = await dbPromise;
+  let storeItem = await db.get(STORE_PROFILES, source.id);
+  if (storeItem != null) {
+    await addLinks({
+      links: source.links,
+      profileId: source.id,
     });
+    AutoGenProfile.incrementScrapeDate(storeItem);
+    await db.put(STORE_PROFILES, storeItem);
+    return;
+  }
+  source.points = 0;
+  AutoGenProfile.incrementScrapeDate(source);
+  await saveOrSkipSource({
+    action: 'skip',
+    targetId: profileId,
+    source,
   });
 }
 
 export async function loadLinks(payload) {
   await dbPromise.then(async function(db) {
     try {
-      let out = await db.getAllFromIndex(STORE_LINKS, STORE_LINKS_PROFILEID, payload.profileId - 0);
+      let out = await db.getAllFromIndex(STORE_LINKS, INDEX_LINKS_PROFILEID, payload.profileId - 0);
       if (out == null) {
         return;
       }
@@ -130,35 +138,7 @@ export async function loadLinks(payload) {
   });
 }
 
-export async function loadProfileSourceLinks(payload) {
-  await dbPromise.then(async function(db) {
-    try {
-      let out = await db.getAllFromIndex(STORE_PROFILE_SOURCE_LINKS, STORE_PROFILE_SOURCE_LINKS_INDEX_PROFILEID_SOURCEID, [payload.profileId - 0, payload.sourceId]);
-      if (out == null) {
-        return;
-      }
-      store.commit(types.LOAD_PROFILE_SOURCE_LINKS, out);
-    } catch (e) {
-      console.log(e);
-      console.log(e.stack);
-    }
-  });
-}
-
-export async function getProfileSourceLink({ profileId, sourceId, linkId }) {
-  let out = null;
-  await dbPromise.then(async function(db) {
-    try {
-      out = await db.get(STORE_PROFILE_SOURCE_LINKS, [profileId - 0, sourceId, linkId]);
-    } catch (e) {
-      console.log(e);
-      console.log(e.stack);
-    }
-  });
-  return out;
-}
-
-export async function getProfileLink({ profileId, linkId }) {
+export async function getLink({ profileId, linkId }) {
   let out = null;
   await dbPromise.then(async function(db) {
     try {
@@ -171,64 +151,22 @@ export async function getProfileLink({ profileId, linkId }) {
   return out;
 }
 
-export function loadProfileSourceLink({ profileId, sourceId, linkId }) {
-  dbPromise.then(async function(db) {
-    try {
-      let out = await db.get(STORE_PROFILE_SOURCE_LINKS, [profileId - 0, sourceId, linkId]);
-      if (out == null) {
-        return;
-      }
-      store.commit(types.LOAD_PROFILE_SOURCE_LINK, out);
-    } catch (e) {
-      console.log(e);
-      console.log(e.stack);
-    }
-  });
+export async function loadLink({ profileId, linkId }) {
+  let out = await getLink({ profileId, linkId });
+  if (out == null) {
+    return;
+  }
+  store.commit(types.LOAD_LINK, out);
 }
 
-export function loadLink({ profileId, linkId }) {
-  dbPromise.then(async function(db) {
-    try {
-      let out = await db.get(STORE_LINKS, [profileId - 0, linkId]);
-      if (out == null) {
-        return;
-      }
-      store.commit(types.LOAD_LINK, out);
-    } catch (e) {
-      console.log(e);
-      console.log(e.stack);
-    }
-  });
-}
-
-export function loadSource(key) {
-  dbPromise.then(async function(db) {
-    try {
-      let out = await db.get(STORE_SOURCES, key);
-      if (out == null) {
-        return;
-      }
-      let stats = {};
-      stats.numLinks = await db.countFromIndex(STORE_PROFILE_SOURCE_LINKS, STORE_PROFILE_SOURCE_LINKS_INDEX_PROFILEID_SOURCEID, key);
-      out['Scraped links'] = stats.numLinks;
-      store.commit(types.LOAD_PROFILE_SOURCE_STATS, stats);
-      store.commit(types.LOAD_SOURCE, out);
-    } catch (e) {
-      console.log(e);
-      console.log(e.stack);
-    }
-  });
-}
-
-export async function deleteProfileSourceLink({ profileId, sourceId, linkId }) {
-  await dbPromise.then(async function(db) {
-    try {
-      await db.delete(STORE_PROFILE_SOURCE_LINKS, [profileId - 0, sourceId, linkId]);
-    } catch (e) {
-      console.log(e);
-      console.log(e.stack);
-    }
-  });
+export async function loadSource(key) {
+  const db = await dbPromise;
+  let out = await db.get(STORE_SOURCES, key);
+  if (out == null) {
+    return;
+  }
+  out['Links'] = await db.countFromIndex(STORE_LINKS, INDEX_LINKS_PROFILEID, key[1]);
+  store.commit(types.LOAD_SOURCE, out);
 }
 
 export function deleteLink({ profileId, linkId }) {
@@ -278,51 +216,51 @@ export function saveObject(storeName, object) {
 }
 
 export async function fetchProfiles() {
-  await dbPromise.then(async function(db) {
-    const tx = db.transaction(STORE_PROFILES);
-    const profilesStore = tx.objectStore(STORE_PROFILES);
-    const values = await profilesStore.getAll();
-    let profiles = [];
-    if (values.length === 0) {
-      await addProfile('myProfile');
-    }
-    for (let i = 0; i < values.length; i++) {
-      values[i].links = await db.countFromIndex(STORE_LINKS, STORE_LINKS_PROFILEID, values[i].id);
-      values[i].sources = await db.countFromIndex(STORE_SOURCES, STORE_SOURCES_PROFILEID, values[i].id);
-      profiles.push(values[i]);
-    }
-    await tx.done;
-    dispatchToStores('fetchProfiles', profiles);
-  });
+  const db = await dbPromise;
+  const tx = db.transaction(STORE_PROFILES);
+  const profilesStore = tx.objectStore(STORE_PROFILES);
+  const values = await profilesStore.getAll();
+  let profiles = [];
+  if (values.length === 0) {
+    await addProfile({
+      name: 'myProfile',
+    });
+  }
+  for (let i = 0; i < values.length; i++) {
+    values[i].links = await db.countFromIndex(STORE_LINKS, INDEX_LINKS_PROFILEID, values[i].id);
+    values[i].sources = await db.countFromIndex(STORE_SOURCES, INDEX_SOURCES_CONSUMERID, values[i].id);
+    profiles.push(values[i]);
+  }
+  await tx.done;
+  dispatchToStores('fetchProfiles', profiles);
 }
 
 export async function getProfileSources(profileId) {
   let out = null;
   await dbPromise.then(async function(db) {
-    out = await db.getAllFromIndex(STORE_SOURCES, STORE_SOURCES_PROFILEID, profileId - 0);
+    out = await db.getAllFromIndex(STORE_SOURCES, INDEX_SOURCES_CONSUMERID, profileId - 0);
   });
   return out;
 }
 
-export async function getProfileSourceLinks(profileId, sourceId) {
+export async function getLinks(profileId) {
   let out = null;
   await dbPromise.then(async function(db) {
-    out = await db.getAllFromIndex(STORE_PROFILE_SOURCE_LINKS, STORE_PROFILE_SOURCE_LINKS_INDEX_PROFILEID_SOURCEID, [profileId - 0, sourceId]);
+    out = await db.getAllFromIndex(STORE_LINKS, INDEX_LINKS_PROFILEID, [profileId - 0]);
   });
   return out;
 }
 
-export async function getProfileSourceLinksByTimeScraped(profileId, sourceId) {
+export async function getLinksByTimeAdded(profileId, sourceId) {
   let out = null;
-  await dbPromise.then(async function(db) {
-    let tx = await db.transaction(STORE_PROFILE_SOURCE_LINKS);
-    let objStore = await tx.objectStore(STORE_PROFILE_SOURCE_LINKS);
-    let index = await objStore.index(STORE_PROFILE_SOURCE_LINKS_INDEX_PROFILEID_SOURCEID_TIMESCRAPED, [profileId, sourceId]);
-    let keyRng = IDBKeyRange.bound([profileId, sourceId, new Date(2019, 1)], [profileId, sourceId, new Date()]);
-    let cursor = await index.openCursor(keyRng, 'prev');
-    out = cursor;
-    await tx.done;
-  });
+  const db = await dbPromise;
+  let tx = await db.transaction(STORE_LINKS);
+  let objStore = await tx.objectStore(STORE_LINKS);
+  let index = await objStore.index(INDEX_LINKS_PROFILEID_TIMEADDED, profileId);
+  let keyRng = IDBKeyRange.bound([profileId, new Date(2019, 1)], [profileId, new Date()]);
+  let cursor = await index.openCursor(keyRng, 'prev');
+  out = cursor;
+  await tx.done;
   return out;
 }
 
@@ -358,38 +296,24 @@ export function deleteProfileSource(payload) {
   });
 }
 
-export function addProfileSourceLink(payload) {
-  dbPromise.then(function(db) {
-    let storeName = STORE_PROFILE_SOURCE_LINKS;
-    payload.url = trimmedUrl(payload.url);
-    db.put(storeName, payload);
-  });
+export async function addLink(payload) {
+  let db = await dbPromise;
+  let storeName = STORE_LINKS;
+  payload.url = trimmedUrl(payload.url);
+  payload[STORE_LINKS_TIME_ADDED] = new Date();
+  await db.put(storeName, payload);
 }
 
-export function addSources(payload) {
-  dbPromise.then(function(db) {
-    var tx = db.transaction(STORE_SOURCES, 'readwrite');
-    var sourcesStore = tx.objectStore(STORE_SOURCES);
-    return Promise.all(
-      payload.sources.map(async function(item) {
-        console.log('Storing source:', item);
-        let storeItem = await sourcesStore.get([item.profileId, item.url]);
-        if (storeItem != null) {
-          item.points += storeItem.points;
-        }
-        sourcesStore.put(item);
-        store.commit(types.ADD_SOURCE, item);
-      })
-    )
-      .catch(function(e) {
-        tx.abort();
-        console.log(e);
-      })
-      .then(async function() {
-        console.log('Sources "' + JSON.stringify(payload.sources) + '" stored successfully.');
-        await setCurUrlSourceStatus();
-      });
-  });
+export async function addSources({ sources }) {
+  for (let i = 0; i < sources.length; i++) {
+    let source = sources[i];
+    await saveOrSkipSource({
+      source,
+      targetId: source.consumerId,
+      action: 'save',
+    });
+  }
+  await setCurUrlSourceStatus();
 }
 
 export async function setSourceSaved(payload) {
@@ -474,43 +398,54 @@ export async function saveOrSkipLink(payload) {
     await db.put(storeName, link);
     console.log('Link "' + payload.link.url + '" stored successfully.');
     await setCurUrlLinkStatus();
-    dispatchToStores('setCurUrl', payload);
-    dispatchToStores('setUrlToScrape', payload.link.url);
-    chrome.runtime.sendMessage('save');
+    // await dispatchToStores('setCurUrl', payload);
+    // await dispatchToStores('setUrlToScrape', payload.link.url);
+    // chrome.runtime.sendMessage('save');
   });
 }
 
-export async function saveOrSkipSource(payload) {
-  let source = payload.source;
-  await dbPromise.then(async function(db) {
-    source.url = trimmedUrl(source.url);
-    source.saved = payload.action === 'save';
-    source.profileId = payload.targetId - 0;
-    source.timeSaved = new Date();
-    // delete source.sources;
-    // delete source.sourcesForSave;
-    // delete source.sourcesForSkip;
+export async function saveOrSkipSource({ source, targetId, action }) {
+  const db = await dbPromise;
 
-    let storeName = STORE_SOURCES;
-    console.log('Storing source:', source);
-    let storeObject = await db.get(storeName, [source.profileId, source.url]);
-    if (storeObject != null) {
-      source.points = source.points - 0 + storeObject.points;
+  let sourceConnection = {};
+  sourceConnection.points = source.points;
+  sourceConnection[STORE_SOURCES_PROVIDERID] = trimmedUrl(source.id);
+  sourceConnection[STORE_SOURCES_CONSUMERID] = targetId - 0;
+  sourceConnection.saved = action === 'save';
+  sourceConnection.timeAdded = new Date();
+
+  let storeObject = await db.get(STORE_SOURCES, [targetId, source.id]);
+  if (storeObject != null) {
+    sourceConnection.points = sourceConnection.points - 0 + (storeObject.points - 0);
+  }
+  await db.put(STORE_SOURCES, sourceConnection);
+
+  addProfile(source);
+
+  console.log('Source "' + source.id + '" stored successfully.');
+  await setCurUrlSourceStatus();
+}
+
+export async function addLinks({ links, profileId }) {
+  if (links == null) {
+    return;
+  }
+  for (let i = 0; i < links.length; i++) {
+    let link = links[i];
+    if (typeof link === 'string') {
+      link = { url: link };
     }
-    await db.put(storeName, source);
-    console.log('Source "' + source.url + '" stored successfully.');
-    await setCurUrlSourceStatus();
-    // dispatchToStores('setCurUrl', payload);
-    // dispatchToStores('setUrlToScrape', payload.link.url);
-    // chrome.runtime.sendMessage('save');
-  });
+    link.profileId = profileId;
+    link.timeAdded = new Date();
+    await addLink(link);
+  }
 }
 
 export async function updateSourceScrapeDate({ profileId, sourceUrl }) {
   await dbPromise.then(async function(db) {
     let source = await db.get(STORE_SOURCES, [profileId, sourceUrl]);
     if (source != null) {
-      Source.incrementScrapeDate(source);
+      AutoGenProfile.incrementScrapeDate(source);
       await db.put(STORE_SOURCES, source);
     }
   });
@@ -556,25 +491,36 @@ export async function removeSource(payload) {
   });
 }
 
-export async function addProfile(payload) {
-  let profile = new Profile(payload);
-  dbPromise.then(async function(db) {
-    var tx = db.transaction(STORE_PROFILES, 'readwrite');
-    var profilesStore = tx.objectStore(STORE_PROFILES);
-    try {
-      let toSave = {
-        name: profile.name,
-      };
-      profilesStore.put(toSave);
-      store.commit(types.ADD_PROFILE, toSave.name);
-      fetchProfiles();
-    } catch (e) {
-      tx.abort();
-      console.log(e);
-      console.log(e.stack);
-    }
-    await tx.done;
+export async function addProfile(profile) {
+  if (profile.autoGenerated == null) {
+    profile.autoGenerated = false;
+  }
+
+  const db = await dbPromise;
+  let links = profile.links;
+  let sources = profile.sources;
+  let sourcesForSave = profile.sourcesForSave;
+  let sourcesForSkip = profile.sourcesForSkip;
+
+  delete profile.links;
+  delete profile.sources;
+  delete profile.sourcesForSave;
+  delete profile.sourcesForSkip;
+  console.log('Storing source profile:', profile);
+
+  addLinks({
+    links,
+    profileId: profile.id,
   });
+
+  profile.links = links;
+  profile.sources = sources;
+  profile.sourcesForSave = sourcesForSave;
+  profile.sourcesForSkip = sourcesForSkip;
+
+  await db.put(STORE_PROFILES, profile);
+  store.commit(types.ADD_PROFILE, profile.name);
+  fetchProfiles();
 }
 
 export async function setTarget(profileId) {
@@ -587,12 +533,12 @@ export async function setCurUrlLinkStatus() {
   let url = store.state.curLink.url;
   if (store.state.targetId == null) {
     console.log('no current target');
-    dispatchToStores(setCurUrlLinkStatus, 'neither');
+    dispatchToStores('setCurUrlLinkStatus', 'neither');
     return;
   }
   if (url == null) {
     console.log('no link');
-    dispatchToStores(setCurUrlLinkStatus, 'neither');
+    dispatchToStores('setCurUrlLinkStatus', 'neither');
     return;
   }
   url = trimmedUrl(url);

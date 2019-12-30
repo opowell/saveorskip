@@ -1,13 +1,11 @@
 import Settings from './pages/Settings';
 import Home from './pages/Home';
+import Link from './pages/Link';
+import Links from './pages/Links';
 import Profile from './pages/Profile';
-import ProfileLink from './pages/ProfileLink';
-import ProfileLinks from './pages/ProfileLinks';
-import ProfileSource from './pages/ProfileSource';
-import ProfileSourceLink from './pages/ProfileSourceLink';
-import ProfileSourceLinks from './pages/ProfileSourceLinks';
-import ProfileSources from './pages/ProfileSources';
 import Profiles from './pages/Profiles';
+import Source from './pages/Source';
+import Sources from './pages/Sources';
 import Scrapers from './pages/Scrapers';
 
 export default [
@@ -28,12 +26,12 @@ export default [
   },
   {
     path: '/profile/:profileId/link/:linkId',
-    component: ProfileLink,
+    component: Link,
     name: 'profileLink',
   },
   {
     path: '/profile/:id/links',
-    component: ProfileLinks,
+    component: Links,
     name: 'profileLinks',
   },
   {
@@ -43,23 +41,13 @@ export default [
   },
   {
     path: '/profile/:id/sources',
-    component: ProfileSources,
+    component: Sources,
     name: 'profileSources',
   },
   {
     path: '/profile/:profileId/sources/:sourceId',
-    component: ProfileSource,
+    component: Source,
     name: 'profileSource',
-  },
-  {
-    path: '/profile/:profileId/sources/:sourceId/links',
-    component: ProfileSourceLinks,
-    name: 'profileSourceLinks',
-  },
-  {
-    path: '/profile/:profileId/sources/:sourceId/links/:linkId',
-    component: ProfileSourceLink,
-    name: 'profileSourceLink',
   },
   {
     path: '/scrapers',

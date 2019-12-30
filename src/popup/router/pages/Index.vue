@@ -56,7 +56,7 @@
     <div class="menu-divider" />
     <div class="menu-item">Current page</div>
     <template v-for="(value, name) in curLink">
-      <div :key="value" v-if="name !== 'links' && name !== 'sources'" class="menu-item" :title="value">
+      <div :key="name" v-if="name !== 'links' && name !== 'sources'" class="menu-item" :title="value">
         <span style="flex: 1 1 auto; margin-right: 10px;">{{ name }}: </span>
         <span>{{ value }}</span>
       </div>
@@ -149,9 +149,6 @@ export default {
       this.setTarget(event.target.value);
     },
     setTarget(profileId) {
-      // this.$store.commit(types.SET_TARGET, profileId - 0);
-      // idb.setCurUrlLinkStatus();
-      // idb.setCurUrlSourceStatus();
       idb.setTarget(profileId - 0);
     },
     save() {

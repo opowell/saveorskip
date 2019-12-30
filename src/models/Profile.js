@@ -40,14 +40,6 @@ export default class {
     Vue.set(profile.links, link.url, newLink);
   }
 
-  static removeLink(profile, url) {
-    Vue.delete(profile.links, url);
-  }
-
-  static removeSource(profile, url) {
-    Vue.delete(profile.sources, url);
-  }
-
   static setSourceSaved(profile, url, saved) {
     if (profile == null) {
       return;

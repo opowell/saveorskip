@@ -166,8 +166,7 @@ function showNextPage(profileId) {
 function scrapeIfNecessary(source) {
   let now = new Date();
   console.log('comparing now to next scrape date: ' + now + ' vs. ' + source.nextScrape);
-  if (new Date(source.nextScrape) < now) {
-    console.log('scraping items from ' + source.url);
+  if (source.nextScrape == null || new Date(source.nextScrape) < now) {
     scrapeSource(source.url);
   }
 }
@@ -193,6 +192,9 @@ async function loadNextSuggestion(profileId) {
       url: trimmedUrl(source.url),
     });
     let linksCursor = await idb.getProfileSourceLinksByTimeScraped(profileId, source.url);
+    if (linksCursor == null) {
+      continue;
+    }
     let nextUrl = null;
     while (nextUrl === null) {
       // Check if current link already exists on profile.
@@ -230,37 +232,18 @@ chrome.tabs.onActivated.addListener(function(activeInfo) {
     tabId: activeInfo.tabId,
   });
   chrome.tabs.sendMessage(activeInfo.tabId, { action: 'getLink' }, getLinkCB);
-  // chrome.tabs.get(activeInfo.tabId, function(tab) {
-  // store.commit(types.SET_CUR_URL, {
-  //   url: tab.url,
-  //   title: tab.title,
-  // });
-  // idb.setCurUrlLinkStatus();
-  // idb.setCurUrlSourceStatus();
-  // });
 });
 
 chrome.tabs.onUpdated.addListener(async function(tabId, changeInfo, tab) {
   if (tabId === store.state.activeTabId) {
     chrome.tabs.sendMessage(tab.id, { action: 'getLink' }, getLinkCB);
   }
-  // if (tabId === store.state.activeTabId && tab.url != null) {
-  //   store.commit(types.SET_CUR_URL, {
-  //     url: tab.url,
-  //     title: tab.title,
-  //   });
-  //   await idb.setSkippedIfNew(store.state.targetId, {url: tab.url, title: tab.title});
-  //   await idb.setCurUrlLinkStatus();
-  //   await idb.setCurUrlSourceStatus();
-  // }
 });
 
 async function getLinkCB(link) {
   await idb.setCurLink(link);
   await idb.setSkippedLinkIfNew(store.state.targetId, link);
   await idb.setSkippedSourceIfNew(store.state.targetId, link);
-  await idb.setCurUrlLinkStatus();
-  await idb.setCurUrlSourceStatus();
 }
 
 chrome.runtime.onMessage.addListener(async function(message, sender, sendResponse) {
@@ -296,9 +279,9 @@ chrome.runtime.onMessage.addListener(async function(message, sender, sendRespons
     case 'pageLoaded':
       let tUrl = trimmedUrl(sender.tab.url);
       if (tUrl === store.state.urlToScrape) {
-        saveSourcesOfUrl(sender.tab.url, null, 'save');
+        saveSourcesOfUrl(tUrl, null, 'save');
       } else if (tUrl === store.state.sourceToScrape) {
-        saveAsSource(sender.tab);
+        saveAsSource(sender.tab, store.state.targetId, tUrl);
       } else if (sender.tab.id !== store.state.curSuggestionTabId) {
         if (sender.tab.active) {
           // store.commit(types.SET_CUR_URL, {
@@ -308,14 +291,12 @@ chrome.runtime.onMessage.addListener(async function(message, sender, sendRespons
           store.commit(types.SET_ACTIVE_TAB_ID, {
             tabId: sender.tab.id,
           });
-          await idb.setCurLink(message.link);
           await idb.setSkippedLinkIfNew(store.state.targetId, message.link);
           await idb.setSkippedSourceIfNew(store.state.targetId, message.link);
-          await idb.setCurUrlLinkStatus();
-          await idb.setCurUrlSourceStatus();
+          await idb.setCurLink(message.link);
         }
       } else {
-        saveAsSource(sender.tab);
+        saveAsSource(sender.tab, store.state.targetId, tUrl);
       }
       break;
     case 'saveAndGo':
@@ -342,13 +323,18 @@ chrome.runtime.onMessage.addListener(async function(message, sender, sendRespons
 });
 
 function scrapeSource(url) {
+  console.log('scraping items from ' + url);
   store.commit(types.SET_SOURCE_TO_SCRAPE, url);
   chrome.tabs.create({ url: 'http://' + url, active: false });
 }
 
 // Save current tab as a source.
-function saveAsSource(tab) {
+function saveAsSource(tab, profileId, sourceUrl) {
   chrome.tabs.sendMessage(tab.id, { action: 'getLinks' }, getLinksCB);
+  idb.updateSourceScrapeDate({
+    profileId,
+    sourceUrl,
+  });
 }
 
 async function getLinksCB(links) {

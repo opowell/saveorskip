@@ -9,3 +9,7 @@ export function Source(url, profileId) {
   out.saved = false;
   return out;
 }
+
+export function incrementScrapeDate(source) {
+  source.nextScrape += new Date(new Date().getTime() + 24 * 60 * 60 * 1000).toJSON();
+}

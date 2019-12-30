@@ -12,6 +12,7 @@ import {
 } from './Constants.ts';
 // import { trimmedUrl } from '../Utils.js';
 import Profile from '../models/Profile.js';
+import * as Source from '../models/Source.js';
 import * as types from './mutation-types.js';
 
 function trimmedUrl(url) {
@@ -49,10 +50,9 @@ export async function dispatchToStores(functionName, payload) {
 }
 
 export async function setCurLink(payload) {
-  if (payload === null) {
-    debugger;
-  }
   await dispatchToStores('setCurUrl', payload);
+  await setCurUrlLinkStatus();
+  await setCurUrlSourceStatus();
 }
 
 export function loadProfile(payload) {
@@ -106,6 +106,7 @@ export async function setSkippedSourceIfNew(profileId, source) {
     if (storeItem != null) {
       return;
     }
+    source.points = 0;
     await saveOrSkipSource({
       action: 'skip',
       targetId: profileId,
@@ -417,6 +418,10 @@ export async function setSourceSaved(payload) {
 
 export async function saveOrSkipLink(payload) {
   let link = payload.link;
+
+  let linksProp = link.links;
+  delete link.links;
+
   link.url = trimmedUrl(link.url);
   link.saved = payload.action === 'save';
   link.profileId = payload.targetId - 0;
@@ -436,7 +441,6 @@ export async function saveOrSkipLink(payload) {
     }
     for (let i in sources) {
       let source = sources[i];
-      source.points = -source.points;
       await saveOrSkipSource({
         targetId: source.profileId,
         source,
@@ -459,6 +463,8 @@ export async function saveOrSkipLink(payload) {
       source,
       action: 'skip', // TODO: check if source exists. update, instead of overwrite.
     });
+
+    link.links = linksProp;
   }
 
   // Process link itself.
@@ -500,9 +506,43 @@ export async function saveOrSkipSource(payload) {
   });
 }
 
+export async function updateSourceScrapeDate({ profileId, sourceUrl }) {
+  await dbPromise.then(async function(db) {
+    let source = await db.get(STORE_SOURCES, [profileId, sourceUrl]);
+    if (source != null) {
+      Source.incrementScrapeDate(source);
+      await db.put(STORE_SOURCES, source);
+    }
+  });
+}
+
+export async function changeSourcePoints(payload) {
+  let source = payload.source;
+  await dbPromise.then(async function(db) {
+    source.url = trimmedUrl(source.url);
+    source.profileId = payload.targetId - 0;
+    let storeObject = await db.get(STORE_SOURCES, [source.profileId, source.url]);
+    if (storeObject != null) {
+      storeObject.points += payload.pointsChange;
+    }
+    await db.put(STORE_SOURCES, source);
+  });
+}
+
 export async function removeLink(payload) {
   await dbPromise.then(async function(db) {
     let storeName = STORE_LINKS;
+    let storeObj = await db.get(STORE_LINKS, [payload.targetId, payload.url]);
+    if (storeObj != null && storeObj.sources != null) {
+      for (let i = 0; i < storeObj.sources.length; i++) {
+        let source = storeObj.sources[i];
+        await changeSourcePoints({
+          targetId: source.profileId,
+          source,
+          changePoints: -source.points,
+        });
+      }
+    }
     await db.delete(storeName, [payload.targetId, payload.url]);
     await setCurUrlLinkStatus();
   });
@@ -545,7 +585,6 @@ export async function setTarget(profileId) {
 
 export async function setCurUrlLinkStatus() {
   let url = store.state.curLink.url;
-  // console.log('setting status of current page as link: ' + store.state.targetId + '/' + url);
   if (store.state.targetId == null) {
     console.log('no current target');
     dispatchToStores(setCurUrlLinkStatus, 'neither');

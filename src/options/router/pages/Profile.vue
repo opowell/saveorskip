@@ -131,7 +131,7 @@ export default {
       return this.filter != null && this.filter.length > 0 && (this.profile == null || this.profile[this.filter] == null);
     },
     profileId() {
-      return this.$route.params.id - 0;
+      return convertId(this.$route.params.id);
     },
     profile() {
       return this.$store.state.profile;

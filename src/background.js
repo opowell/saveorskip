@@ -340,8 +340,7 @@ function scrapeSource(url) {
 // Save current tab as a source.
 function saveAsSource(tab, profileId, sourceUrl) {
   chrome.tabs.sendMessage(tab.id, { action: 'getLinks' }, getLinksCB);
-  idb.updateSourceScrapeDate({
-    profileId,
+  idb.updateProfileScrapeDate({
     sourceUrl,
   });
 }

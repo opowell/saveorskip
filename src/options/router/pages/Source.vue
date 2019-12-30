@@ -24,6 +24,7 @@ import ObjectsTable from '../components/ObjectsTable.vue';
 import * as idb from '../../../store/idb.js';
 import { STORE_SOURCES } from '../../../store/Constants.ts';
 import Vue from 'vue';
+import { convertId } from '../../../Utils.js';
 
 export default {
   name: 'Source',
@@ -63,7 +64,7 @@ export default {
       this.fetchData();
     },
     fetchData() {
-      let profileId = this.$route.params.profileId - 0;
+      let profileId = convertId(this.$route.params.profileId);
       let sourceId = this.$route.params.sourceId;
       idb.loadSource([profileId, sourceId]);
       idb.loadProfile({ profileId });
@@ -86,7 +87,7 @@ export default {
       return this.profileSourceStats.numLinks;
     },
     profileId() {
-      return this.$route.params.profileId - 0;
+      return convertId(this.$route.params.profileId);
     },
     profile() {
       return this.$store.state.profile;

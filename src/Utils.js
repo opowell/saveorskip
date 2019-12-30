@@ -1,3 +1,10 @@
+export function convertId(id) {
+  if (isNaN(id)) {
+    return id;
+  }
+  return Number.parseInt(id);
+}
+
 export function trimmedUrl(url) {
   if (url == null) {
     return null;

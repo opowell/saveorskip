@@ -78,6 +78,7 @@
 <script>
 import * as idb from '../../../store/idb.js';
 import { Source } from '../../../models/Source.js';
+import { convertId } from '../../../Utils.js';
 
 export default {
   async mounted() {
@@ -149,7 +150,7 @@ export default {
       this.setTarget(event.target.value);
     },
     setTarget(profileId) {
-      idb.setTarget(profileId - 0);
+      idb.setTarget(convertId(profileId));
     },
     save() {
       idb.saveOrSkipLink({
@@ -189,7 +190,7 @@ export default {
     },
     removeLink() {
       idb.removeLink({
-        targetId: this.targetId - 0,
+        targetId: convertId(this.targetId),
         url: this.$store.state.curLink.url,
       });
     },

@@ -12,7 +12,7 @@
       <button v-if="!isObjArray" title="Reset this object to its original form" @click="reset" :disabled="!changesPending">Reset</button>
     </div>
     <!-- Main table element -->
-    <b-table hover show-empty stacked="md" :items="items" :fields="fieldNames" :filter="filter" @row-clicked="clickItem" class="mt-3">
+    <b-table :hover="isObjArray" show-empty stacked="md" :items="items" :fields="fieldNames" :filter="filter" @row-clicked="clickItem" class="mt-3">
       <template v-slot:cell(name)="data">
         <a v-if="isLink(data.value)" :title="data.value" :href="links[data.value]">
           {{ decodeURIComponent(data.value) }}
@@ -63,7 +63,8 @@ import * as idb from '../../../store/idb.js';
 import Vue from 'vue';
 
 export default {
-  props: ['object', 'ineditableRowNames', 'ineditableColNames', 'store', 'fetchData', 'links'],
+  // eslint-disable-next-line prettier/prettier
+  props: ['object', 'ineditableRowNames', 'ineditableColNames', 'store', 'fetchData', 'links', 'rowNamesToSkip', 'colNamesToSkip'],
   data() {
     return {
       sortDesc: true,
@@ -107,7 +108,7 @@ export default {
       if (val == null) {
         return '';
       }
-      if (typeof val == 'object') {
+      if (typeof val === 'object') {
         return JSON.stringify(val);
       }
       return val;
@@ -216,6 +217,9 @@ export default {
         for (let i in this.object) {
           let item = this.object[i];
           for (let a in item) {
+            if (this.colNamesToSkip != null && this.colNamesToSkip.includes(a)) {
+              continue;
+            }
             if (!out.includes(a)) {
               let field = {
                 key: a,
@@ -265,6 +269,9 @@ export default {
         }
       } else {
         for (let i in this.object) {
+          if (this.rowNamesToSkip != null && this.rowNamesToSkip.includes(this.valueToString(i))) {
+            continue;
+          }
           out.push({
             name: this.valueToString(i),
             value: this.valueToString(this.object[i]),

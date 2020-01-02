@@ -31,6 +31,9 @@ sos.getLinks = function() {
       continue;
     }
     url = sos.buildUrl(url);
+    if (sos.isParentUrl(url)) {
+      continue;
+    }
     if (!links.includes(url)) {
       links.push(url);
     }
@@ -38,7 +41,20 @@ sos.getLinks = function() {
   return links;
 };
 
+sos.isParentUrl = function(url) {
+  let curUrl = sos.buildUrl(window.location.href);
+  if (curUrl.includes(url) && url !== curUrl) {
+    return true;
+  }
+  return false;
+};
+
 sos.buildUrl = function(url) {
+  if (url.includes('#')) {
+    let hashIndex = url.indexOf('#');
+    let questionIndex = url.indexOf('?');
+    url = url.substring(0, hashIndex) + questionIndex > -1 ? url.substring(questionIndex) : '';
+  }
   if (!url.includes('://')) {
     url = sos.trimmedUrl(location.origin) + (url.startsWith('/') ? '' : '/') + sos.trimmedUrl(url);
     url = sos.trimmedUrl(url);
@@ -48,7 +64,7 @@ sos.buildUrl = function(url) {
   return url;
 };
 
-sos.getUrlSources = function(url, sendResponse) {
+sos.getSourcesForUrl = function(url, sendResponse) {
   let sources = [];
   let linkEls = document.querySelectorAll('a');
   for (let i = 0; i < linkEls.length; i++) {
@@ -64,6 +80,20 @@ sos.getUrlSources = function(url, sendResponse) {
 
 sos.getSources = function() {
   let sources = [];
+  let linkEls = document.querySelectorAll('a');
+  for (let i = 0; i < linkEls.length; i++) {
+    let url = linkEls[i].getAttribute('href');
+    if (url == null) {
+      continue;
+    }
+    url = sos.buildUrl(url);
+    if (!sos.isParentUrl(url)) {
+      continue;
+    }
+    if (!sources.includes(url)) {
+      sources.push(url);
+    }
+  }
   return sources;
 };
 
@@ -74,7 +104,7 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
     let sources = sos.getSources();
     sendResponse({ sources });
   } else if (request.action === 'getUrlSources') {
-    sos.getUrlSources(request.url, sendResponse);
+    sos.getSourcesForUrl(request.url, sendResponse);
   } else if (request.action === 'getLinks') {
     sos.getLinksWithResponse(sendResponse);
   } else if (request.action === 'getLink') {

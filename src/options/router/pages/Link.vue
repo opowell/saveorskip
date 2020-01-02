@@ -8,7 +8,7 @@
       ref="table"
       :object="link"
       @create="addProperty"
-      :ineditable-row-names="['profileId', 'url']"
+      :ineditable-row-names="['profileId', 'url', 'title', 'timeAdded']"
       :ineditable-col-names="['profileId']"
       @save="saveLink"
       :fetchData="fetchData"
@@ -171,15 +171,15 @@ export default {
         },
         {
           text: this.profileName,
-          href: '#/profile/' + this.profileId,
+          href: '#/profile/' + encodeURIComponent(this.profileId),
         },
         {
           text: 'Links',
-          href: '#/profile/' + this.profileId + '/links',
+          href: '#/profile/' + encodeURIComponent(this.profileId) + '/links',
         },
         {
           text: this.linkId,
-          href: '#/profile/' + this.profileId + '/sources/' + this.linkId,
+          href: '#/profile/' + encodeURIComponent(this.profileId) + '/sources/' + encodeURIComponent(this.linkId),
         },
       ];
     },

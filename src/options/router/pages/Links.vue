@@ -1,13 +1,14 @@
 <template>
   <div>
     <b-breadcrumb :items="crumbs" />
-    <objects-table ref="table" :object="links" @create="addLink" @click="openLink" />
+    <objects-table ref="table" :object="links" @create="addLink" @click="openLink" :colNamesToSkip="['profileId']" />
   </div>
 </template>
 
 <script>
 import ObjectsTable from '../components/ObjectsTable.vue';
 import * as idb from '../../../store/idb.js';
+import { convertId } from '../../../Utils.js';
 
 export default {
   name: 'ProfileLinks',
@@ -24,12 +25,12 @@ export default {
   },
   methods: {
     fetchData() {
-      idb.loadLinks({ profileId: this.$route.params.id });
-      idb.loadProfile({ profileId: this.$route.params.id });
+      idb.loadLinks({ profileId: this.profileId });
+      idb.loadProfile({ profileId: this.profileId });
     },
     async addLink(inputStr) {
       let link = {
-        targetId: this.$route.params.id,
+        targetId: this.profileId,
         action: 'save',
         link: { url: inputStr },
       };
@@ -55,7 +56,7 @@ export default {
       return Object.keys(this.links).length;
     },
     profileId() {
-      return this.$route.params.id;
+      return convertId(this.$route.params.id);
     },
     profile() {
       return this.$store.state.profile;
@@ -75,11 +76,11 @@ export default {
         },
         {
           text: this.profileName,
-          href: '#/profile/' + this.profileId,
+          href: '#/profile/' + encodeURIComponent(this.profileId),
         },
         {
           text: 'Links',
-          to: '{ name: "profileLinks", params: { id: this.$route.params.id }}',
+          href: '#/profile/' + encodeURIComponent(this.profileId) + '/links',
         },
       ];
     },

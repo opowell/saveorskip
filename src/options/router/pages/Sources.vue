@@ -1,7 +1,7 @@
 <template>
   <div>
     <b-breadcrumb :items="crumbs" />
-    <objects-table ref="table" :object="sources" @create="addSource" @click="openSource" />
+    <objects-table ref="table" :object="sources" @create="addSource" @click="openSource" :colNamesToSkip="['consumerId']" />
   </div>
 </template>
 
@@ -9,6 +9,7 @@
 import ObjectsTable from '../components/ObjectsTable.vue';
 import * as idb from '../../../store/idb.js';
 import { Source } from '../../../models/Source.js';
+import { convertId } from '../../../Utils.js';
 
 export default {
   name: 'ProfilePage',
@@ -25,8 +26,8 @@ export default {
   },
   methods: {
     fetchData() {
-      idb.loadSources({ profileId: this.$route.params.id });
-      idb.loadProfile({ profileId: this.$route.params.id });
+      idb.loadSources({ profileId: this.profileId });
+      idb.loadProfile({ profileId: this.profileId });
     },
     async addSource(inputStr) {
       let source = Source(inputStr, this.profileId);
@@ -36,7 +37,7 @@ export default {
       this.fetchData();
     },
     openSource({ item, index, event }) {
-      this.$router.push({ name: 'profileSource', params: { profileId: this.profileId, sourceId: item.url } });
+      this.$router.push({ name: 'profileSource', params: { profileId: this.profileId, sourceId: item.providerId } });
     },
   },
   computed: {
@@ -47,7 +48,7 @@ export default {
       return Object.keys(this.sources).length;
     },
     profileId() {
-      return this.$route.params.id;
+      return convertId(this.$route.params.id);
     },
     profile() {
       return this.$store.state.profile;
@@ -67,11 +68,11 @@ export default {
         },
         {
           text: this.profileName,
-          href: '#/profile/' + this.profileId,
+          href: '#/profile/' + encodeURIComponent(this.profileId),
         },
         {
           text: 'Sources',
-          to: '{ name: "profileSources", params: { id: this.$route.params.id }}',
+          href: '#/profile/' + encodeURIComponent(this.profileId) + '/sources',
         },
       ];
     },

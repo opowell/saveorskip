@@ -10,9 +10,10 @@
       @create="addProperty"
       @save="saveObject"
       :fetchData="fetchData"
-      :ineditable-row-names="['points', 'consumerId', 'providerId']"
+      :ineditable-row-names="['points', 'consumerId', 'providerId', 'saved', 'timeAdded']"
       :ineditable-col-names="['consumerId', 'providerId']"
       :links="fieldLinks"
+      :rowNamesToSkip="['consumerId']"
       @deleteObject="askDeleteObject"
     >
     </objects-table>
@@ -64,7 +65,7 @@ export default {
       this.fetchData();
     },
     fetchData() {
-      let profileId = convertId(this.$route.params.profileId);
+      let profileId = this.profileId;
       let sourceId = this.$route.params.sourceId;
       idb.loadSource([profileId, sourceId]);
       idb.loadProfile({ profileId });
@@ -74,7 +75,7 @@ export default {
   computed: {
     fieldLinks() {
       return {
-        'Scraped links': '#/profile/' + this.$route.params.profileId + '/sources/' + encodeURIComponent(this.$route.params.sourceId) + '/links',
+        providerId: '#/profile/' + encodeURIComponent(this.$route.params.sourceId),
       };
     },
     profileSourceStats() {
@@ -150,15 +151,15 @@ export default {
         },
         {
           text: this.profileName,
-          href: '#/profile/' + this.$route.params.profileId,
+          href: '#/profile/' + encodeURIComponent(this.$route.params.profileId),
         },
         {
           text: 'Sources',
-          href: '#/profile/' + this.$route.params.profileId + '/sources',
+          href: '#/profile/' + encodeURIComponent(this.$route.params.profileId) + '/sources',
         },
         {
           text: this.sourceId,
-          href: '#/profile/' + this.$route.params.profileId + '/sources/' + this.$route.params.sourceId,
+          href: '#/profile/' + encodeURIComponent(this.$route.params.profileId) + '/sources/' + encodeURIComponent(this.$route.params.sourceId),
         },
       ];
     },

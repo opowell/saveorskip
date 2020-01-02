@@ -256,7 +256,7 @@ async function getLinkCB(link) {
 }
 
 chrome.runtime.onMessage.addListener(async function(message, sender, sendResponse) {
-  console.log('message received from ' + trimmedUrl(sender.url) + ': ' + JSON.stringify(message));
+  console.log('message received from ' + trimmedUrl(sender.url), message);
 
   let action = message;
   if (message.action != null) {

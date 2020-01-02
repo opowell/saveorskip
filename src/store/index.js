@@ -42,7 +42,7 @@ export default new Vuex.Store({
     sourceToScrape: null,
 
     // Id of current target.
-    targetId: '',
+    targetId: 1,
     curLink: null,
     curUrlAsLink: null,
     curUrlAsSource: null,
@@ -55,8 +55,6 @@ export default new Vuex.Store({
     nextSuggestion: null,
     scrapeDelayMS: 1000 * 60 * 60 * 24,
     urlToScrape: null,
-
-    dbPromise: null,
   },
   getters,
   mutations,

@@ -13,7 +13,7 @@ import {
 } from './Constants.ts';
 import * as AutoGenProfile from '../models/AutoGenProfile.js';
 import * as types from './mutation-types.js';
-import { convertId } from '../Utils.js';
+import Vue from 'vue';
 
 function trimmedUrl(url) {
   if (url == null) {
@@ -57,7 +57,6 @@ export async function setCurLink(payload) {
 
 export async function loadProfile(payload) {
   let profileId = payload.profileId;
-  profileId = convertId(profileId);
   const db = await dbPromise;
   let profile = await db.get(STORE_PROFILES, profileId);
   profile['Links'] = await db.countFromIndex(STORE_LINKS, INDEX_LINKS_PROFILEID, profile.id);
@@ -67,7 +66,7 @@ export async function loadProfile(payload) {
 
 export async function loadSources(payload) {
   let db = await dbPromise;
-  let out = await db.getAllFromIndex(STORE_SOURCES, INDEX_SOURCES_CONSUMERID, convertId(payload.profileId));
+  let out = await db.getAllFromIndex(STORE_SOURCES, INDEX_SOURCES_CONSUMERID, payload.profileId);
   for (let i = 0; i < out.length; i++) {
     // eslint-disable-next-line prettier/prettier
     out[i]['Links'] = await db.countFromIndex(STORE_LINKS, INDEX_LINKS_PROFILEID, [out[i].profileId, out[i].url]);
@@ -80,13 +79,12 @@ export async function setSkippedLinkIfNew(profileId, link) {
     return;
   }
   link.url = trimmedUrl(link.url);
-  let storeItem = null;
   const db = await dbPromise;
-  storeItem = await db.get(STORE_LINKS, [convertId(profileId), link.url]);
+  let storeItem = await db.get(STORE_LINKS, [profileId, link.url]);
   if (storeItem != null) {
     return;
   }
-  saveOrSkipLink({
+  await saveOrSkipLink({
     action: 'skip',
     targetId: profileId,
     link,
@@ -113,6 +111,8 @@ export async function setSkippedSourceIfNew(profileId, source) {
     });
     AutoGenProfile.incrementScrapeDate(storeItem);
     await db.put(STORE_PROFILES, storeItem);
+    source.url = prevUrl;
+    source.title = prevTitle;
     return;
   }
   source.points = 0;
@@ -129,7 +129,7 @@ export async function setSkippedSourceIfNew(profileId, source) {
 
 export async function loadLinks(payload) {
   let db = await dbPromise;
-  let out = await db.getAllFromIndex(STORE_LINKS, INDEX_LINKS_PROFILEID, convertId(payload.profileId));
+  let out = await db.getAllFromIndex(STORE_LINKS, INDEX_LINKS_PROFILEID, payload.profileId);
   if (out == null) {
     return;
   }
@@ -138,7 +138,7 @@ export async function loadLinks(payload) {
 
 export async function getLink({ profileId, linkId }) {
   let db = await dbPromise;
-  let out = await db.get(STORE_LINKS, [convertId(profileId), linkId]);
+  let out = await db.get(STORE_LINKS, [profileId, linkId]);
   return out;
 }
 
@@ -162,7 +162,7 @@ export async function loadSource(key) {
 
 export async function deleteLink({ profileId, linkId }) {
   let db = await dbPromise;
-  await db.delete(STORE_LINKS, [convertId(profileId), linkId]);
+  await db.delete(STORE_LINKS, [profileId, linkId]);
   store.commit(types.LOAD_LINK, undefined);
 }
 
@@ -177,7 +177,6 @@ export async function deleteObject(store, key) {
 }
 
 export async function saveLink(link) {
-  link.profileId = link.convertId(profileId);
   let db = await dbPromise;
   try {
     await db.put(STORE_LINKS, link);
@@ -199,9 +198,7 @@ export async function saveObject(storeName, object) {
 
 export async function fetchProfiles() {
   const db = await dbPromise;
-  const tx = db.transaction(STORE_PROFILES);
-  const profilesStore = tx.objectStore(STORE_PROFILES);
-  const values = await profilesStore.getAll();
+  const values = await db.getAll(STORE_PROFILES);
   let profiles = [];
   if (values.length === 0) {
     await addProfile({
@@ -213,19 +210,18 @@ export async function fetchProfiles() {
     values[i].sources = await db.countFromIndex(STORE_SOURCES, INDEX_SOURCES_CONSUMERID, values[i].id);
     profiles.push(values[i]);
   }
-  await tx.done;
-  dispatchToStores('fetchProfiles', profiles);
+  await dispatchToStores('fetchProfiles', profiles);
 }
 
 export async function getProfileSources(profileId) {
   let db = await dbPromise;
-  let out = await db.getAllFromIndex(STORE_SOURCES, INDEX_SOURCES_CONSUMERID, convertId(profileId));
+  let out = await db.getAllFromIndex(STORE_SOURCES, INDEX_SOURCES_CONSUMERID, profileId);
   return out;
 }
 
 export async function getLinks(profileId) {
   let db = await dbPromise;
-  let out = await db.getAllFromIndex(STORE_LINKS, INDEX_LINKS_PROFILEID, [convertId(profileId)]);
+  let out = await db.getAllFromIndex(STORE_LINKS, INDEX_LINKS_PROFILEID, profileId);
   return out;
 }
 
@@ -250,17 +246,8 @@ export async function deleteProfile(payload) {
 
 export async function deleteProfileSource(payload) {
   let db = await dbPromise;
-  var tx = db.transaction(STORE_SOURCES, 'readwrite');
-  var objStore = tx.objectStore(STORE_SOURCES);
-  try {
-    await objStore.delete([payload.profileId, payload.sourceId]);
-    store.commit(types.DELETE_PROFILE_SOURCE, payload);
-    await tx.done;
-  } catch (e) {
-    tx.abort();
-    console.log(e);
-    console.log(e.stack);
-  }
+  await db.delete(STORE_SOURCES, [payload.profileId, payload.sourceId]);
+  store.commit(types.DELETE_PROFILE_SOURCE, payload);
 }
 
 export async function addLink(payload) {
@@ -290,7 +277,7 @@ export async function setSourceSaved(payload) {
     url: trimmedUrl(payload.link.url),
     title: payload.link.title,
     saved: payload.action === 'save',
-    profileId: convertId(payload.targetId),
+    profileId: payload.targetId,
   };
   if (payload.props != null) {
     let propKeys = Object.keys(payload.props);
@@ -314,7 +301,7 @@ export async function saveOrSkipLink(payload) {
 
   link.url = trimmedUrl(link.url);
   link.saved = payload.action === 'save';
-  link.profileId = convertId(payload.targetId);
+  link.profileId = payload.targetId;
   link.timeSaved = new Date();
 
   let db = await dbPromise;
@@ -356,6 +343,12 @@ export async function saveOrSkipLink(payload) {
   }
 
   // Process link itself.
+  if (link.url == null) {
+    link.url = link.id;
+  }
+  if (link.title == null) {
+    link.title = link.name;
+  }
   console.log('Storing link:', link);
   await db.put(STORE_LINKS, link);
   console.log('Link "' + payload.link.url + '" stored successfully.');
@@ -371,17 +364,22 @@ export async function saveOrSkipSource({ source, targetId, action }) {
   let sourceConnection = {};
   sourceConnection.points = source.points;
   sourceConnection[STORE_SOURCES_PROVIDERID] = trimmedUrl(source.id);
-  sourceConnection[STORE_SOURCES_CONSUMERID] = convertId(targetId);
+  sourceConnection[STORE_SOURCES_CONSUMERID] = targetId;
   sourceConnection.saved = action === 'save';
   sourceConnection.timeAdded = new Date();
 
-  let storeObject = await db.get(STORE_SOURCES, [targetId, source.id]);
+  let sourceId = source.id;
+  if (source.id == null) {
+    sourceId = source.url;
+  }
+
+  let storeObject = await db.get(STORE_SOURCES, [targetId, sourceId]);
   if (storeObject != null) {
     sourceConnection.points = sourceConnection.points - 0 + (storeObject.points - 0);
   }
   await db.put(STORE_SOURCES, sourceConnection);
 
-  addProfile(source);
+  await addProfile(source);
 
   console.log('Source "' + source.id + '" stored successfully.');
   await setCurUrlSourceStatus();
@@ -415,7 +413,7 @@ export async function changeSourcePoints(payload) {
   let source = payload.source;
   let db = await dbPromise;
   source.url = trimmedUrl(source.url);
-  source.profileId = convertId(payload.targetId);
+  source.profileId = payload.targetId;
   let storeObject = await db.get(STORE_SOURCES, [source.profileId, source.url]);
   if (storeObject != null) {
     storeObject.points += payload.pointsChange;
@@ -457,53 +455,67 @@ export async function addProfile(profile) {
   let sourcesForSave = profile.sourcesForSave;
   let sourcesForSkip = profile.sourcesForSkip;
 
-  delete profile.links;
-  delete profile.sources;
-  delete profile.sourcesForSave;
-  delete profile.sourcesForSkip;
-  console.log('Storing source profile:', profile);
-
-  addLinks({
+  await addLinks({
     links,
     profileId: profile.id,
   });
+
+  Vue.delete(profile, 'links');
+  Vue.delete(profile, 'sources');
+  Vue.delete(profile, 'sourcesForSave');
+  Vue.delete(profile, 'sourcesForSkip');
+
+  delete profile.saved;
+  delete profile.points;
+  delete profile.profileId;
+  delete profile.title;
+  delete profile.url;
+  delete profile.timeSaved;
+
+  profile.timeAdded = new Date();
+
+  console.log('Storing source profile:', profile);
+
+  await db.put(STORE_PROFILES, profile);
+  await fetchProfiles();
 
   profile.links = links;
   profile.sources = sources;
   profile.sourcesForSave = sourcesForSave;
   profile.sourcesForSkip = sourcesForSkip;
-
-  await db.put(STORE_PROFILES, profile);
-  store.commit(types.ADD_PROFILE, profile.name);
-  fetchProfiles();
 }
 
 export async function setTarget(profileId) {
-  dispatchToStores('setTarget', profileId);
-  setCurUrlLinkStatus();
-  setCurUrlSourceStatus();
+  await dispatchToStores('setTarget', profileId);
+  await setCurUrlLinkStatus();
+  await setCurUrlSourceStatus();
 }
 
 export async function setCurUrlLinkStatus() {
-  let url = store.state.curLink.url;
-  if (store.state.targetId == null) {
-    console.log('no current target');
-    await dispatchToStores('setCurUrlLinkStatus', 'neither');
-    return;
-  }
-  if (url == null) {
-    console.log('no link');
-    await dispatchToStores('setCurUrlLinkStatus', 'neither');
-    return;
-  }
-  url = trimmedUrl(url);
+  try {
+    let url = store.state.curLink.url;
+    if (store.state.targetId == null) {
+      console.log('no current target');
+      await dispatchToStores('setCurUrlLinkStatus', 'neither');
+      return;
+    }
+    if (url == null) {
+      console.log('no link');
+      await dispatchToStores('setCurUrlLinkStatus', 'neither');
+      return;
+    }
+    url = trimmedUrl(url);
 
-  let db = await dbPromise;
-  let link = await db.get(STORE_LINKS, [convertId(store.state.targetId), url]);
-  if (link == null) {
-    return;
+    let db = await dbPromise;
+    let link = await db.get(STORE_LINKS, [store.state.targetId, url]);
+    if (link == null) {
+      return;
+    }
+    await dispatchToStores('setCurUrlLinkStatus', link.saved);
+  } catch (err) {
+    console.log(err);
+    debugger;
   }
-  await dispatchToStores('setCurUrlLinkStatus', link.saved);
 }
 
 export async function setCurUrlSourceStatus() {
@@ -518,7 +530,7 @@ export async function setCurUrlSourceStatus() {
   }
   url = trimmedUrl(url);
   let db = await dbPromise;
-  let link = await db.get(STORE_SOURCES, [convertId(store.state.targetId), url]);
+  let link = await db.get(STORE_SOURCES, [store.state.targetId, url]);
   if (link == null) {
     store.commit(types.SET_CUR_URL_SOURCE_STATUS, 'neither');
   } else {

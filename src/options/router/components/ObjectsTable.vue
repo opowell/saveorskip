@@ -15,16 +15,16 @@
     <b-table hover show-empty stacked="md" :items="items" :fields="fieldNames" :filter="filter" @row-clicked="clickItem" class="mt-3">
       <template v-slot:cell(name)="data">
         <a v-if="isLink(data.value)" :title="data.value" :href="links[data.value]">
-          {{ data.value }}
+          {{ decodeURIComponent(data.value) }}
         </a>
         <div v-else-if="!canEditCell('name', data.item)" :title="data.value">
-          {{ data.value }}
+          {{ decodeURIComponent(data.value) }}
         </div>
         <b-input v-else type="text" @change="changeFieldName(data.item.name, $event)" @keyup="changeFieldName(data.item.name, $event)" :value="data.value" style="width: 100%" />
       </template>
       <template v-slot:cell(value)="data">
         <div v-if="!canEditCell('value', data.item)" :title="data.value">
-          {{ data.value }}
+          {{ decodeURIComponent(data.value) }}
         </div>
         <b-select
           v-else-if="typeof data.item.value === 'boolean'"
@@ -43,14 +43,14 @@
           type="text"
           @keyup="changeFieldValue(data.item.name, $event)"
           @change="changeFieldValue(data.item.name, $event)"
-          :value="data.value"
+          :value="decodeURIComponent(data.value)"
         />
         <textarea
           v-else
           class="form-control"
           @keyup="changeFieldValue(data.item.name, $event)"
           @change="changeFieldValue(data.item.name, $event)"
-          :value="data.value"
+          :value="decodeURIComponent(data.value)"
           style="width: 100%"
         />
       </template>

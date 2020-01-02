@@ -33,6 +33,7 @@
 import ObjectsTable from '../components/ObjectsTable.vue';
 import * as idb from '../../../store/idb.js';
 import { STORE_PROFILES } from '../../../store/Constants.ts';
+import { convertId } from '../../../Utils.js';
 import Vue from 'vue';
 
 export default {
@@ -142,6 +143,9 @@ export default {
       }
       if (typeof this.profile.name == 'object') {
         return JSON.stringify(this.profile.name);
+      }
+      if (this.profile.name == '') {
+        return decodeURIComponent(this.profile.id);
       }
       return this.profile.name;
     },

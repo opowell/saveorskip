@@ -23,10 +23,32 @@ if (!('indexedDB' in window)) {
   console.log("This browser doesn't support IndexedDB");
 }
 
-// When anything below changes, increment DB_VERSION. This forces the database schema to be updated.
+// export const getDBConnection = async function() {
+//   let dbPromise = await openDB(DB_NAME, DB_VERSION, {
+//     upgrade(db, oldVersion, newVersion, transaction) {
+//       if (oldVersion === 0) {
+//         console.log('Creating stores');
+
+//         db.createObjectStore(STORE_PROFILES, { keyPath: 'id', autoIncrement: true });
+
+//         let linksStore = db.createObjectStore(STORE_LINKS, { keyPath: [STORE_LINKS_PROFILEID, 'url'] });
+//         linksStore.createIndex('saved', 'saved', { unique: false });
+//         linksStore.createIndex(INDEX_LINKS_PROFILEID, INDEX_LINKS_PROFILEID, { unique: false });
+//         linksStore.createIndex(INDEX_LINKS_PROFILEID_TIMEADDED, ['profileId', 'timeScraped']);
+
+//         let sourcesStore = db.createObjectStore(STORE_SOURCES, { keyPath: [STORE_SOURCES_CONSUMERID, STORE_SOURCES_PROVIDERID] });
+//         sourcesStore.createIndex(STORE_SOURCES_CONSUMERID, STORE_SOURCES_CONSUMERID);
+//         sourcesStore.createIndex('saved', 'saved');
+//         sourcesStore.createIndex('url', 'url');
+//       }
+//     },
+//   });
+//   return dbPromise;
+// }
+
+// // When anything below changes, increment DB_VERSION. This forces the database schema to be updated.
 export const dbPromise = openDB(DB_NAME, DB_VERSION, {
   upgrade(db, oldVersion, newVersion, transaction) {
-    store.state.dbPromise = this;
     if (oldVersion === 0) {
       console.log('Creating stores');
 

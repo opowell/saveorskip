@@ -84,7 +84,7 @@ export default {
   async mounted() {
     await idb.fetchProfiles();
     if (!this.hasTarget && this.profiles != null && this.profiles.length > 0) {
-      this.setTarget(this.profiles[0].id);
+      this.setTarget(this.personalProfiles[0].id);
     }
     await idb.setCurUrlLinkStatus();
     await idb.setCurUrlSourceStatus();

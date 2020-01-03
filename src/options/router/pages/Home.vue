@@ -67,6 +67,7 @@ export default {
           debugger;
         },
       });
+      await idb.fetchProfiles();
     },
   },
 };

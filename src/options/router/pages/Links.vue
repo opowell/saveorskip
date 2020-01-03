@@ -1,7 +1,7 @@
 <template>
   <div>
     <b-breadcrumb :items="crumbs" />
-    <objects-table ref="table" :object="links" @create="addLink" @click="openLink" :colNamesToSkip="['profileId']" />
+    <objects-table ref="table" :object="links" @create="addLink" @click="openLink" :colNamesToSkip="['profileId']" :colLabels="{ timeAdded: 'Time added' }" />
   </div>
 </template>
 

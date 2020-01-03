@@ -15,6 +15,7 @@
       :links="fieldLinks"
       :rowNamesToSkip="['consumerId']"
       @deleteObject="askDeleteObject"
+      :rowLabels="{ providerId: 'Profile' }"
     >
     </objects-table>
   </div>

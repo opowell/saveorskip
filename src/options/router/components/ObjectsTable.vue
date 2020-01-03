@@ -15,10 +15,10 @@
     <b-table :hover="isObjArray" show-empty stacked="md" :items="items" :fields="fieldNames" :filter="filter" @row-clicked="clickItem" class="mt-3">
       <template v-slot:cell(name)="data">
         <a v-if="isLink(data.value)" :title="data.value" :href="links[data.value]">
-          {{ decodeURIComponent(data.value) }}
+          {{ decodeURIComponent(rowLabel(data.value)) }}
         </a>
         <div v-else-if="!canEditCell('name', data.item)" :title="data.value">
-          {{ decodeURIComponent(data.value) }}
+          {{ decodeURIComponent(rowLabel(data.value)) }}
         </div>
         <b-input v-else type="text" @change="changeFieldName(data.item.name, $event)" @keyup="changeFieldName(data.item.name, $event)" :value="data.value" style="width: 100%" />
       </template>
@@ -59,12 +59,11 @@
 </template>
 
 <script>
-import * as idb from '../../../store/idb.js';
 import Vue from 'vue';
 
 export default {
   // eslint-disable-next-line prettier/prettier
-  props: ['object', 'ineditableRowNames', 'ineditableColNames', 'store', 'fetchData', 'links', 'rowNamesToSkip', 'colNamesToSkip'],
+  props: ['object', 'ineditableRowNames', 'ineditableColNames', 'store', 'fetchData', 'links', 'rowNamesToSkip', 'colNamesToSkip', 'colLabels', 'rowLabels'],
   data() {
     return {
       sortDesc: true,
@@ -74,6 +73,12 @@ export default {
     };
   },
   methods: {
+    rowLabel(x) {
+      if (this.rowLabels != null && this.rowLabels[x] != null) {
+        return this.rowLabels[x];
+      }
+      return x;
+    },
     isLink(propertyName) {
       if (this.links == null) {
         return false;
@@ -221,9 +226,13 @@ export default {
               continue;
             }
             if (!out.includes(a)) {
+              let label = a;
+              if (this.colLabels != null && this.colLabels[a] != null) {
+                label = this.colLabels[a];
+              }
               let field = {
                 key: a,
-                label: a,
+                label,
                 class: 'table-cell',
                 sortable: true,
               };

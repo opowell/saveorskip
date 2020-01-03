@@ -8,11 +8,12 @@
       ref="table"
       :object="link"
       @create="addProperty"
-      :ineditable-row-names="['profileId', 'url', 'title', 'timeAdded']"
+      :ineditable-row-names="['profileId', 'url', 'title', 'timeAdded', 'saved']"
       :ineditable-col-names="['profileId']"
       @save="saveLink"
       :fetchData="fetchData"
       @deleteObject="askDeleteObject"
+      rowNamesToSkip="['profileId']"
     >
       <template v-slot:header>
         <button @click="openLink(true)" title="Open this link in a new window.">Open</button>

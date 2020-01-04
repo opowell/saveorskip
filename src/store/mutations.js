@@ -116,6 +116,8 @@ export default {
       return;
     }
     payload.url = trimmedUrl(payload.url);
+    delete payload.name;
+    delete payload.id;
     state.curLink = payload;
   },
 

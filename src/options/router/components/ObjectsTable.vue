@@ -13,6 +13,12 @@
     </div>
     <!-- Main table element -->
     <b-table :hover="isObjArray" show-empty stacked="md" :items="items" :fields="fieldNames" :filter="filter" @row-clicked="clickItem" class="mt-3">
+      <!-- <template slot="top-row" slot-scope="{ fields: fieldNames }">
+        <td v-for="field in fieldNames" :key="field.key">
+          <input v-model="filters[field.key]" :placeholder="field.label + '...'">
+        </td>
+      </template> -->
+
       <template v-slot:cell(name)="data">
         <a v-if="isLink(data.value)" :title="data.value" :href="links[data.value]">
           {{ decodeURIComponent(rowLabel(data.value)) }}
@@ -22,6 +28,7 @@
         </div>
         <b-input v-else type="text" @change="changeFieldName(data.item.name, $event)" @keyup="changeFieldName(data.item.name, $event)" :value="data.value" style="width: 100%" />
       </template>
+
       <template v-slot:cell(value)="data">
         <div v-if="!canEditCell('value', data.item)" :title="data.value">
           {{ decodeURIComponent(data.value) }}
@@ -54,6 +61,10 @@
           style="width: 100%"
         />
       </template>
+
+      <template v-slot:cell(description)="data">
+        {{ data.value }}
+      </template>
     </b-table>
   </div>
 </template>
@@ -63,7 +74,7 @@ import Vue from 'vue';
 
 export default {
   // eslint-disable-next-line prettier/prettier
-  props: ['object', 'ineditableRowNames', 'ineditableColNames', 'store', 'fetchData', 'links', 'rowNamesToSkip', 'colNamesToSkip', 'colLabels', 'rowLabels'],
+  props: ['object', 'ineditableRowNames', 'ineditableColNames', 'store', 'fetchData', 'links', 'rowNamesToSkip', 'colNamesToSkip', 'colLabels', 'rowLabels', 'rowDescriptions'],
   data() {
     return {
       sortDesc: true,
@@ -78,6 +89,12 @@ export default {
         return this.rowLabels[x];
       }
       return x;
+    },
+    rowDescription(x) {
+      if (this.rowDescriptions != null && this.rowDescriptions[x] != null) {
+        return this.rowDescriptions[x];
+      }
+      return '';
     },
     isLink(propertyName) {
       if (this.links == null) {
@@ -179,6 +196,13 @@ export default {
     },
   },
   computed: {
+    // filters() {
+    //   let out = {};
+    //   for (let i in this.fieldNames) {
+    //     out[this.fieldNames[i].key] = '';
+    //   }
+    //   return out;
+    // },
     editableFieldNames() {
       let out = [];
       if (Array.isArray(this.object)) {
@@ -253,6 +277,12 @@ export default {
           class: 'table-cell',
           sortable: true,
         });
+        out.push({
+          key: 'description',
+          label: 'Description',
+          class: 'table-cell',
+          sortable: true,
+        });
       }
       return out;
     },
@@ -284,6 +314,7 @@ export default {
           out.push({
             name: this.valueToString(i),
             value: this.valueToString(this.object[i]),
+            description: this.rowDescription(i),
           });
         }
       }

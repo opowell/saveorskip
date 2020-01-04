@@ -66,8 +66,7 @@ export async function loadProfile(payload) {
 }
 
 export async function loadSources(payload) {
-  let db = await dbPromise;
-  let out = await db.getAllFromIndex(STORE_SOURCES, INDEX_SOURCES_CONSUMERID, payload.profileId);
+  let out = await getProfileSources(payload.profileId);
   await dispatchToStores('loadSources', out);
 }
 
@@ -81,7 +80,6 @@ export async function setSkippedLinkIfNew(profileId, link) {
   if (storeItem != null) {
     return;
   }
-  let linksBackup = link.links;
   await saveOrSkipLink({
     action: 'skip',
     targetId: profileId,
@@ -143,11 +141,7 @@ export async function setSkippedSourceIfNew(profileId, source) {
 }
 
 export async function loadLinks(payload) {
-  let db = await dbPromise;
-  let out = await db.getAllFromIndex(STORE_LINKS, INDEX_LINKS_PROFILEID, payload.profileId);
-  if (out == null) {
-    return;
-  }
+  let out = await getLinks(payload.profileId);
   store.commit(types.LOAD_LINKS, out);
 }
 
@@ -295,6 +289,9 @@ export async function addLink(payload) {
 }
 
 export async function addSources({ sources }) {
+  if (!Array.isArray(sources)) {
+    return;
+  }
   for (let i = 0; i < sources.length; i++) {
     let source = sources[i];
     await saveOrSkipSource({
@@ -391,9 +388,12 @@ export async function saveOrSkipLink(payload) {
   if (link.title == null) {
     link.title = link.name;
   }
+  if (link.profileId === link.url) {
+    return;
+  }
   console.log('Storing link:', link);
   await db.put(STORE_LINKS, link);
-  console.log('Link "' + payload.link.url + '" stored successfully.');
+  console.log('Link "' + link.url + '" stored successfully.');
   await setCurUrlLinkStatus();
 
   // Reset content.

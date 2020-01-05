@@ -1,23 +1,60 @@
 <template>
   <div>
+    <b-modal id="addFilterModal" title="Add Filter" @ok="addFilter">
+      <div>
+        <span>Field: {{ addFilterField }} </span>
+      </div>
+      <div>
+        <span>Value:</span>
+        <input id="addFilterValue" type="text" />
+      </div>
+    </b-modal>
     <!-- User Interface controls -->
     <div style="display: flex; align-items: baseline;">
       <b-input v-model="filter" placeholder="Add / filter" v-on:keyup.enter="tryToAddItem" style="max-width: 400px;" />
-      <button :disabled="!canAddItem" @click="addItem">Add</button>
+      <div>
+        <span v-for="(filter, index) in filters" :key="index"> {{ filter.field }} = {{ filter.value }} </span>
+      </div>
       <div style="flex: 1 1 auto">&nbsp;</div>
       <slot name="header"></slot>
+      <span v-show="hasSelection">
+        <span>Selected: {{ selection.length }}</span>
+        <button @click="deleteSelectedRows" title="Delete selected objects.">Delete...</button>
+      </span>
+      <button @click="addItemPrompt">Add...</button>
       <button v-if="!isObjArray" @click="duplicate">Duplicate</button>
       <button v-if="!isObjArray" @click="deleteObject" title="Delete this object.">Delete...</button>
       <button v-if="!isObjArray" title="Save the changes to this object." :disabled="!changesPending" :class="{ 'btn-primary': changesPending }" @click="saveObject">Save</button>
       <button v-if="!isObjArray" title="Reset this object to its original form" @click="reset" :disabled="!changesPending">Reset</button>
     </div>
     <!-- Main table element -->
-    <b-table :hover="isObjArray" show-empty stacked="md" :items="items" :fields="fieldNames" :filter="filter" @row-clicked="clickItem" class="mt-3">
-      <!-- <template slot="top-row" slot-scope="{ fields: fieldNames }">
-        <td v-for="field in fieldNames" :key="field.key">
-          <input v-model="filters[field.key]" :placeholder="field.label + '...'">
-        </td>
-      </template> -->
+    <b-table
+      ref="table"
+      :hover="isObjArray"
+      show-empty
+      stacked="md"
+      :items="items"
+      :fields="fieldNames"
+      :filter="filters"
+      :filter-function="filterFunction"
+      @row-clicked="clickItem"
+      class="mt-3"
+      selectable
+      @row-selected="rowSelected"
+      no-select-on-click
+    >
+      <template v-slot:head(__checkbox)="data">
+        <input type="checkbox" v-model="selectAll" @change="selectAllChange($event)" />
+      </template>
+
+      <template v-slot:head()="data">
+        <span class="table-header" @click.prevent.stop="openFilter(data)">{{ data.label }}</span>
+      </template>
+
+      <template v-slot:cell(__checkbox)="data">
+        <input v-if="isSelectable(data.item)" type="checkbox" :checked="isSelected(data)" @change="toggleRowSelect(data, $event)" />
+        <div v-else></div>
+      </template>
 
       <template v-slot:cell(name)="data">
         <a v-if="isLink(data.value)" :title="data.value" :href="links[data.value]">
@@ -81,9 +118,87 @@ export default {
       filter: null,
       deleteItemSelect: null,
       changesPending: false,
+      selectAll: false,
+      selection: [],
+      selectableProp: '',
+      showColFilters: false,
+      addFilterField: '',
+      filters: [],
     };
   },
   methods: {
+    filterFunction(rowData, filters) {
+      for (let i in filters) {
+        let filter = filters[i];
+        if (filter.field == null) {
+          continue;
+        }
+        if (filter.value == null) {
+          continue;
+        }
+        if (rowData[filter.field] == null) {
+          return false;
+        }
+        if (rowData[filter.field].includes == null) {
+          return false;
+        }
+        if (!rowData[filter.field].includes(filter.value)) {
+          return false;
+        }
+      }
+      return true;
+    },
+    openFilter(data) {
+      this.addFilterField = data.column;
+      this.$bvModal.show('addFilterModal');
+    },
+    addFilter() {
+      let filter = {
+        field: this.addFilterField,
+        value: document.getElementById('addFilterValue').value,
+      };
+      this.filters.push(filter);
+    },
+    selectAllChange(event) {
+      if (event.target.checked) {
+        this.$refs.table.selectAllRows();
+      } else {
+        this.$refs.table.clearSelected();
+      }
+    },
+    deleteSelectedRows() {},
+    toggleRowSelect(data, event) {
+      let index = data.index;
+      if (event.target.checked) {
+        this.$refs.table.selectRow(index);
+        this.selectableProp = 'range';
+      } else {
+        this.$refs.table.unselectRow(index);
+      }
+    },
+    rowSelected(rows) {
+      console.log('selected ' + rows.length);
+      this.selection = rows;
+    },
+    isSelected(data) {
+      for (let i in this.selection) {
+        if (this.selection[i] === data.item) {
+          return true;
+        }
+      }
+      return false;
+    },
+    isSelectable(item) {
+      if (this.isObjArray) {
+        return true;
+      } else {
+        if (this.isLink(item.name)) {
+          return false;
+        } else {
+          return this.canEditCell('name', item);
+        }
+      }
+    },
     rowLabel(x) {
       if (this.rowLabels != null && this.rowLabels[x] != null) {
         return this.rowLabels[x];
@@ -168,12 +283,15 @@ export default {
       Vue.delete(this.object, this.deleteItemSelect);
       this.changesPending = true;
     },
+    addItemPrompt() {
+      this.$emit('create');
+    },
     clickItem(item, index, event) {
       this.$emit('click', { item, index, event });
     },
-    createNewItem(inputString) {
-      this.$emit('create', inputString);
-    },
+    // createNewItem(inputString) {
+    //   this.$emit('create', inputString);
+    // },
     canEditCell(field, obj) {
       if (this.isObjArray) {
         return false;
@@ -196,13 +314,19 @@ export default {
     },
   },
   computed: {
-    // filters() {
-    //   let out = {};
-    //   for (let i in this.fieldNames) {
-    //     out[this.fieldNames[i].key] = '';
-    //   }
-    //   return out;
-    // },
+    hasSelection() {
+      return this.selection.length > 0;
+    },
+    selectedRows() {
+      let out = [];
+      let tableRows = this.$refs.table.selectedRows;
+      for (let i in tableRows) {
+        if (tableRows[i]) {
+          out.push(i);
+        }
+      }
+      return out;
+    },
     editableFieldNames() {
       let out = [];
       if (Array.isArray(this.object)) {
@@ -241,7 +365,12 @@ export default {
         });
     },
     fieldNames() {
-      let out = [];
+      let checkBoxField = {
+        key: '__checkbox',
+        label: '',
+        sortable: true,
+      };
+      let out = ['__checkbox'];
       if (Array.isArray(this.object)) {
         for (let i in this.object) {
           let item = this.object[i];
@@ -351,5 +480,11 @@ export default {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+.table-header {
+  padding: 2px 5px;
+}
+.table-header:hover {
+  background-color: rgba(118, 178, 255, 0.473);
 }
 </style>

@@ -4,8 +4,8 @@ export const setTarget = ({ commit }, payload) => {
   commit(types.SET_TARGET, payload);
 };
 
-export const setCurUrl = ({ commit }, payload) => {
-  commit(types.SET_CUR_URL, payload);
+export const setCurPage = ({ commit }, payload) => {
+  commit(types.SET_CUR_PAGE, payload);
 };
 
 export const setCurUrlLinkStatus = ({ commit }, payload) => {

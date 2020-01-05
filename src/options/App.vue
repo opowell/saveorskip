@@ -11,7 +11,7 @@ export default {
   name: 'App',
   mounted() {
     chrome.tabs.query({ active: true }, function(tabs) {
-      store.dispatch('setCurUrl', { url: tabs[0].url });
+      store.dispatch('setCurPage', { url: tabs[0].url });
     });
   },
 };

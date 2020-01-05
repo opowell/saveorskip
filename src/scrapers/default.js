@@ -131,6 +131,8 @@ sos.getLink = function() {
 
 let link = sos.getLink();
 
+console.log('finished running, sending pageLoaded message');
+
 chrome.runtime.sendMessage({
   action: 'pageLoaded',
   link,

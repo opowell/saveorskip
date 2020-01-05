@@ -50,8 +50,17 @@ export async function dispatchToStores(functionName, payload) {
   });
 }
 
-export async function setCurLink(payload) {
-  await dispatchToStores('setCurUrl', payload);
+export async function setCurPage(payload) {
+  if (payload == null) {
+    return;
+  }
+  if (payload.id != null && payload.url == null) {
+    payload.url = payload.id;
+  }
+  if (payload.title != null && payload.name == null) {
+    payload.title = payload.name;
+  }
+  await dispatchToStores('setCurPage', payload);
   await setCurUrlLinkStatus();
   await setCurUrlSourceStatus();
 }
@@ -547,12 +556,17 @@ export async function setTarget(profileId) {
 
 export async function setCurUrlLinkStatus() {
   try {
-    let url = store.state.curLink.url;
     if (store.state.targetId == null) {
       console.log('no current target');
       await dispatchToStores('setCurUrlLinkStatus', 'neither');
       return;
     }
+    if (store.state.curPage == null) {
+      console.log('no current target');
+      await dispatchToStores('setCurUrlLinkStatus', 'neither');
+      return;
+    }
+    let url = store.state.curPage.url;
     if (url == null) {
       console.log('no link');
       await dispatchToStores('setCurUrlLinkStatus', 'neither');
@@ -568,16 +582,18 @@ export async function setCurUrlLinkStatus() {
     await dispatchToStores('setCurUrlLinkStatus', link.saved);
   } catch (err) {
     console.log(err);
-    // debugger;
   }
 }
 
 export async function setCurUrlSourceStatus() {
-  let url = store.state.curLink.url;
   if (store.state.targetId == null) {
     store.commit(types.SET_CUR_URL_SOURCE_STATUS, 'neither');
     return;
   }
+  if (store.state.curPage == null) {
+    return;
+  }
+  let url = store.state.curPage.url;
   if (url == null) {
     store.commit(types.SET_CUR_URL_SOURCE_STATUS, 'neither');
     return;

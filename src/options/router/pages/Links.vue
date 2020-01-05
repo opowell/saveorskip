@@ -1,7 +1,21 @@
 <template>
   <div>
+    <b-modal id="addLinkModal" title="Add Link" @ok="addLink">
+      <div>
+        <span>url:</span>
+        <input type="text" />
+      </div>
+      <div>
+        <span>title:</span>
+        <input type="text" />
+      </div>
+      <div>
+        <span>saved:</span>
+        <input type="text" />
+      </div>
+    </b-modal>
     <b-breadcrumb :items="crumbs" />
-    <objects-table ref="table" :object="links" @create="addLink" @click="openLink" :colNamesToSkip="['profileId']" :colLabels="{ timeAdded: 'Time added' }" />
+    <objects-table ref="table" :object="links" @create="addLinkPrompt" @click="openLink" :colNamesToSkip="['profileId']" :colLabels="{ timeAdded: 'Time added' }" />
   </div>
 </template>
 
@@ -27,6 +41,9 @@ export default {
     fetchData() {
       idb.loadLinks({ profileId: this.profileId });
       idb.loadProfile({ profileId: this.profileId });
+    },
+    addLinkPrompt() {
+      this.$bvModal.show('addLinkModal');
     },
     async addLink(inputStr) {
       let link = {

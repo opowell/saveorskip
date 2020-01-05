@@ -110,7 +110,7 @@ export default {
     }
   },
 
-  [types.SET_CUR_URL](state, payload) {
+  [types.SET_CUR_PAGE](state, payload) {
     if (payload == null || payload.url == null) {
       console.log('no url given');
       return;
@@ -118,7 +118,7 @@ export default {
     payload.url = trimmedUrl(payload.url);
     delete payload.name;
     delete payload.id;
-    state.curLink = payload;
+    state.curPage = payload;
   },
 
   [types.SET_URL_TO_SCRAPE](state, payload) {

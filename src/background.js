@@ -10,15 +10,15 @@ global.browser = require('webextension-polyfill');
  **/
 async function saveOrSkip(gotoNext, action) {
   console.log('background: saveOrSkip ' + JSON.stringify(action));
-  store.state.curLink.profileId = store.state.targetId;
-  store.state.curLink.saved = action === 'save';
-  // await idb.saveLink(store.state.curLink);
+  store.state.curPage.profileId = store.state.targetId;
+  store.state.curPage.saved = action === 'save';
+  // await idb.saveLink(store.state.curPage);
   // let cb = null;
   if (gotoNext === true) {
     // cb = showNextPage;
     showNextPage();
   }
-  // saveSourcesOfUrl(store.state.curLink.url, cb, action);
+  // saveSourcesOfUrl(store.state.curPage.url, cb, action);
 }
 
 // function saveOrSkipLink(gotoNext, action, link) {
@@ -250,7 +250,7 @@ chrome.tabs.onUpdated.addListener(async function(tabId, changeInfo, tab) {
 });
 
 async function getLinkCB(link) {
-  await idb.setCurLink(link);
+  await idb.setCurPage(link);
   await idb.setSkippedLinkIfNew(store.state.targetId, link);
   await idb.setSkippedSourceIfNew(store.state.targetId, link);
 }
@@ -293,16 +293,16 @@ chrome.runtime.onMessage.addListener(async function(message, sender, sendRespons
         saveAsSource(sender.tab, store.state.targetId, tUrl);
       } else if (sender.tab.id !== store.state.curSuggestionTabId) {
         if (sender.tab.active) {
-          // store.commit(types.SET_CUR_URL, {
+          // store.commit(types.SET_CUR_PAGE, {
           //   url: sender.tab.url,
           // });
-          // idb.setCurLink(sender.tab.url);
+          // idb.setCurPage(sender.tab.url);
           store.commit(types.SET_ACTIVE_TAB_ID, {
             tabId: sender.tab.id,
           });
           await idb.setSkippedLinkIfNew(store.state.targetId, message.link);
           await idb.setSkippedSourceIfNew(store.state.targetId, message.link);
-          await idb.setCurLink(message.link);
+          await idb.setCurPage(message.link);
         }
       } else {
         saveAsSource(sender.tab, store.state.targetId, tUrl);

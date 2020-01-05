@@ -12,7 +12,7 @@ Vue.use(Vuex);
 const stateReducer = function(state) {
   return {
     activeTabId: state.activeTabId,
-    curLink: state.curLink,
+    curPage: state.curPage,
     targetId: state.targetId,
   };
 };

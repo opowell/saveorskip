@@ -110,6 +110,22 @@ export default {
     }
   },
 
+  [types.DELETE_LINK](state, payload) {
+    if (payload == null || payload.url == null || payload.profileId == null) {
+      return;
+    }
+    for (let i in state.links) {
+      if (state.links[i] == null) {
+        continue;
+      }
+      // eslint-disable-next-line prettier/prettier
+      if (state.links[i].profileId === payload.profileId && state.links[i].url === payload.url) {
+        state.links.splice(i, 1);
+        return;
+      }
+    }
+  },
+
   [types.SET_CUR_PAGE](state, payload) {
     if (payload == null || payload.url == null) {
       console.log('no url given');

@@ -1,5 +1,8 @@
 <template>
   <div>
+    <b-modal id="deleteModal" title="Delete items" @ok="deleteSelectedRows" no-fade>
+      <div>Are you sure you want to delete {{ selection.length }} items?</div>
+    </b-modal>
     <b-modal id="addFilterModal" title="Add Filter" @ok="addFilter" no-fade>
       <div style="margin-bottom: 1rem;">
         <span style="width: 100px;">Field:</span>
@@ -43,7 +46,7 @@
       <div>
         <slot name="header"></slot>
         <span v-show="hasSelection">
-          <button @click="deleteSelectedRows" title="Delete selected objects.">Delete {{ selection.length }}...</button>
+          <button @click="deletePrompt" title="Delete selected objects.">Delete {{ selection.length }}...</button>
         </span>
         <button v-if="showAddComputed" @click="addItemPrompt">Add...</button>
         <button @click="openFilter">Filter...</button>
@@ -325,7 +328,13 @@ export default {
         this.$refs.table.clearSelected();
       }
     },
-    deleteSelectedRows() {},
+    deletePrompt() {
+      this.$bvModal.show('deleteModal');
+    },
+    deleteSelectedRows() {
+      this.$bvModal.hide('deleteModal');
+      this.$emit('deleteSelectedRows', this.selection);
+    },
     removeFilter(index) {
       this.filters.splice(index, 1);
       this.updateFilterQuery();

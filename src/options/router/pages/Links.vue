@@ -22,6 +22,7 @@
       :colNamesToSkip="['profileId']"
       :colLabels="{ timeAdded: 'Time added' }"
       :crumbs="crumbs"
+      @deleteSelectedRows="deleteLinks"
     />
   </div>
 </template>
@@ -45,6 +46,14 @@ export default {
     this.fetchData();
   },
   methods: {
+    deleteLinks(selection) {
+      for (let i in selection) {
+        idb.deleteLink({
+          profileId: selection[i].profileId,
+          linkId: selection[i].url,
+        });
+      }
+    },
     fetchData() {
       idb.loadLinks({ profileId: this.profileId });
       idb.loadProfile({ profileId: this.profileId });

@@ -182,6 +182,7 @@ export async function deleteLink({ profileId, linkId }) {
   let db = await dbPromise;
   await db.delete(STORE_LINKS, [profileId, linkId]);
   store.commit(types.LOAD_LINK, undefined);
+  store.commit(types.DELETE_LINK, { profileId, url: linkId });
 }
 
 export async function deleteObject(store, key) {

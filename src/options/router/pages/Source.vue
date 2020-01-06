@@ -1,12 +1,12 @@
 <template>
   <div>
-    <b-modal id="deleteModal" title="Delete Source" @ok="deleteObject">
+    <b-modal id="deleteModal" title="Delete Source" @ok="deleteObject" no-fade>
       <p class="my-4">Are you sure you want to delete this source?</p>
     </b-modal>
-    <b-breadcrumb :items="crumbs" />
     <objects-table
       ref="table"
       :object="source"
+      :crumbs="crumbs"
       @create="addProperty"
       @save="saveObject"
       :fetchData="fetchData"

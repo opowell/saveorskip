@@ -1,31 +1,57 @@
 <template>
   <div>
-    <b-modal id="addFilterModal" title="Add Filter" @ok="addFilter">
-      <div>
-        <span>Field: {{ addFilterField }} </span>
+    <b-modal id="addFilterModal" title="Add Filter" @ok="addFilter" no-fade>
+      <div style="margin-bottom: 1rem;">
+        <span style="width: 100px;">Field:</span>
+        <select id="addFilterField">
+          <option v-for="(fieldName, index) in fieldNames" :key="index" :selected="addFilterField === fieldName.key">
+            {{ fieldName.label }}
+          </option>
+        </select>
       </div>
-      <div>
-        <span>Value:</span>
-        <input id="addFilterValue" type="text" />
+      <div style="margin-bottom: 1rem;">
+        <span style="width: 100px;">Operator:</span>
+        <select id="addFilterOperator">
+          <option value="contains" selected>contains</option>
+          <option value="eq">=</option>
+          <option value="gt">&gt;</option>
+          <option value="ge">&ge;</option>
+          <option value="lt">&lt;</option>
+          <option value="le">&le;</option>
+          <option value="notc">does NOT contain</option>
+          <option value="ne">&ne;</option>
+        </select>
+      </div>
+      <div style="margin-bottom: 1rem;">
+        <span style="width: 100px;">Value:</span>
+        <input ontabindex="1" id="addFilterValue" type="text" v-on:keyup.enter="addFilter" />
       </div>
     </b-modal>
     <!-- User Interface controls -->
     <div style="display: flex; align-items: baseline;">
-      <b-input v-model="filter" placeholder="Add / filter" v-on:keyup.enter="tryToAddItem" style="max-width: 400px;" />
-      <div>
-        <span v-for="(filter, index) in filters" :key="index"> {{ filter.field }} = {{ filter.value }} </span>
+      <b-breadcrumb :items="crumbs" />
+      <div style="display: flex;">
+        <span
+          class="filter"
+          v-for="(filter, index) in filters"
+          :key="index"
+          @click="removeFilter(index)"
+          v-html="filter.field + ' ' + filterSymbol(filter.operator) + ' ' + filter.value"
+        />
       </div>
       <div style="flex: 1 1 auto">&nbsp;</div>
-      <slot name="header"></slot>
-      <span v-show="hasSelection">
-        <span>Selected: {{ selection.length }}</span>
-        <button @click="deleteSelectedRows" title="Delete selected objects.">Delete...</button>
-      </span>
-      <button @click="addItemPrompt">Add...</button>
-      <button v-if="!isObjArray" @click="duplicate">Duplicate</button>
-      <button v-if="!isObjArray" @click="deleteObject" title="Delete this object.">Delete...</button>
-      <button v-if="!isObjArray" title="Save the changes to this object." :disabled="!changesPending" :class="{ 'btn-primary': changesPending }" @click="saveObject">Save</button>
-      <button v-if="!isObjArray" title="Reset this object to its original form" @click="reset" :disabled="!changesPending">Reset</button>
+      <div>
+        <slot name="header"></slot>
+        <span v-show="hasSelection">
+          <button @click="deleteSelectedRows" title="Delete selected objects.">Delete {{ selection.length }}...</button>
+        </span>
+        <button v-if="showAddComputed" @click="addItemPrompt">Add...</button>
+        <button @click="openFilter">Filter...</button>
+        <button v-if="!isObjArray" @click="duplicate">Duplicate</button>
+        <button v-if="!isObjArray" @click="deleteObject" title="Delete this object.">Delete...</button>
+        <button v-if="!isObjArray" title="Save the changes to this object." :disabled="!changesPending" :class="{ 'btn-primary': changesPending }" @click="saveObject">Save</button>
+        <button v-if="!isObjArray" title="Reset this object to its original form" @click="reset" :disabled="!changesPending">Reset</button>
+      </div>
     </div>
     <!-- Main table element -->
     <b-table
@@ -42,6 +68,8 @@
       selectable
       @row-selected="rowSelected"
       no-select-on-click
+      :thClass="thClass"
+      style="margin-top: 0rem !important;"
     >
       <template v-slot:head(__checkbox)="data">
         <input type="checkbox" v-model="selectAll" @change="selectAllChange($event)" />
@@ -111,11 +139,48 @@ import Vue from 'vue';
 
 export default {
   // eslint-disable-next-line prettier/prettier
-  props: ['object', 'ineditableRowNames', 'ineditableColNames', 'store', 'fetchData', 'links', 'rowNamesToSkip', 'colNamesToSkip', 'colLabels', 'rowLabels', 'rowDescriptions'],
+  props: [
+    'object',
+    'ineditableRowNames',
+    'ineditableColNames',
+    'store',
+    'fetchData',
+    'links',
+    'rowNamesToSkip',
+    'colNamesToSkip',
+    'colLabels',
+    'rowLabels',
+    'rowDescriptions',
+    'showAdd',
+    'selectable',
+    'thClass',
+    'crumbs',
+  ],
+  mounted() {
+    let str = this.$route.query.filters;
+    if (str == null) {
+      return;
+    }
+    let filtersStrs = [str];
+    if (str.includes(']]')) {
+      filtersStrs = str.split(']]');
+    }
+    for (let i in filtersStrs) {
+      let values = filtersStrs[i].split(',');
+      if (values.length !== 3) {
+        continue;
+      }
+      let filterObj = {
+        field: values[0],
+        operator: values[1],
+        value: values[2],
+      };
+      this.filters.push(filterObj);
+    }
+  },
   data() {
     return {
       sortDesc: true,
-      filter: null,
       deleteItemSelect: null,
       changesPending: false,
       selectAll: false,
@@ -127,6 +192,34 @@ export default {
     };
   },
   methods: {
+    filterSymbol(operator) {
+      switch (operator) {
+        case 'contains':
+          return 'contains';
+          break;
+        case 'notC':
+          return 'does NOT contain';
+          break;
+        case 'eq':
+          return '=';
+          break;
+        case 'ne':
+          return '&ne;';
+          break;
+        case 'gt':
+          return '&gt;';
+          break;
+        case 'ge':
+          return '&ge;';
+          break;
+        case 'lt':
+          return '&lt;';
+          break;
+        case 'le':
+          return '&le;';
+          break;
+      }
+    },
     filterFunction(rowData, filters) {
       for (let i in filters) {
         let filter = filters[i];
@@ -139,11 +232,48 @@ export default {
         if (rowData[filter.field] == null) {
           return false;
         }
-        if (rowData[filter.field].includes == null) {
-          return false;
-        }
-        if (!rowData[filter.field].includes(filter.value)) {
-          return false;
+        let x = rowData[filter.field] + '';
+        switch (filter.operator) {
+          case 'contains':
+            if (!x.includes(filter.value)) {
+              return false;
+            }
+            break;
+          case 'notC':
+            if (x.includes(filter.value)) {
+              return false;
+            }
+            break;
+          case 'eq':
+            if (x != filter.value) {
+              return false;
+            }
+            break;
+          case 'ne':
+            if (x == filter.value) {
+              return false;
+            }
+            break;
+          case 'gt':
+            if (x <= filter.value) {
+              return false;
+            }
+            break;
+          case 'ge':
+            if (x < filter.value) {
+              return false;
+            }
+            break;
+          case 'lt':
+            if (x >= filter.value) {
+              return false;
+            }
+            break;
+          case 'le':
+            if (x > filter.value) {
+              return false;
+            }
+            break;
         }
       }
       return true;
@@ -151,13 +281,42 @@ export default {
     openFilter(data) {
       this.addFilterField = data.column;
       this.$bvModal.show('addFilterModal');
+      Vue.nextTick(function() {
+        document.getElementById('addFilterValue').focus();
+      });
+    },
+    updateFilterQuery() {
+      let path = window.location.hash;
+      if (path.length > 2) {
+        path = path.substring(2);
+      }
+      if (path.includes('/')) {
+        let slashParts = path.split('/');
+        path = slashParts[slashParts.length - 1];
+      }
+      if (path.includes('?')) {
+        path = path.split('?')[0];
+      }
+      let filtersStr = '';
+      if (this.filters.length > 0) {
+        filtersStr = '?filters=';
+        for (let i in this.filters) {
+          filtersStr += this.filters[i].field + ',' + this.filters[i].operator + ',' + this.filters[i].value + ']]';
+        }
+      }
+      try {
+        this.$router.push(path + filtersStr);
+      } catch (err) {}
     },
     addFilter() {
+      this.$bvModal.hide('addFilterModal');
       let filter = {
-        field: this.addFilterField,
+        field: document.getElementById('addFilterField').value,
+        operator: document.getElementById('addFilterOperator').value,
         value: document.getElementById('addFilterValue').value,
       };
       this.filters.push(filter);
+      this.updateFilterQuery();
     },
     selectAllChange(event) {
       if (event.target.checked) {
@@ -167,6 +326,10 @@ export default {
       }
     },
     deleteSelectedRows() {},
+    removeFilter(index) {
+      this.filters.splice(index, 1);
+      this.updateFilterQuery();
+    },
     toggleRowSelect(data, event) {
       let index = data.index;
       if (event.target.checked) {
@@ -263,11 +426,11 @@ export default {
       this.fetchData();
       this.changesPending = false;
     },
-    tryToAddItem() {
-      if (this.canAddItem) {
-        this.addItem();
-      }
-    },
+    // tryToAddItem() {
+    //   if (this.canAddItem) {
+    //     this.addItem();
+    //   }
+    // },
     addItem() {
       if (Array.isArray(this.object)) {
         this.createNewItem(this.filter);
@@ -314,6 +477,18 @@ export default {
     },
   },
   computed: {
+    selectableComputed() {
+      if (this.selectable === false) {
+        return false;
+      }
+      return true;
+    },
+    showAddComputed() {
+      if (this.showAdd === false) {
+        return false;
+      }
+      return true;
+    },
     hasSelection() {
       return this.selection.length > 0;
     },
@@ -353,9 +528,6 @@ export default {
       }
       return out;
     },
-    canAddItem() {
-      return this.filter != null && this.filter.length > 0 && (this.object == null || this.object[this.filter] == null);
-    },
     sortOptions() {
       // Create an options list from our fields
       return this.fields
@@ -370,27 +542,33 @@ export default {
         label: '',
         sortable: true,
       };
-      let out = ['__checkbox'];
+      let out = [];
+      if (this.selectableComputed) {
+        out.push(checkBoxField);
+      }
       if (Array.isArray(this.object)) {
         for (let i in this.object) {
           let item = this.object[i];
-          for (let a in item) {
+          nextItem: for (let a in item) {
             if (this.colNamesToSkip != null && this.colNamesToSkip.includes(a)) {
               continue;
             }
-            if (!out.includes(a)) {
-              let label = a;
-              if (this.colLabels != null && this.colLabels[a] != null) {
-                label = this.colLabels[a];
+            for (let j in out) {
+              if (out[j].key === a) {
+                continue nextItem;
               }
-              let field = {
-                key: a,
-                label,
-                class: 'table-cell',
-                sortable: true,
-              };
-              out.push(field);
             }
+            let label = a;
+            if (this.colLabels != null && this.colLabels[a] != null) {
+              label = this.colLabels[a];
+            }
+            let field = {
+              key: a,
+              label,
+              class: 'table-cell',
+              sortable: true,
+            };
+            out.push(field);
           }
         }
       } else {
@@ -463,6 +641,17 @@ export default {
 .input-group-append {
   align-items: baseline;
 }
+.filter {
+  background-color: #eee;
+  border-radius: 3px;
+  padding: 3px 7px;
+  margin-left: 5px;
+}
+.filter:hover {
+  text-decoration-line: line-through;
+  cursor: pointer;
+  background-color: #ddd;
+}
 </style>
 
 <style>
@@ -483,8 +672,17 @@ export default {
 }
 .table-header {
   padding: 2px 5px;
+  border-radius: 2px;
 }
 .table-header:hover {
-  background-color: rgba(118, 178, 255, 0.473);
+  background-color: rgba(118, 200, 255, 0.308);
+}
+
+button {
+  flex: 0 0 auto;
+}
+
+.breadcrumb-item {
+  word-break: break-all;
 }
 </style>

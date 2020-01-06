@@ -1,13 +1,12 @@
 <template>
   <div>
-    <b-modal id="addProfileModal" title="Add Profile" @ok="addProfile">
+    <b-modal id="addProfileModal" title="Add Profile" @ok="addProfile" no-fade>
       <div>
         <span>Name:</span>
         <input id="addProfileNameInput" type="text" />
       </div>
     </b-modal>
-    <b-breadcrumb :items="crumbs" />
-    <objects-table ref="table" :object="profiles" @create="addProfilePrompt" @click="openProfile" :ineditable-row-names="[]" />
+    <objects-table ref="table" :object="profiles" @create="addProfilePrompt" @click="openProfile" :ineditable-row-names="[]" :crumbs="crumbs" />
   </div>
 </template>
 

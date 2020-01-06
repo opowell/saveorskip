@@ -1,6 +1,6 @@
 <template>
   <div>
-    <b-modal id="addLinkModal" title="Add Link" @ok="addLink">
+    <b-modal id="addLinkModal" title="Add Link" @ok="addLink" no-fade>
       <div>
         <span>url:</span>
         <input type="text" />
@@ -14,8 +14,15 @@
         <input type="text" />
       </div>
     </b-modal>
-    <b-breadcrumb :items="crumbs" />
-    <objects-table ref="table" :object="links" @create="addLinkPrompt" @click="openLink" :colNamesToSkip="['profileId']" :colLabels="{ timeAdded: 'Time added' }" />
+    <objects-table
+      ref="table"
+      :object="links"
+      @create="addLinkPrompt"
+      @click="openLink"
+      :colNamesToSkip="['profileId']"
+      :colLabels="{ timeAdded: 'Time added' }"
+      :crumbs="crumbs"
+    />
   </div>
 </template>
 

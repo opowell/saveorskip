@@ -1,7 +1,6 @@
 <template>
   <div>
-    <b-breadcrumb :items="crumbs" />
-    <objects-table ref="table" :object="sources" @create="addSource" @click="openSource" :colNamesToSkip="['consumerId']" :colLabels="{ providerId: 'Profile' }" />
+    <objects-table ref="table" :object="sources" @create="addSource" @click="openSource" :colNamesToSkip="['consumerId']" :colLabels="{ providerId: 'Profile' }" :crumbs="crumbs" />
   </div>
 </template>
 

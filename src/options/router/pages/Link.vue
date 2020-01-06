@@ -1,11 +1,11 @@
 <template>
   <div>
-    <b-modal id="deleteModal" title="Delete Link" @ok="deleteObject">
+    <b-modal id="deleteModal" title="Delete Link" @ok="deleteObject" no-fade>
       <p class="my-4">Are you sure you want to delete this link?</p>
     </b-modal>
-    <b-breadcrumb :items="crumbs" />
     <objects-table
       ref="table"
+      :crumbs="crumbs"
       :object="link"
       @create="addProperty"
       :ineditable-row-names="['profileId', 'url', 'title', 'timeAdded', 'saved']"
@@ -27,6 +27,7 @@
 import * as idb from '../../../store/idb.js';
 import Vue from 'vue';
 import ObjectsTable from '../components/ObjectsTable.vue';
+import { convertId } from '../../../Utils.js';
 
 export default {
   name: 'ProfileLink',
@@ -101,7 +102,7 @@ export default {
         linkId: this.linkId,
       });
       idb.loadProfile({
-        profileId: this.$route.params.profileId,
+        profileId: this.profileId,
       });
       this.changesPending = false;
     },
@@ -146,13 +147,13 @@ export default {
       return out;
     },
     linkId() {
-      return this.$route.params.linkId;
+      return convertId(this.$route.params.linkId);
     },
     link() {
       return this.$store.state.link;
     },
     profileId() {
-      return this.$route.params.profileId;
+      return convertId(this.$route.params.profileId);
     },
     profile() {
       return this.$store.state.profile;

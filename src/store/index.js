@@ -23,41 +23,50 @@ const vuexLocal = new VuexPersistence({
   reducer: stateReducer,
 });
 
-export default new Vuex.Store({
-  state: {
-    // Active tab id
-    activeTabId: '',
+const initState = {
+  // Active tab id
+  activeTabId: '',
 
-    // Set of profiles.
-    profile: null,
-    profileStats: null,
-    profiles: [],
-    links: [],
-    source: null,
-    profileSourceStats: null,
-    sources: [],
-    link: null,
-    profileSourceLink: null,
-    profileSourceLinks: [],
-    sourceToScrape: null,
+  // Set of profiles.
+  profile: null,
+  profileStats: null,
+  profiles: [],
+  links: [],
+  scrapers: [],
+  source: null,
+  profileSourceStats: null,
+  sources: [],
+  link: null,
+  profileSourceLink: null,
+  profileSourceLinks: [],
+  sourceToScrape: null,
 
-    // Id of current target.
-    targetId: 1,
-    curLink: null,
-    curUrlAsLink: null,
-    curUrlAsSource: null,
-    curSuggestion: null,
-    curSuggestionTabId: null,
-    profileDuplicate: null,
-    sourceDuplicate: null,
-    needCurSuggestion: true,
-    sourceForCurUrl: null,
-    nextSuggestion: null,
-    scrapeDelayMS: 1000 * 60 * 60 * 24,
-    urlToScrape: null,
-  },
+  // Id of current target.
+  targetId: 1,
+  curLink: null,
+  curUrlAsLink: null,
+  curUrlAsSource: null,
+  curSuggestion: null,
+  curSuggestionTabId: null,
+  profileDuplicate: null,
+  sourceDuplicate: null,
+  needCurSuggestion: true,
+  sourceForCurUrl: null,
+  nextSuggestion: null,
+  scrapeDelayMS: 1000 * 60 * 60 * 24,
+  urlToScrape: null,
+};
+
+const store = new Vuex.Store({
+  state: initState,
   getters,
   mutations,
   actions,
   plugins: [vuexLocal.plugin],
 });
+
+export default store;
+const initialStateCopy = JSON.parse(JSON.stringify(initState));
+export function resetState() {
+  store.replaceState(JSON.parse(JSON.stringify(initialStateCopy)));
+}

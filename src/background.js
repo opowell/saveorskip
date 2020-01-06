@@ -286,6 +286,7 @@ chrome.runtime.onMessage.addListener(async function(message, sender, sendRespons
       showNextPage();
       break;
     case 'pageLoaded':
+      sendResponse(store.state.scrapers[0]);
       let tUrl = trimmedUrl(sender.tab.url);
       if (tUrl === store.state.urlToScrape) {
         saveSourcesOfUrl(tUrl, null, 'save');
@@ -346,19 +347,18 @@ function saveAsSource(tab, profileId, sourceUrl) {
 }
 
 async function getLinksCB(links) {
-  if (links == null) {
-    links = [];
-  }
-  console.log('received ' + links.length + ' new suggestions from/for ' + store.state.sourceToScrape + ':\n' + joinArray(links));
+  console.log('received ' + links.length + ' new suggestions for ' + store.state.sourceToScrape + ':\n' + JSON.stringify(links));
 
   for (let i in links) {
     let link = links[i];
     link.url = trimmedUrl(link.url);
     link.timeAdded = new Date();
-    link.profileId = store.state.targetId;
-    link.sourceId = store.state.sourceToScrape;
+    link.saved = true;
+    link.profileId = store.state.sourceToScrape;
     idb.addLink(link);
   }
+
+  store.commit(types.SET_SOURCE_TO_SCRAPE, '');
 }
 
 function drawRandomElFromObject(object, scoreFn) {
@@ -495,6 +495,8 @@ function changeActiveTabToUrl(newURL) {
 
 // SETTINGS
 let scoreFn = scoreFnJustPoints;
+
+idb.loadScrapers();
 
 // // Load scrapers
 // import ScraperReddit from './scrapers/reddit.js';

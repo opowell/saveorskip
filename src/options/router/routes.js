@@ -1,12 +1,13 @@
-import Settings from './pages/Settings';
 import Home from './pages/Home';
 import Link from './pages/Link';
 import Links from './pages/Links';
 import Profile from './pages/Profile';
 import Profiles from './pages/Profiles';
+import Scraper from './pages/Scraper';
+import Scrapers from './pages/Scrapers';
+import Settings from './pages/Settings';
 import Source from './pages/Source';
 import Sources from './pages/Sources';
-import Scrapers from './pages/Scrapers';
 
 export default [
   {
@@ -53,5 +54,10 @@ export default [
     path: '/scrapers',
     component: Scrapers,
     name: 'scrapers',
+  },
+  {
+    path: '/scrapers/:id',
+    component: Scraper,
+    name: 'scraper',
   },
 ];

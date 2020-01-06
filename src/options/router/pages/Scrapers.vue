@@ -1,22 +1,84 @@
 <template>
   <div>
-    <div v-for="scraper in scrapers" :key="scraper">{{ scraper }}</div>
+    <b-modal id="addScraperModal" title="Add Scraper" @ok="addScraper" no-fade>
+      <div>
+        <span>Domain:</span>
+        <input id="addScraperDomainInput" type="text" v-on:keyup.enter="addScraper" />
+      </div>
+    </b-modal>
+    <objects-table
+      ref="table"
+      :object="scrapers"
+      @create="addScraperPrompt"
+      @click="openScraper"
+      :ineditable-row-names="[]"
+      :crumbs="crumbs"
+      @deleteSelectedRows="deleteScrapers"
+    />
   </div>
 </template>
 
 <script>
+import ObjectsTable from '../components/ObjectsTable.vue';
+import * as idb from '../../../store/idb.js';
+
 export default {
-  name: 'ScrapersPage',
-  data: function() {
+  name: 'Scrapers',
+  components: {
+    ObjectsTable,
+  },
+  mounted() {
+    this.fetchData();
+  },
+  data() {
     return {
-      scrapers: ['reddit', 'hacker news'],
+      scrapers: [],
     };
+  },
+  computed: {
+    crumbs() {
+      return [
+        {
+          text: 'Home',
+          href: '#/',
+        },
+        {
+          text: 'Scrapers',
+          href: '#/scrapers',
+        },
+      ];
+    },
+  },
+  methods: {
+    deleteScrapers(selection) {
+      for (let i in selection) {
+        idb.deleteScraper({
+          scraperId: selection[i].id,
+        });
+      }
+    },
+    async fetchData() {
+      this.scrapers.splice(this.scrapers.length);
+      let fetchedData = await idb.getScrapers();
+      this.scrapers.push(...fetchedData);
+    },
+    addScraperPrompt() {
+      this.$bvModal.show('addScraperModal');
+    },
+    addScraper() {
+      this.$bvModal.hide('addScraperModal');
+      let domainInput = document.getElementById('addScraperDomainInput').value;
+      if (domainInput.length < 1) {
+        return;
+      }
+      let scraper = {
+        doman: domainInput,
+      };
+      idb.addScraper(scraper);
+    },
+    openScraper({ item, index, event }) {
+      this.$router.push({ name: 'scraper', params: { id: item.id } });
+    },
   },
 };
 </script>
-
-<style scoped>
-p {
-  font-size: 20px;
-}
-</style>

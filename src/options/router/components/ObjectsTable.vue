@@ -1,13 +1,13 @@
 <template>
   <div>
-    <b-modal id="deleteModal" title="Delete items" @ok="deleteSelectedRows" no-fade>
+    <b-modal id="deleteSelectionModal" title="Delete items" @ok="deleteSelectedRows" no-fade>
       <div>Are you sure you want to delete {{ selection.length }} items?</div>
     </b-modal>
     <b-modal id="addFilterModal" title="Add Filter" @ok="addFilter" no-fade>
       <div style="margin-bottom: 1rem;">
         <span style="width: 100px;">Field:</span>
         <select id="addFilterField">
-          <option v-for="(fieldName, index) in fieldNames" :key="index" :selected="addFilterField === fieldName.key">
+          <option v-for="(fieldName, index) in fieldNames" :key="index" :value="fieldName.key" :selected="addFilterField === fieldName.key">
             {{ fieldName.label }}
           </option>
         </select>
@@ -34,20 +34,18 @@
     <div style="display: flex; align-items: baseline;">
       <b-breadcrumb :items="crumbs" />
       <div style="display: flex;">
-        <span
-          class="filter"
-          v-for="(filter, index) in filters"
-          :key="index"
-          @click="removeFilter(index)"
-          v-html="filter.field + ' ' + filterSymbol(filter.operator) + ' ' + filter.value"
-        />
+        <span class="filter" v-for="(filter, index) in filters" :key="index" @click="removeFilter(index)">
+          <span style="color: green">{{ filterLabel(filter.field) }}</span>
+          <span style="color: grey" v-html="filterSymbol(filter.operator)" />
+          <span style="color: red">{{ filter.value }}</span>
+        </span>
       </div>
       <div style="flex: 1 1 auto">&nbsp;</div>
       <div>
-        <slot name="header"></slot>
         <span v-show="hasSelection">
           <button @click="deletePrompt" title="Delete selected objects.">Delete {{ selection.length }}...</button>
         </span>
+        <slot name="header"></slot>
         <button v-if="showAddComputed" @click="addItemPrompt">Add...</button>
         <button @click="openFilter">Filter...</button>
         <button v-if="!isObjArray" @click="duplicate">Duplicate</button>
@@ -58,6 +56,7 @@
     </div>
     <!-- Main table element -->
     <b-table
+      responsive
       ref="table"
       :hover="isObjArray"
       show-empty
@@ -195,6 +194,15 @@ export default {
     };
   },
   methods: {
+    filterLabel(key) {
+      for (let i in this.fieldNames) {
+        let field = this.fieldNames[i];
+        if (field.key === key) {
+          return field.label;
+        }
+      }
+      return key;
+    },
     filterSymbol(operator) {
       switch (operator) {
         case 'contains':
@@ -323,16 +331,20 @@ export default {
     },
     selectAllChange(event) {
       if (event.target.checked) {
-        this.$refs.table.selectAllRows();
+        for (let i = 0; i < this.items.length; i++) {
+          if (this.isSelectable(this.items[i])) {
+            this.$refs.table.selectRow(i);
+          }
+        }
       } else {
         this.$refs.table.clearSelected();
       }
     },
     deletePrompt() {
-      this.$bvModal.show('deleteModal');
+      this.$bvModal.show('deleteSelectionModal');
     },
     deleteSelectedRows() {
-      this.$bvModal.hide('deleteModal');
+      this.$bvModal.hide('deleteSelectionModal');
       this.$emit('deleteSelectedRows', this.selection);
     },
     removeFilter(index) {
@@ -655,6 +667,7 @@ export default {
   border-radius: 3px;
   padding: 3px 7px;
   margin-left: 5px;
+  color: #444;
 }
 .filter:hover {
   text-decoration-line: line-through;
@@ -689,6 +702,7 @@ export default {
 
 button {
   flex: 0 0 auto;
+  margin-bottom: 0.25rem !important;
 }
 
 .breadcrumb-item {

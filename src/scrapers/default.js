@@ -133,7 +133,26 @@ let link = sos.getLink();
 
 console.log('finished running, sending pageLoaded message');
 
-chrome.runtime.sendMessage({
-  action: 'pageLoaded',
-  link,
-});
+let callback = function(data) {
+  eval(`sos.getLinks = function() {
+    let links = [];
+    ${data.getLinks}
+    console.log('returning links: ' + links.join('\n'));
+    return links;
+  };`);
+
+  eval(`sos.getSources = function() {
+    let sources = [];
+    ${data.getSources}
+    console.log('returning sources: ' + sos.objJoin(sources, '\n'));
+    return sources;    
+  }`);
+};
+
+chrome.runtime.sendMessage(
+  {
+    action: 'pageLoaded',
+    link,
+  },
+  callback
+);

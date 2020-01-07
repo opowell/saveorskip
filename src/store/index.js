@@ -55,6 +55,9 @@ const initState = {
   nextSuggestion: null,
   scrapeDelayMS: 1000 * 60 * 60 * 24,
   urlToScrape: null,
+
+  testPageUrl: '',
+  testPage: null,
 };
 
 const store = new Vuex.Store({

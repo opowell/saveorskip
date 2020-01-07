@@ -4,6 +4,14 @@ export const setTarget = ({ commit }, payload) => {
   commit(types.SET_TARGET, payload);
 };
 
+export const setTestPage = ({ commit }, payload) => {
+  commit(types.SET_TEST_PAGE, payload);
+};
+
+export const setTestPageUrl = ({ commit }, payload) => {
+  commit(types.SET_TEST_PAGE_URL, payload);
+};
+
 export const setCurPage = ({ commit }, payload) => {
   commit(types.SET_CUR_PAGE, payload);
 };

@@ -3,6 +3,28 @@
     <b-modal id="deleteScraperModal" title="Delete Scraper" @ok="deleteObject" no-fade>
       <p class="my-4">Are you sure you want to delete this scraper?</p>
     </b-modal>
+    <b-modal size="xl" id="scrapePageModal" title="Test scraper" no-fade>
+      <p>Enter the page you wish to scrape:</p>
+      <div>
+        <input id="testScraperUrlInput" type="text" v-on:keyup.enter="scrapePage" :value="scraper.domain" />
+      </div>
+      <button @click="scrapePage">Scrape</button>
+      <div>{{ message }}</div>
+      <div v-if="testPage !== null">
+        <div><b>Page</b></div>
+        <div v-for="(value, field) in testPage" :key="field">
+          <template v-if="!['links', 'sources'].includes(field)"> {{ field }}: {{ value }} </template>
+        </div>
+        <div><b>Links</b></div>
+        <div v-for="link in testPage.links" :key="link.url">
+          {{ JSON.stringify(link) }}
+        </div>
+        <div><b>Sources</b></div>
+        <div v-for="source in testPage.sources" :key="source.id">
+          {{ JSON.stringify(source) }}
+        </div>
+      </div>
+    </b-modal>
     <objects-table
       ref="table"
       :crumbs="crumbs"
@@ -18,7 +40,9 @@
       :fetchData="fetchData"
       @deleteObject="askDeleteObject"
     >
-      <template v-slot:header> </template>
+      <template v-slot:header>
+        <button @click="scrapePagePrompt" title="Open and scrape a page.">Test...</button>
+      </template>
     </objects-table>
   </div>
 </template>
@@ -29,6 +53,7 @@ import * as idb from '../../../store/idb.js';
 import { STORE_SCRAPERS } from '../../../store/Constants.ts';
 import { convertId } from '../../../Utils.js';
 import Vue from 'vue';
+import * as types from '../../../store/mutation-types.js';
 
 export default {
   name: 'Scraper',
@@ -39,6 +64,13 @@ export default {
     '$route.params.id': function(id) {
       this.fetchData();
     },
+    testPage: function(x) {
+      if (x !== null) {
+        this.message = 'Finished scraping.';
+      } else {
+        this.message = '';
+      }
+    },
   },
   mounted() {
     this.fetchData();
@@ -46,9 +78,25 @@ export default {
   data() {
     return {
       scraper: {},
+      message: '',
     };
   },
   methods: {
+    scrapePagePrompt() {
+      this.$bvModal.show('scrapePageModal');
+    },
+    async scrapePage() {
+      this.message = 'Scraping...';
+      let url = document.getElementById('testScraperUrlInput').value;
+      if (url.length < 1) {
+        return;
+      }
+      // chrome.runtime.sendMessage({ action: 'testPage', url });
+      await idb.dispatchToStores('setTestPageUrl', {
+        url,
+      });
+      chrome.tabs.create({ url: 'http://' + url, active: false });
+    },
     askDeleteObject() {
       this.$bvModal.show('deleteScraperModal');
     },
@@ -72,6 +120,9 @@ export default {
     },
   },
   computed: {
+    testPage() {
+      return this.$store.state.testPage;
+    },
     scraperId() {
       return convertId(this.$route.params.id);
     },

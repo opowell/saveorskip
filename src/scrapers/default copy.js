@@ -145,23 +145,22 @@ let getScraperCallback = function({ scraper, closeWhenDone }) {
 
   x += scraper.getLinks;
 
-  x += "console.log('returning links: ' + links.join('\\n'));";
-  x += `return links;
+  x += `
+    console.log('returning links: ' + links.join('\n'));
+    return links;
   };`;
   eval(x);
 
   eval(`sos.getSources = function() {
     let sources = [];
     ${scraper.getSources}
-    console.log('returning sources: ' + sos.objJoin(sources, '\\\\n'));
+    console.log('returning sources: ' + sos.objJoin(sources, '\n'));
     return sources;    
   }`);
 
   eval(scraper.onScriptLoad);
 
-  if (sos.doFinish) {
-    sos.finishScraperLoad(scraper, closeWhenDone);
-  }
+  sos.finishScraperLoad(scraper, closeWhenDone);
 };
 
 sos.finishScraperLoad = function(scraper, closeWhenDone) {

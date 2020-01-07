@@ -422,6 +422,9 @@ export default {
       if (this.ineditableColNames.includes(field)) {
         return;
       }
+      if (this.object[field] === value) {
+        return;
+      }
       Vue.set(this.object, field, value);
       this.changesPending = true;
     },

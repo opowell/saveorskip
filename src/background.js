@@ -256,7 +256,8 @@ async function getLinkCB(link) {
 }
 
 chrome.runtime.onMessage.addListener(async function(message, sender, sendResponse) {
-  console.log('message received from ' + trimmedUrl(sender.url), message);
+  let senderUrl = trimmedUrl(sender.url);
+  console.log('message received from ' + senderUrl, message);
 
   let action = message;
   if (message.action != null) {
@@ -264,6 +265,13 @@ chrome.runtime.onMessage.addListener(async function(message, sender, sendRespons
   }
 
   switch (action) {
+    case 'testPage':
+      // store.commit(types.SET_TEST_PAGE_URL, { url: message.url });
+      idb.dispatchToStores('setTestPageUrl', {
+        url: message.url,
+      });
+      chrome.tabs.create({ url: 'http://' + message.url, active: false });
+      break;
     case 'storeDispatch':
       idb.dispatchToStores(message.storeAction, message.storePayload);
       break;
@@ -282,32 +290,45 @@ chrome.runtime.onMessage.addListener(async function(message, sender, sendRespons
     //     false
     //   );
     //   break;
+    case 'getPage':
+      console.log('testPage: ' + store.state.testPageUrl + ' vs. senderUrl = ' + senderUrl);
+      if (senderUrl === store.state.testPageUrl) {
+        idb.dispatchToStores('setTestPage', { page: message.page });
+      }
+      break;
     case 'showNextPage':
       showNextPage();
       break;
     case 'pageLoaded':
-      sendResponse(store.state.scrapers[0]);
-      let tUrl = trimmedUrl(sender.tab.url);
-      if (tUrl === store.state.urlToScrape) {
-        saveSourcesOfUrl(tUrl, null, 'save');
-      } else if (tUrl === store.state.sourceToScrape) {
-        saveAsSource(sender.tab, store.state.targetId, tUrl);
-      } else if (sender.tab.id !== store.state.curSuggestionTabId) {
-        if (sender.tab.active) {
-          // store.commit(types.SET_CUR_PAGE, {
-          //   url: sender.tab.url,
-          // });
-          // idb.setCurPage(sender.tab.url);
-          store.commit(types.SET_ACTIVE_TAB_ID, {
-            tabId: sender.tab.id,
-          });
-          await idb.setSkippedLinkIfNew(store.state.targetId, message.link);
-          await idb.setSkippedSourceIfNew(store.state.targetId, message.link);
-          await idb.setCurPage(message.link);
-        }
-      } else {
-        saveAsSource(sender.tab, store.state.targetId, tUrl);
+      let closeWhenDone = false;
+      if (senderUrl === store.state.testPageUrl) {
+        closeWhenDone = true;
       }
+      sendResponse({
+        scraper: store.state.scrapers[0],
+        closeWhenDone,
+      });
+      // let tUrl = trimmedUrl(sender.tab.url);
+      // if (tUrl === store.state.urlToScrape) {
+      //   saveSourcesOfUrl(tUrl, null, 'save');
+      // } else if (tUrl === store.state.sourceToScrape) {
+      //   saveAsSource(sender.tab, store.state.targetId, tUrl);
+      // } else if (sender.tab.id !== store.state.curSuggestionTabId) {
+      //   if (sender.tab.active) {
+      //     // store.commit(types.SET_CUR_PAGE, {
+      //     //   url: sender.tab.url,
+      //     // });
+      //     // idb.setCurPage(sender.tab.url);
+      //     store.commit(types.SET_ACTIVE_TAB_ID, {
+      //       tabId: sender.tab.id,
+      //     });
+      //     await idb.setSkippedLinkIfNew(store.state.targetId, message.link);
+      //     await idb.setSkippedSourceIfNew(store.state.targetId, message.link);
+      //     await idb.setCurPage(message.link);
+      //   }
+      // } else {
+      //   saveAsSource(sender.tab, store.state.targetId, tUrl);
+      // }
       break;
     case 'saveAndGo':
       saveOrSkip(true, 'save');

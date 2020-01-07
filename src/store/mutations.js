@@ -198,6 +198,15 @@ export default {
     state.sourceDuplicate = copy;
   },
 
+  [types.SET_TEST_PAGE_URL](state, payload) {
+    state.testPageUrl = payload.url;
+    state.testPage = null;
+  },
+
+  [types.SET_TEST_PAGE](state, payload) {
+    state.testPage = payload.page;
+  },
+
   [types.SET_NEED_CUR_SUGGESTION](state, payload) {
     state.needCurSuggestion = payload.value;
   },

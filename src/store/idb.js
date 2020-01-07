@@ -97,6 +97,8 @@ export async function setSkippedLinkIfNew(profileId, link) {
   });
 }
 
+export async function setTestPage(page) {}
+
 export async function setSkippedSourceIfNew(profileId, source) {
   if (source == null || source.url == null) {
     console.log('no url given');
@@ -295,6 +297,7 @@ export async function deleteProfile(payload) {
 export async function loadScrapers() {
   let scrapers = await getScrapers();
   store.commit(types.LOAD_SCRAPERS, scrapers);
+  console.log('scrapers: ' + JSON.stringify(store.state.scrapers));
 }
 
 export async function deleteScraper({ scraperId }) {

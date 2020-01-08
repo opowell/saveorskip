@@ -25,6 +25,14 @@ export default {
     state.curUrlAsSource = payload;
   },
 
+  [types.ADD_PROFILE_TO_SCRAPE](state, payload) {
+    state.urlsToScrape[payload] = true;
+  },
+
+  [types.REMOVE_URL_TO_SCRAPE](state, payload) {
+    delete state.urlsToScrape[payload];
+  },
+
   [types.ADD_PROFILE](state, payload) {
     let profile = new Profile(payload);
     state.profiles.push(profile);

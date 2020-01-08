@@ -99,6 +99,9 @@ sos.setIfNotNull = function(scraper, field) {
 };
 
 let getScraperCallback = function({ scraper, closeWhenDone }) {
+  sos.scraper = scraper;
+  sos.closeWhenDone = closeWhenDone;
+
   sos.setIfNotNull(scraper, 'getPageAttributes');
   sos.setIfNotNull(scraper, 'getLinks');
   sos.setIfNotNull(scraper, 'getSources');
@@ -108,11 +111,11 @@ let getScraperCallback = function({ scraper, closeWhenDone }) {
   sos.onScriptLoad();
 
   if (sos.doFinish) {
-    sos.finishScraperLoad(scraper, closeWhenDone);
+    sos.finishScraperLoad();
   }
 };
 
-sos.finishScraperLoad = function(scraper, closeWhenDone) {
+sos.finishScraperLoad = function() {
   let page = sos.getPage();
 
   chrome.runtime.sendMessage({
@@ -120,7 +123,9 @@ sos.finishScraperLoad = function(scraper, closeWhenDone) {
     page,
   });
 
-  if (closeWhenDone === true) {
+  debugger;
+
+  if (sos.closeWhenDone === true) {
     window.close();
   }
 };

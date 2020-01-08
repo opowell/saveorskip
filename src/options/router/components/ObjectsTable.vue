@@ -102,9 +102,10 @@
         </div>
         <b-select
           v-else-if="typeof data.item.value === 'boolean'"
-          @change="changeValue(data.item.name, $event)"
-          @keyup="changeValue(data.item.name, $event)"
-          v-model="data.item.value"
+          @change="changeFieldValue(data.item.name, $event, data.item)"
+          @keyup="changeFieldValue(data.item.name, $event, data.item)"
+          @input="changeFieldValue(data.item.name, $event, data.item)"
+          :value="data.item.value"
           style="width: unset;"
         >
           <option value="true">yes</option>
@@ -415,17 +416,26 @@ export default {
         this.object[value] = val;
       }
     },
-    changeFieldValue(field, value) {
+    changeFieldValue(field, value, item) {
       if (value.target != null) {
         value = value.target.value;
       }
       if (this.ineditableColNames.includes(field)) {
         return;
       }
+      if (value === 'true') {
+        value = true;
+      }
+      if (value === 'false') {
+        value = false;
+      }
       if (this.object[field] === value) {
         return;
       }
       Vue.set(this.object, field, value);
+      if (item != null) {
+        item.value = value;
+      }
       this.changesPending = true;
     },
     valueToString(val) {

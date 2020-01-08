@@ -35,7 +35,6 @@
 <script>
 import ObjectsTable from '../components/ObjectsTable.vue';
 import * as idb from '../../../store/idb.js';
-import { STORE_PROFILES } from '../../../store/Constants.ts';
 import { convertId } from '../../../Utils.js';
 import Vue from 'vue';
 
@@ -57,7 +56,7 @@ export default {
       chrome.tabs.create({ url: 'http://' + this.profile.id, active });
     },
     async scrape() {
-      chrome.runtime.sendMessage({ action: 'scrapeSource', url: this.profile.id });
+      chrome.runtime.sendMessage({ action: 'scrapeProfile', url: this.profile.id });
     },
     async exportProfile() {
       let csvContent = '';
@@ -132,8 +131,8 @@ export default {
       Vue.set(this.profile, inputStr, '');
       this.$refs.table.changesPending = true;
     },
-    saveObject() {
-      idb.saveObject(STORE_PROFILES, this.profile);
+    async saveObject() {
+      await idb.storeProfile(this.profile, true);
       this.fetchData();
     },
     deleteObject() {

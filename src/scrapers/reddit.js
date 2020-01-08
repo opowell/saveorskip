@@ -178,7 +178,7 @@ out.onScriptLoad = function() {
   };
 
   setTimeout(function() {
-    sos.finishScraperLoad(scraper, closeWhenDone);
+    sos.finishScraperLoad();
   }, 7000);
 
   sos.doFinish = false;

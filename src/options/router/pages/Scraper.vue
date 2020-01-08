@@ -6,7 +6,7 @@
     <b-modal size="xl" id="scrapePageModal" title="Test scraper" no-fade>
       <p>Enter the page you wish to scrape:</p>
       <div>
-        <input id="testScraperUrlInput" type="text" v-on:keyup.enter="scrapePage" :value="scraper.domain" />
+        <input id="testScraperUrlInput" type="text" v-on:keyup.enter="scrapePage" :value="defaultTestUrl" />
       </div>
       <button @click="scrapePage">Scrape</button>
       <div>{{ message }}</div>
@@ -30,11 +30,12 @@
       :crumbs="crumbs"
       :object="scraper"
       @create="addProperty"
-      :ineditable-row-names="['id', 'domain', 'getLinks', 'getSources', 'getSourcesOfLink', 'getPageAttributes', 'onScriptLoad']"
+      :ineditable-row-names="['id', 'domain', 'priority']"
       :ineditable-col-names="['id']"
       :rowDescriptions="{
         id: 'Unique identifier.',
         domain: 'The domain to use this scraper on.',
+        priority: 'The order in which scrapers are processed. Higher values take precendence.',
       }"
       @save="saveObject"
       :fetchData="fetchData"
@@ -120,6 +121,15 @@ export default {
     },
   },
   computed: {
+    defaultTestUrl() {
+      if (this.scraper == null) {
+        return '';
+      }
+      if (this.scraper.defaultTestUrl == null) {
+        return this.scraper.domain;
+      }
+      return this.scraper.defaultTestUrl;
+    },
     testPage() {
       return this.$store.state.testPage;
     },

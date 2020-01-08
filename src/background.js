@@ -304,8 +304,9 @@ chrome.runtime.onMessage.addListener(async function(message, sender, sendRespons
       if (senderUrl === store.state.testPageUrl) {
         closeWhenDone = true;
       }
+      let scraper = getScraper(senderUrl);
       sendResponse({
-        scraper: store.state.scrapers[0],
+        scraper,
         closeWhenDone,
       });
       // let tUrl = trimmedUrl(sender.tab.url);
@@ -352,6 +353,27 @@ chrome.runtime.onMessage.addListener(async function(message, sender, sendRespons
       break;
   }
 });
+
+function updateScraperProp(scraper, newS, prop) {
+  if (scraper.priority < newS.priority && newS[prop] != null) {
+    scraper[prop] = newS[prop];
+  }
+}
+
+function getScraper(url) {
+  let scraper = {};
+  for (let i in store.state.scrapers) {
+    let curScraper = store.state.scrapers[i];
+    if (url.startsWith(curScraper.domain)) {
+      scraper.priority = curScraper.priority;
+      updateScraperProp(scraper, curScraper, 'getLinks');
+      updateScraperProp(scraper, curScraper, 'getSources');
+      updateScraperProp(scraper, curScraper, 'getSourcesOfUrl');
+      updateScraperProp(scraper, curScraper, 'onScriptLoad');
+    }
+  }
+  return scraper;
+}
 
 function scrapeSource(url) {
   console.log('scraping items from ' + url);

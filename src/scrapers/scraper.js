@@ -1,6 +1,8 @@
+/* eslint-disable prettier/prettier */
 var sos = sos || {};
 
 sos.SUGGESTIONS_PER_SAVE = 2;
+sos.doFinish = true;
 
 sos.trimmedUrl = function(url) {
   if (url.includes('://')) {
@@ -32,33 +34,6 @@ sos.getLinksWithResponse = function(sendResponse) {
   }
 };
 
-sos.getLinks = function() {
-  let links = [];
-  let linkEls = document.querySelectorAll('a');
-  for (let i = 0; i < linkEls.length; i++) {
-    let url = linkEls[i].getAttribute('href');
-    if (url == null) {
-      continue;
-    }
-    url = sos.buildUrl(url);
-    if (sos.isParentUrl(url)) {
-      continue;
-    }
-    if (!links.includes(url)) {
-      links.push(url);
-    }
-  }
-  return links;
-};
-
-sos.isParentUrl = function(url) {
-  let curUrl = sos.buildUrl(window.location.href);
-  if (curUrl.includes(url) && url !== curUrl) {
-    return true;
-  }
-  return false;
-};
-
 sos.buildUrl = function(url) {
   if (url.includes('#')) {
     let hashIndex = url.indexOf('#');
@@ -74,37 +49,14 @@ sos.buildUrl = function(url) {
   return url;
 };
 
-sos.getSourcesForUrl = function(url, sendResponse) {
-  let sources = [];
-  let linkEls = document.querySelectorAll('a');
-  for (let i = 0; i < linkEls.length; i++) {
-    let linkUrl = linkEls[i].getAttribute('href');
-    linkUrl = sos.buildUrl(linkUrl);
-    if (url === linkUrl) {
-      sources.push(sos.trimmedUrl(location.href));
-      break;
-    }
+sos.getLinksWithResponse = function(sendResponse) {
+  let links = sos.getLinks();
+  if (sendResponse != null) {
+    sendResponse(links);
   }
-  sendResponse(sources);
-};
-
-sos.getSources = function() {
-  let sources = [];
-  let linkEls = document.querySelectorAll('a');
-  for (let i = 0; i < linkEls.length; i++) {
-    let url = linkEls[i].getAttribute('href');
-    if (url == null) {
-      continue;
-    }
-    url = sos.buildUrl(url);
-    if (!sos.isParentUrl(url)) {
-      continue;
-    }
-    if (!sources.includes(url)) {
-      sources.push(url);
-    }
+  if (links.length > 0 && sos.closeAfterScrape) {
+    window.close();
   }
-  return sources;
 };
 
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
@@ -136,31 +88,28 @@ sos.getPage = function() {
     sources,
     links,
   };
+  sos.getPageAttributes(out);
   return out;
 };
 
+sos.setIfNotNull = function(scraper, field) {
+  if (scraper[field] != null) {
+    eval(`sos[field] = ${scraper[field]}`);
+  }
+};
+
 let getScraperCallback = function({ scraper, closeWhenDone }) {
-  let x = `sos.getLinks = function() {
-    let links = [];`;
+  sos.setIfNotNull(scraper, 'getPageAttributes');
+  sos.setIfNotNull(scraper, 'getLinks');
+  sos.setIfNotNull(scraper, 'getSources');
+  sos.setIfNotNull(scraper, 'getSourcesOfUrl');
+  sos.setIfNotNull(scraper, 'onScriptLoad');
 
-  x += scraper.getLinks;
+  sos.onScriptLoad();
 
-  x += `
-    console.log('returning links: ' + links.join('\n'));
-    return links;
-  };`;
-  eval(x);
-
-  eval(`sos.getSources = function() {
-    let sources = [];
-    ${scraper.getSources}
-    console.log('returning sources: ' + sos.objJoin(sources, '\n'));
-    return sources;    
-  }`);
-
-  eval(scraper.onScriptLoad);
-
-  sos.finishScraperLoad(scraper, closeWhenDone);
+  if (sos.doFinish) {
+    sos.finishScraperLoad(scraper, closeWhenDone);
+  }
 };
 
 sos.finishScraperLoad = function(scraper, closeWhenDone) {
@@ -183,3 +132,16 @@ chrome.runtime.sendMessage(
   },
   getScraperCallback
 );
+
+// Functions to overwrite in scraper instances.
+sos.getLinks = function() {
+  return [];
+};
+sos.getSources = function() {
+  return [];
+};
+sos.getSourcesOfUrl = function() {
+  return [];
+};
+sos.getPageAttributes = function(page) {};
+sos.onScriptLoad = function() {};

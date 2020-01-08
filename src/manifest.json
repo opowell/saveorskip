@@ -1,7 +1,7 @@
 {
   "name": "Save or skip",
   "description": "Save or skip pages you visit, and get new recommendations based on your history.",
-  "version": "1.2",
+  "version": "1.3",
   "author": "opowell@gmail.com",
 
   "manifest_version": 2,
@@ -23,7 +23,7 @@
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["scrapers/default.js"]
+      "js": ["scrapers/scraper.js"]
     }
   ],
 

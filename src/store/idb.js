@@ -532,16 +532,15 @@ export async function getScraper({ scraperId }) {
   return out;
 }
 
-export async function addScraper({ domain, getLinks, getSources, getSourcesOfLink, getPageAttributes, onScriptLoad }) {
+// export async function addScraper({ domain, getLinks, getSources, getSourcesOfLink, getPageAttributes, onScriptLoad }) {
+export async function addScraper(scraper) {
   let db = await dbPromise;
-  await db.put(STORE_SCRAPERS, {
-    domain,
-    getLinks,
-    getSources,
-    getSourcesOfLink,
-    getPageAttributes,
-    onScriptLoad,
-  });
+  for (let i in scraper) {
+    if (typeof scraper[i] === 'function') {
+      scraper[i] = scraper[i].toString();
+    }
+  }
+  await db.put(STORE_SCRAPERS, scraper);
 }
 
 export async function addProfile(profile) {

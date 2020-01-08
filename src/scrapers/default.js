@@ -1,36 +1,9 @@
-var sos = sos || {};
+var sos = {};
 
-sos.SUGGESTIONS_PER_SAVE = 2;
+sos.priority = 1; // higher value, higher priority
 
-sos.trimmedUrl = function(url) {
-  if (url.includes('://')) {
-    url = url.substring(url.indexOf('://') + '://'.length);
-  }
-  if (url.endsWith('/')) {
-    url = url.substring(0, url.length - 1);
-  }
-  return url;
-};
-
-sos.objJoin = function(obj, separator) {
-  var arr = [];
-  for (var key in obj) {
-    if (obj.hasOwnProperty(key)) {
-      arr.push(JSON.stringify(obj[key]));
-    }
-  }
-  return arr.join(separator || '\n');
-};
-
-sos.getLinksWithResponse = function(sendResponse) {
-  let links = sos.getLinks();
-  if (sendResponse != null) {
-    sendResponse(links);
-  }
-  if (links.length > 0 && sos.closeAfterScrape) {
-    window.close();
-  }
-};
+sos.name = 'All other pages.';
+sos.domain = ''; // match any url.
 
 sos.getLinks = function() {
   let links = [];
@@ -51,30 +24,7 @@ sos.getLinks = function() {
   return links;
 };
 
-sos.isParentUrl = function(url) {
-  let curUrl = sos.buildUrl(window.location.href);
-  if (curUrl.includes(url) && url !== curUrl) {
-    return true;
-  }
-  return false;
-};
-
-sos.buildUrl = function(url) {
-  if (url.includes('#')) {
-    let hashIndex = url.indexOf('#');
-    let questionIndex = url.indexOf('?');
-    url = url.substring(0, hashIndex) + questionIndex > -1 ? url.substring(questionIndex) : '';
-  }
-  if (!url.includes('://')) {
-    url = sos.trimmedUrl(location.origin) + (url.startsWith('/') ? '' : '/') + sos.trimmedUrl(url);
-    url = sos.trimmedUrl(url);
-  } else {
-    url = sos.trimmedUrl(url);
-  }
-  return url;
-};
-
-sos.getSourcesForUrl = function(url, sendResponse) {
+sos.getSourcesForUrl = function(url) {
   let sources = [];
   let linkEls = document.querySelectorAll('a');
   for (let i = 0; i < linkEls.length; i++) {
@@ -85,7 +35,7 @@ sos.getSourcesForUrl = function(url, sendResponse) {
       break;
     }
   }
-  sendResponse(sources);
+  return sources;
 };
 
 sos.getSources = function() {
@@ -107,80 +57,16 @@ sos.getSources = function() {
   return sources;
 };
 
-chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
-  console.log('sos received message: ' + request.action);
+sos.onScriptLoad = function() {
+  sos.SUGGESTIONS_PER_SAVE = 2;
 
-  if (request.action === 'getSources') {
-    let sources = sos.getSources();
-    sendResponse({ sources });
-  } else if (request.action === 'getUrlSources') {
-    sos.getSourcesForUrl(request.url, sendResponse);
-  } else if (request.action === 'getLinks') {
-    sos.getLinksWithResponse(sendResponse);
-  } else if (request.action === 'getLink') {
-    let link = sos.getLink();
-    console.log('got link: ' + JSON.stringify(link));
-    sendResponse(link);
-  } else {
-    console.log('sos unknown message: ' + request.action);
-    sendResponse({}); // Send nothing..
-  }
-});
-
-sos.getPage = function() {
-  let links = sos.getLinks();
-  let sources = sos.getSources();
-  let out = {
-    url: sos.trimmedUrl(location.href),
-    title: document.title,
-    sources,
-    links,
+  sos.isParentUrl = function(url) {
+    let curUrl = sos.buildUrl(window.location.href);
+    if (curUrl.includes(url) && url !== curUrl) {
+      return true;
+    }
+    return false;
   };
-  return out;
 };
 
-let getScraperCallback = function({ scraper, closeWhenDone }) {
-  let x = `sos.getLinks = function() {
-    let links = [];`;
-
-  x += scraper.getLinks;
-
-  x += "console.log('returning links: ' + links.join('\\n'));";
-  x += `return links;
-  };`;
-  eval(x);
-
-  eval(`sos.getSources = function() {
-    let sources = [];
-    ${scraper.getSources}
-    console.log('returning sources: ' + sos.objJoin(sources, '\\\\n'));
-    return sources;    
-  }`);
-
-  eval(scraper.onScriptLoad);
-
-  if (sos.doFinish) {
-    sos.finishScraperLoad(scraper, closeWhenDone);
-  }
-};
-
-sos.finishScraperLoad = function(scraper, closeWhenDone) {
-  let page = sos.getPage();
-
-  chrome.runtime.sendMessage({
-    action: 'getPage',
-    page,
-  });
-
-  if (closeWhenDone === true) {
-    window.close();
-  }
-};
-
-console.log('finished running, sending pageLoaded message');
-chrome.runtime.sendMessage(
-  {
-    action: 'pageLoaded',
-  },
-  getScraperCallback
-);
+export default sos;

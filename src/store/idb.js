@@ -232,6 +232,9 @@ export async function storeProfile(profile, overwriteProps) {
   if (profile.name == null && profile.title != null) {
     profile.name = profile.title;
   }
+  if (profile.timeAdded == null) {
+    profile.timeAdded = new Date();
+  }
 
   let links = profile.links;
   let sources = profile.sources;
@@ -491,6 +494,14 @@ export async function saveOrSkipSource({ source, targetId, action }) {
   }
   if (source.providerId != null) {
     providerId = source.providerId;
+  }
+  if (typeof providerId === 'object') {
+    if (providerId.id != null) {
+      providerId = providerId.id;
+    }
+    if (providerId.url != null) {
+      providerId = providerId.url;
+    }
   }
 
   let sourceConnection = {};

@@ -55,8 +55,8 @@
       </div>
     </div>
     <!-- Main table element -->
+    <!-- responsive='true' -->
     <b-table
-      responsive
       ref="table"
       :hover="isObjArray"
       show-empty

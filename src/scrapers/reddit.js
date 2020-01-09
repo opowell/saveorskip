@@ -29,7 +29,7 @@ out.getLinks = function() {
   return links;
 };
 
-out.getSources = function() {
+out.getSources = function(saveOrSkip) {
   let sources = [];
   // REDDIT
   if (sos.trimmedUrl(window.location.href) !== 'www.reddit.com') {
@@ -179,7 +179,7 @@ out.onScriptLoad = function() {
 
   setTimeout(function() {
     sos.finishScraperLoad();
-  }, 7000);
+  }, 8000);
 
   sos.doFinish = false;
 };

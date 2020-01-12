@@ -358,14 +358,13 @@ async function storePage(page, url) {
   }
 
   let sources = page.sources;
-  if (page.sources == null && page.sourcesForSave != null) {
-    sources = page.sourcesForSave;
-  }
 
   for (let i in sources) {
     let source = sources[i];
     if (typeof source === 'string') {
-      source = { providerId: source };
+      source = {
+        providerId: source,
+      };
       sources[i] = source;
     }
     source.consumerId = url;

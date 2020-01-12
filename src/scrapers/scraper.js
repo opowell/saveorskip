@@ -81,13 +81,11 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 
 sos.getPage = function() {
   let links = sos.getLinks();
-  let sourcesForSave = sos.getSources('save');
-  let sourcesForSkip = sos.getSources('skip');
+  let sources = sos.getSources();
   let out = {
     url: sos.trimmedUrl(location.href),
     title: document.title,
-    sourcesForSave,
-    sourcesForSkip,
+    sources,
     links,
   };
   sos.getPageAttributes(out);

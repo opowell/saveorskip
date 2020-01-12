@@ -71,6 +71,7 @@
       @row-selected="rowSelected"
       no-select-on-click
       :thClass="thClass"
+      tbody-tr-class="click-row"
       style="margin-top: 0rem !important;"
     >
       <template v-slot:head(__checkbox)="data">
@@ -720,5 +721,9 @@ button {
 
 .breadcrumb-item {
   word-break: break-all;
+}
+
+.click-row {
+  cursor: pointer;
 }
 </style>

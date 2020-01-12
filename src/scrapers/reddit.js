@@ -29,13 +29,14 @@ out.getLinks = function() {
   return links;
 };
 
-out.getSources = function(saveOrSkip) {
+out.getSources = function() {
   let sources = [];
   // REDDIT
   if (sos.trimmedUrl(window.location.href) !== 'www.reddit.com') {
     sources.push({
       url: 'www.reddit.com',
-      points: sos[saveOrSkip].SUGGESTIONS_DOMAIN,
+      pointsSave: sos.save.SUGGESTIONS_DOMAIN,
+      pointsSkip: sos.skip.SUGGESTIONS_DOMAIN,
     });
   }
 
@@ -46,7 +47,8 @@ out.getSources = function(saveOrSkip) {
     subreddit = sos.buildUrl(name);
     sources.push({
       url: subreddit,
-      points: sos[saveOrSkip].SUGGESTIONS_SUBREDDIT,
+      pointsSave: sos.save.SUGGESTIONS_SUBREDDIT,
+      pointsSkip: sos.skip.SUGGESTIONS_SUBREDDIT,
     });
   } catch (err) {}
 
@@ -57,7 +59,8 @@ out.getSources = function(saveOrSkip) {
       posterLink = sos.buildUrl(user);
       sources.push({
         url: posterLink,
-        points: sos[saveOrSkip].SUGGESTIONS_POSTER,
+        pointsSave: sos.save.SUGGESTIONS_POSTER,
+        pointsSkip: sos.skip.SUGGESTIONS_POSTER,
       });
     }
   } catch (err) {}
@@ -79,7 +82,8 @@ out.getSources = function(saveOrSkip) {
           numFound++;
           sources.push({
             url: commenterLink,
-            points: sos[saveOrSkip].SUGGESTIONS_COMMENTER,
+            pointsSave: sos.save.SUGGESTIONS_COMMENTER,
+            pointsSkip: sos.skip.SUGGESTIONS_COMMENTER,
           });
           if (numFound >= sos.MAX_COMMENTERS) {
             break;
@@ -106,12 +110,13 @@ out.getSourcesOfUrl = function() {
     if (targetUrl === url) {
       sources.push({
         url: sos.trimmedUrl(location.href),
-        points: sos[saveOrSkip].URL_SOURCE,
+        pointsSave: sos.save.URL_SOURCE,
+        pointsSkip: sos.skip.URL_SOURCE,
       });
       break;
     }
   }
-  console.log('returning sources (' + saveOrSkip + ') of url ' + targetUrl + ':\n' + sos.objJoin(sources, '\n'));
+  console.log('returning sources of url ' + targetUrl + ':\n' + sos.objJoin(sources, '\n'));
   sendResponse(sources);
 };
 

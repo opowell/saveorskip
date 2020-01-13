@@ -11,7 +11,7 @@
       @save="saveObject"
       :fetchData="fetchData"
       :ineditable-row-names="['points', 'consumerId', 'providerId', 'saved', 'timeAdded']"
-      :ineditable-col-names="['consumerId', 'providerId']"
+      :ineditable-col-names="['consumerId']"
       :links="fieldLinks"
       :rowNamesToSkip="['consumerId']"
       @deleteObject="askDeleteObject"

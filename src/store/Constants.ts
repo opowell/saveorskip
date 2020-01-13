@@ -48,7 +48,7 @@ export const dbPromise = openDB(DB_NAME, DB_VERSION, {
       });
       linksStore.createIndex('saved', 'saved', { unique: false });
       linksStore.createIndex(INDEX_LINKS_PROFILEID, INDEX_LINKS_PROFILEID, { unique: false });
-      linksStore.createIndex(INDEX_LINKS_PROFILEID_TIMEADDED, ['profileId', 'timeScraped']);
+      linksStore.createIndex(INDEX_LINKS_PROFILEID_TIMEADDED, [STORE_LINKS_PROFILEID, STORE_LINKS_TIME_ADDED]);
 
       let sourcesStore = db.createObjectStore(STORE_SOURCES, { keyPath: [STORE_SOURCES_CONSUMERID, STORE_SOURCES_PROVIDERID] });
       sourcesStore.createIndex(STORE_SOURCES_CONSUMERID, STORE_SOURCES_CONSUMERID);

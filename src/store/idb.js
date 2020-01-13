@@ -16,25 +16,7 @@ import {
 import * as AutoGenProfile from '../models/AutoGenProfile.js';
 import * as types from './mutation-types.js';
 import Vue from 'vue';
-
-function trimmedUrl(url) {
-  if (url == null) {
-    return null;
-  }
-
-  if (url.includes == null) {
-    return url;
-  }
-
-  if (url.includes('://')) {
-    url = url.substring(url.indexOf('://') + '://'.length);
-  }
-  if (url.endsWith('/')) {
-    url = url.substring(0, url.length - 1);
-  }
-
-  return url;
-}
+import { trimmedUrl, drawRandomElFromObject, scoreFnJustPoints } from '../Utils.js';
 
 /**
  * Should not call Vuex store directly. Instead, broadcast messages to all tabs with the corresponding store modification. Tabs then update their own stores (and Vue instances).
@@ -315,6 +297,50 @@ export async function getScrapers() {
   return values;
 }
 
+export async function getSuggestion(profileId) {
+  try {
+    let sources = await getProfileSources(profileId);
+    if (sources == null) {
+      console.log('no sources found');
+      return;
+    }
+
+    while (true) {
+      let [source, index] = drawRandomElFromObject(sources, scoreFnJustPoints);
+      if (source == null) {
+        console.log('error loading suggestion: no source found');
+        return;
+      }
+
+      let linksCursor = await getLinksByTimeAdded(source.providerId);
+      if (linksCursor == null) {
+        sources.splice(index, 1);
+        continue;
+      }
+      let nextUrl = null;
+      while (nextUrl === null) {
+        // Check if current link already exists on profile.
+        let storeLink = await getLink({
+          profileId,
+          linkId: linksCursor.value.url,
+        });
+        let alreadyExists = storeLink != null;
+        if (!alreadyExists) {
+          nextUrl = linksCursor.value;
+        } else {
+          await linksCursor.continue();
+        }
+      }
+
+      if (nextUrl !== null) {
+        return nextUrl;
+      }
+    }
+  } catch (err) {
+    console.log(err);
+  }
+}
+
 export async function getProfileSources(profileId) {
   let db = await dbPromise;
   let out = await db.getAllFromIndex(STORE_SOURCES, INDEX_SOURCES_CONSUMERID, profileId);
@@ -327,7 +353,7 @@ export async function getLinks(profileId) {
   return out;
 }
 
-export async function getLinksByTimeAdded(profileId, sourceId) {
+export async function getLinksByTimeAdded(profileId) {
   let out = null;
   const db = await dbPromise;
   let tx = await db.transaction(STORE_LINKS);

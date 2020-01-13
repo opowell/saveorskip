@@ -1,7 +1,7 @@
 <template>
   <div>
     <b-modal id="deleteSelectionModal" title="Delete items" @ok="deleteSelectedRows" no-fade>
-      <div>Are you sure you want to delete {{ selection.length }} items?</div>
+      <div>Are you sure you want to delete {{ selection.length }} item<span v-show="selection.length !== 1">s</span>?</div>
     </b-modal>
     <b-modal id="addFilterModal" title="Add Filter" @ok="addFilter" no-fade>
       <div style="margin-bottom: 1rem;">

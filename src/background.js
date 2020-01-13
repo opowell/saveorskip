@@ -1,7 +1,7 @@
 import store from './store';
 import * as idb from './store/idb.js';
 import * as types from './store/mutation-types.js';
-import { trimmedUrl, joinArray } from './Utils.js';
+import { trimmedUrl, joinArray, drawRandomElFromObject, scoreFnJustPoints } from './Utils.js';
 
 global.browser = require('webextension-polyfill');
 
@@ -181,7 +181,7 @@ async function loadNextSuggestion(profileId) {
     }
 
     while (true) {
-      let source = drawRandomElFromObject(sources, scoreFn);
+      let [source, index] = drawRandomElFromObject(sources, scoreFn);
       if (source == null) {
         console.log('error loading suggestion: no source found');
         return;
@@ -193,12 +193,7 @@ async function loadNextSuggestion(profileId) {
       let linksCursor = await idb.getLinksByTimeAdded(profileId);
       if (linksCursor == null) {
         console.log('no links, skipping ' + source.url);
-        for (let i = 0; i < sources.length; i++) {
-          if (sources[i] === source) {
-            sources.splice(i, 1);
-            break;
-          }
-        }
+        sources.splice(index, 1);
         continue;
       }
       let nextUrl = null;
@@ -427,89 +422,6 @@ async function getLinksCB(links) {
   store.commit(types.SET_SOURCE_TO_SCRAPE, '');
 }
 
-function drawRandomElFromObject(object, scoreFn) {
-  let sum = 0;
-  console.log('DRAWING RANDOM ELEMENT');
-  let keys = Object.keys(object);
-  let scores = [];
-  for (let i = 0; i < keys.length; i++) {
-    let key = keys[i];
-    let score = scoreFn(object[key]);
-    scores.push(score);
-    if (score > 0) {
-      sum = sum + score;
-    }
-  }
-
-  if (sum === 0) {
-    console.log('Error drawing item from list: no item with any points');
-    return;
-  }
-
-  let selected = null;
-  let selectedInd = -1;
-
-  let draw = Math.random() * sum; // random number between 0 (incl.) and sum (excl.)
-  let curSum = 0;
-  for (let j = 0; j < keys.length; j++) {
-    let score = scores[j];
-    if (score > 0) {
-      curSum = curSum + score;
-      if (curSum > draw && selectedInd === -1) {
-        selected = object[[keys[j]]];
-        selectedInd = j;
-        break;
-      }
-    }
-  }
-
-  for (let k = 0; k < keys.length; k++) {
-    let score = scores[k];
-    let selText = '  ';
-    if (k === selectedInd) {
-      selText = '>>';
-    }
-    let obj = object[keys[k]];
-    try {
-      console.log(selText + ' ' + score + ' - ' + obj.points + ' - ' + obj.nextScrape + ' - ' + obj.url);
-    } catch (err) {
-      console.error('ERROR');
-    }
-  }
-
-  return selected;
-}
-
-// eslint-disable-next-line no-unused-vars
-function scoreFnHot(src) {
-  if (src.points < 1) {
-    return 0;
-  }
-
-  let now = new Date();
-  if (src.nextScrape != null && src.scrapedLinks != null && new Date(src.nextScrape) > now && src.scrapedLinks.length === 0) {
-    return 0;
-  }
-
-  return src.points / Math.pow((new Date() - new Date(src.lastSaved)) / (1000 * 60 * 60) + 2, 2);
-}
-
-function scoreFnJustPoints(src) {
-  let p = src.points - 0;
-  if (p < 1) {
-    return 0;
-  }
-
-  // TODO: If source is not due to be scraped, and has no scraped links, return 0.
-  // let now = new Date();
-  // // eslint-disable-next-line prettier/prettier
-  // if (src.nextScrape != null && src.scrapedLinks != null && new Date(src.nextScrape) > now && src.scrapedLinks.length === 0) {
-  //   return 0;
-  // }
-
-  return p;
-}
-
 // Whether or not an array of links contains a particular link
 // eslint-disable-next-line no-unused-vars
 function arrayContainsLink(array, linkToFind) {
@@ -563,8 +475,3 @@ function changeActiveTabToUrl(newURL) {
 let scoreFn = scoreFnJustPoints;
 
 idb.loadScrapers();
-
-// // Load scrapers
-// import ScraperReddit from './scrapers/reddit.js';
-
-// let reddit = {};

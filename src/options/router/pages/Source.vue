@@ -7,7 +7,6 @@
       ref="table"
       :object="source"
       :crumbs="crumbs"
-      @create="addProperty"
       @save="saveObject"
       :fetchData="fetchData"
       :ineditable-row-names="['points', 'consumerId', 'providerId', 'saved', 'timeAdded']"
@@ -56,10 +55,6 @@ export default {
           id: this.$route.params.profileId,
         },
       });
-    },
-    addProperty(inputStr) {
-      Vue.set(this.source, inputStr, '');
-      this.$refs.table.changesPending = true;
     },
     saveObject() {
       idb.saveObject(STORE_SOURCES, this.source);
@@ -112,17 +107,6 @@ export default {
     profileStats() {
       return this.$store.state.profileStats;
     },
-    // fields() {
-    //   let out = [];
-    //   for (let i = 0; i < this.fieldNames.length; i++) {
-    //     let fieldName = this.fieldNames[i];
-    //     out.push({
-    //       name: fieldName,
-    //       value: this.profile[fieldName],
-    //     });
-    //   }
-    //   return out;
-    // },
     removableFieldNames() {
       let out = [];
       for (let i in this.fieldNames) {

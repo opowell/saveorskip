@@ -7,7 +7,6 @@
       ref="table"
       :crumbs="crumbs"
       :object="link"
-      @create="addProperty"
       :ineditable-row-names="['profileId', 'url', 'title', 'timeAdded', 'saved']"
       :ineditable-col-names="['profileId']"
       @save="saveLink"
@@ -52,15 +51,6 @@ export default {
     },
     openLink({ active }) {
       chrome.tabs.create({ url: 'http://' + this.link.url, active });
-    },
-    tryToAddProperty() {
-      if (this.canAddProperty) {
-        this.addProperty();
-      }
-    },
-    addProperty() {
-      Vue.set(this.link, this.filter, '');
-      this.$refs.table.changesPending = true;
     },
     removeProperty() {
       if (this.removePropertySelect == null) {

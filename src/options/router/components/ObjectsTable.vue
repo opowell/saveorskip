@@ -71,7 +71,7 @@
       @row-selected="rowSelected"
       no-select-on-click
       :thClass="thClass"
-      tbody-tr-class="click-row"
+      :tbody-tr-class="isObjArray ? 'click-row' : ''"
       style="margin-top: 0rem !important;"
     >
       <template v-slot:head(__checkbox)="data">
@@ -411,7 +411,7 @@ export default {
         return;
       }
       let val = this.object[field];
-      delete this.object[field];
+      Vue.delete(this.object, field);
       this.changesPending = true;
       if (value !== '') {
         this.object[value] = val;
@@ -457,7 +457,6 @@ export default {
       this.changesPending = false;
     },
     reset() {
-      this.filter = '';
       this.fetchData();
       this.changesPending = false;
     },
@@ -467,11 +466,15 @@ export default {
     //   }
     // },
     addItem() {
-      if (Array.isArray(this.object)) {
-        this.createNewItem(this.filter);
-      } else {
-        Vue.set(this.object, this.filter, '');
+      let fieldName = 'field';
+      let i = 1;
+      while (true) {
+        if (this.object[fieldName + i] == null) {
+          break;
+        }
       }
+      fieldName = fieldName + i;
+      Vue.set(this.object, fieldName, '');
       this.changesPending = true;
     },
     deleteItem() {
@@ -482,7 +485,11 @@ export default {
       this.changesPending = true;
     },
     addItemPrompt() {
-      this.$emit('create');
+      if (this.isObjArray) {
+        this.$emit('create');
+      } else {
+        this.addItem();
+      }
     },
     clickItem(item, index, event) {
       this.$emit('click', { item, index, event });

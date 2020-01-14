@@ -29,7 +29,6 @@
       ref="table"
       :crumbs="crumbs"
       :object="scraper"
-      @create="addProperty"
       :ineditable-row-names="['id', 'domain', 'priority']"
       :ineditable-col-names="['id']"
       :rowDescriptions="{
@@ -103,10 +102,6 @@ export default {
     },
     askDeleteObject() {
       this.$bvModal.show('deleteScraperModal');
-    },
-    addProperty(inputStr) {
-      Vue.set(this.scraper, inputStr, '');
-      this.$refs.table.changesPending = true;
     },
     async saveObject() {
       await idb.saveObject(STORE_SCRAPERS, this.scraper);

@@ -51,7 +51,7 @@ export function drawRandomElFromObject(object, scoreFn) {
 
   if (sum === 0) {
     console.log('Error drawing item from list: no item with any points');
-    return;
+    return [null, -1];
   }
 
   let selected = null;

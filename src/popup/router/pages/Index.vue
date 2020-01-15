@@ -37,6 +37,15 @@
       </select>
       <div v-else>----</div>
     </div>
+    <div class="menu-item" title="Default action to take on newly opened pages.">
+      <span style="flex: 1 1 auto;">Default action:&nbsp;</span>
+      <select v-if="profiles.length > 0" id="profile-default-action" @change="setDefaultActionEv">
+        <option v-for="action in ['save', 'skip', 'nothing']" :key="action" :value="action" :selected="action == defaultAction">
+          {{ action }}
+        </option>
+      </select>
+      <div v-else>----</div>
+    </div>
     <div class="menu-item" title="The status of the current link on the current profile as a link.">
       <span style="flex: 1 1 auto;">Link:&nbsp;</span>
       <span class="button-group">
@@ -90,11 +99,22 @@ export default {
     await idb.fetchProfiles();
     if (!this.hasValidTarget && this.profiles != null && this.profiles.length > 0) {
       this.setTarget(this.personalProfiles[0].id);
+    } else {
+      this.setTarget(this.targetId);
     }
     await idb.setCurUrlLinkStatus();
     await idb.setCurUrlSourceStatus();
   },
   computed: {
+    defaultAction() {
+      if (this.$store.state.targetId == null) {
+        return 'nothing';
+      }
+      if (this.$store.state.popup.profile == null) {
+        return 'nothing';
+      }
+      return this.$store.state.popup.profile.defaultAction;
+    },
     personalProfiles() {
       let out = [];
       for (let i in this.profiles) {
@@ -168,6 +188,9 @@ export default {
     },
   },
   methods: {
+    setDefaultActionEv(event) {
+      idb.setDefaultAction(this.targetId, event.target.value);
+    },
     deleteSource() {
       this.$store.dispatch('removeSource', {
         targetId: this.targetId,

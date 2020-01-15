@@ -134,6 +134,19 @@ export async function setSkippedSourceIfNew(profileId, source) {
   source.title = prevTitle;
 }
 
+export async function setDefaultAction(profileId, action) {
+  let profile = await getProfile(profileId);
+  if (profile == null) {
+    return;
+  }
+  profile.defaultAction = action;
+  let db = await dbPromise;
+  await db.put(STORE_PROFILES, profile);
+  if (store.state.popup.profile.id === profileId) {
+    store.commit(types.SET_POPUP_PROFILE, profile);
+  }
+}
+
 export async function loadLinks(payload) {
   store.commit(types.LOAD_LINKS, []);
   let out = await getLinks(payload.profileId);
@@ -722,6 +735,8 @@ export async function setTarget(profileId) {
   await dispatchToStores('setTarget', profileId);
   await setCurUrlLinkStatus();
   await setCurUrlSourceStatus();
+  let profile = await getProfile(profileId);
+  store.commit(types.SET_POPUP_PROFILE, profile);
 }
 
 export async function setCurUrlLinkStatus() {

@@ -56,6 +56,10 @@ const initState = {
   scrapeDelayMS: 1000 * 60 * 60 * 24,
   urlToScrape: null,
 
+  popup: {
+    profile: null,
+  },
+
   urlsToScrape: {},
 
   testPageUrl: '',

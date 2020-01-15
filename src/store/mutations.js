@@ -33,6 +33,10 @@ export default {
     delete state.urlsToScrape[payload];
   },
 
+  [types.SET_POPUP_PROFILE](state, payload) {
+    state.popup.profile = payload;
+  },
+
   [types.ADD_PROFILE](state, payload) {
     let profile = new Profile(payload);
     state.profiles.push(profile);

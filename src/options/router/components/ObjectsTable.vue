@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div style="display: flex; flex-direction: column; height: 100%">
     <b-modal id="deleteSelectionModal" title="Delete items" @ok="deleteSelectedRows" no-fade>
       <div>Are you sure you want to delete {{ selection.length }} item<span v-show="selection.length !== 1">s</span>?</div>
     </b-modal>
@@ -31,7 +31,7 @@
       </div>
     </b-modal>
     <!-- User Interface controls -->
-    <div style="display: flex; align-items: baseline;">
+    <div style="display: flex; align-items: baseline; flex: 0 0 auto; padding: 1em; background-color: rgb(226, 226, 226);">
       <b-breadcrumb :items="crumbs" />
       <div style="display: flex;">
         <span class="filter" v-for="(filter, index) in filters" :key="index" @click="removeFilter(index)">
@@ -56,13 +56,13 @@
     </div>
     <!-- Main table element -->
     <!-- responsive='true' -->
+    <!-- <div style="flex: 1 1 auto; align-items: flex-start;"> -->
     <b-table
       :sort-by="sortBy"
       :sort-desc="sortDesc"
       ref="table"
       :hover="isObjArray"
       show-empty
-      stacked="md"
       :items="items"
       :fields="fieldNames"
       :filter="filters"
@@ -74,8 +74,10 @@
       no-select-on-click
       :thClass="thClass"
       sort-icon-left
+      no-border-collapse
+      sticky-header
       :tbody-tr-class="isObjArray ? 'click-row' : ''"
-      style="margin-top: 0rem !important;"
+      style="margin-left: 1em; margin-right: 0em; margin-top: 0rem !important; max-height: unset; flex: 1 1 auto; align-items: flex-start; align-self: flex-start; max-width: calc(100% - 1em); margin-bottom: 0em;"
     >
       <template v-slot:head(__checkbox)="data">
         <input type="checkbox" v-model="selectAll" @change="selectAllChange($event)" />
@@ -92,17 +94,17 @@
 
       <template v-slot:cell(name)="data">
         <a v-if="isLink(data.value)" :title="data.value" :href="links[data.value]">
-          {{ decodeURIComponent(rowLabel(data.value)) }}
+          {{ tryDecodeURIComponent(rowLabel(data.value)) }}
         </a>
         <div v-else-if="!canEditCell('name', data.item)" :title="data.value">
-          {{ decodeURIComponent(rowLabel(data.value)) }}
+          {{ tryDecodeURIComponent(rowLabel(data.value)) }}
         </div>
         <b-input v-else type="text" @change="changeFieldName(data.item.name, $event)" @keyup="changeFieldName(data.item.name, $event)" :value="data.value" style="width: 100%" />
       </template>
 
       <template v-slot:cell(value)="data">
         <div v-if="!canEditCell('value', data.item)" :title="data.value">
-          {{ decodeURIComponent(data.value) }}
+          {{ tryDecodeURIComponent(data.value) }}
         </div>
         <b-select
           v-else-if="typeof data.item.value === 'boolean'"
@@ -122,20 +124,24 @@
           type="text"
           @keyup="changeFieldValue(data.item.name, $event)"
           @change="changeFieldValue(data.item.name, $event)"
-          :value="decodeURIComponent(data.value)"
+          :value="tryDecodeURIComponent(data.value)"
         />
         <textarea
           v-else
           class="form-control"
           @keyup="changeFieldValue(data.item.name, $event)"
           @change="changeFieldValue(data.item.name, $event)"
-          :value="decodeURIComponent(data.value)"
+          :value="tryDecodeURIComponent(data.value)"
           style="width: 100%"
         />
       </template>
 
       <template v-slot:cell(description)="data">
-        {{ data.value }}
+        <span style="white-space: normal;" :title="data.value">{{ data.value }}</span>
+      </template>
+
+      <template v-slot:cell()="data">
+        <span :title="data.value">{{ data.value }}</span>
       </template>
     </b-table>
   </div>
@@ -164,6 +170,8 @@ export default {
     'selectable',
     'thClass',
     'crumbs',
+    'givenCols',
+    'givenRows',
   ],
   mounted() {
     let str = this.$route.query.filters;
@@ -200,6 +208,15 @@ export default {
     };
   },
   methods: {
+    tryDecodeURIComponent(text) {
+      try {
+        let x = tryDecodeURIComponent(text);
+        return x;
+      } catch (err) {
+        console.log('error converting ' + text);
+        return text;
+      }
+    },
     filterLabel(key) {
       for (let i in this.fieldNames) {
         let field = this.fieldNames[i];
@@ -464,11 +481,6 @@ export default {
       this.fetchData();
       this.changesPending = false;
     },
-    // tryToAddItem() {
-    //   if (this.canAddItem) {
-    //     this.addItem();
-    //   }
-    // },
     addItem() {
       let fieldName = 'field';
       let i = 1;
@@ -498,9 +510,6 @@ export default {
     clickItem(item, index, event) {
       this.$emit('click', { item, index, event });
     },
-    // createNewItem(inputString) {
-    //   this.$emit('create', inputString);
-    // },
     canEditCell(field, obj) {
       if (this.isObjArray) {
         return false;
@@ -520,6 +529,19 @@ export default {
         }
       }
       return false;
+    },
+    getField(key) {
+      let label = key;
+      if (this.colLabels != null && this.colLabels[key] != null) {
+        label = this.colLabels[key];
+      }
+      let field = {
+        key,
+        label,
+        class: 'table-cell',
+        sortable: true,
+      };
+      return field;
     },
   },
   computed: {
@@ -586,11 +608,17 @@ export default {
       let checkBoxField = {
         key: '__checkbox',
         label: '',
-        sortable: true,
+        sortable: false,
       };
       let out = [];
       if (this.selectableComputed) {
         out.push(checkBoxField);
+      }
+      if (Array.isArray(this.givenCols)) {
+        for (let i in this.givenCols) {
+          let field = this.getField(this.givenCols[i]);
+          out.push(field);
+        }
       }
       if (Array.isArray(this.object)) {
         for (let i in this.object) {
@@ -604,16 +632,7 @@ export default {
                 continue nextItem;
               }
             }
-            let label = a;
-            if (this.colLabels != null && this.colLabels[a] != null) {
-              label = this.colLabels[a];
-            }
-            let field = {
-              key: a,
-              label,
-              class: 'table-cell',
-              sortable: true,
-            };
+            let field = this.getField(a);
             out.push(field);
           }
         }
@@ -655,12 +674,38 @@ export default {
     // },
     items() {
       let out = [];
+
+      if (this.object == null) {
+        return out;
+      }
+
       if (Array.isArray(this.object)) {
         for (let i in this.object) {
           out.push(this.object[i]);
         }
       } else {
+        if (Array.isArray(this.givenRows)) {
+          for (let i in this.givenRows) {
+            let row = this.givenRows[i];
+            out.push({
+              name: this.valueToString(row),
+              value: this.valueToString(this.object[row]),
+              description: this.rowDescription(row),
+            });
+          }
+        }
         for (let i in this.object) {
+          console.log(i);
+          let exists = false;
+          for (let j in out) {
+            if (out[j].name === this.valueToString(i)) {
+              exists = true;
+              break;
+            }
+          }
+          if (exists) {
+            continue;
+          }
           if (this.rowNamesToSkip != null && this.rowNamesToSkip.includes(this.valueToString(i))) {
             continue;
           }
@@ -706,6 +751,9 @@ export default {
 .table-cell {
   vertical-align: baseline !important;
   max-width: 40rem;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
 }
 .narrow {
   width: 10rem;
@@ -718,6 +766,11 @@ export default {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+th {
+  border-top: 0px !important;
+}
+
 .table-header {
   padding: 2px 5px;
   border-radius: 2px;

@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div style="height: 100%;">
     <b-modal id="deleteAllModal" title="Reset database" @ok="resetDB" no-fade>
       <p class="my-4">Are you sure you want to permanently delete all of your data?</p>
     </b-modal>

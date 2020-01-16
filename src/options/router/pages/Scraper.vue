@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div style="height: 100%;">
     <b-modal id="deleteScraperModal" title="Delete Scraper" @ok="deleteObject" no-fade>
       <p class="my-4">Are you sure you want to delete this scraper?</p>
     </b-modal>

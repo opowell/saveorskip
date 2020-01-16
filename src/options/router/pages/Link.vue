@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div style="height: 100%;">
     <b-modal id="deleteLinkModal" title="Delete Link" @ok="deleteObject" no-fade>
       <p class="my-4">Are you sure you want to delete this link?</p>
     </b-modal>

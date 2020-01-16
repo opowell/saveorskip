@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div style="height: 100%;">
     <b-modal id="addScraperModal" title="Add Scraper" @ok="addScraper" no-fade>
       <div>
         <span>Domain:</span>

@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div style="height: 100%;">
     <b-modal size="xl" id="getSuggestionModal" title="Get Suggestion" no-fade>
       <button @click="drawSuggestion" :disabled="getSuggestionStatus === 'Loading...'">Get new suggestion</button>
       <p>Status: {{ getSuggestionStatus }}</p>
@@ -36,6 +36,7 @@
       :fetchData="fetchData"
       @deleteObject="askDeleteObject"
       :links="fieldLinks"
+      :givenRows="['id', 'name', 'Links', 'Sources']"
     >
       <template v-slot:header>
         <button @click="openSuggestionModal" title="Draw suggestion from this profile.">Get suggestion...</button>

@@ -482,3 +482,5 @@ function changeActiveTabToUrl(newURL) {
 let scoreFn = scoreFnJustPoints;
 
 idb.loadScrapers();
+
+idb.loadPopupProfile();

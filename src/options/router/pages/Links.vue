@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div style="height: 100%;">
     <b-modal id="addLinkModal" title="Add Link" @ok="addLink" no-fade>
       <div>
         <span>url:</span>
@@ -20,7 +20,8 @@
       :crumbs="crumbs"
       @deleteSelectedRows="deleteLinks"
       sortBy="timeAdded"
-      sortDesc="true"
+      :sortDesc="true"
+      :givenCols="['saved', 'url', 'title', 'timeAdded']"
     />
   </div>
 </template>

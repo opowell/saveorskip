@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div style="height: 100%;">
     <b-modal id="addSourceModal" title="Add Source" @ok="addSource" no-fade>
       <div>
         <span>id/url:</span>
@@ -19,6 +19,9 @@
       :colLabels="{ providerId: 'Profile' }"
       :crumbs="crumbs"
       @deleteSelectedRows="deleteSources"
+      :givenCols="['points', 'saved', 'providerId', 'timeAdded']"
+      sortBy="points"
+      :sortDesc="true"
     />
   </div>
 </template>

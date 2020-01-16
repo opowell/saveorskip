@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div style="height: 100%;">
     <b-breadcrumb :items="crumbs" />
     <h4>Settings</h4>
     <div style="display: flex; align-items: baseline; margin-top: 2rem;">

@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div style="height: 100%;">
     <b-modal id="addProfileModal" title="Add Profile" @ok="addProfile" no-fade>
       <div>
         <span>Name:</span>
@@ -14,6 +14,7 @@
       :ineditable-row-names="[]"
       :crumbs="crumbs"
       @deleteSelectedRows="deleteProfiles"
+      :givenCols="['id', 'name', 'links', 'sources']"
     />
   </div>
 </template>

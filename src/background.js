@@ -167,7 +167,7 @@ function scrapeIfNecessary(source) {
   let now = new Date();
   console.log('comparing now to next scrape date: ' + now + ' vs. ' + source.nextScrape);
   if (source.nextScrape == null || new Date(source.nextScrape) < now) {
-    scrapeSource(source.url);
+    scrapeProfile(source.providerId);
   }
 }
 
@@ -277,7 +277,7 @@ chrome.runtime.onMessage.addListener(async function(message, sender, sendRespons
       if (senderUrl === store.state.testPageUrl) {
         idb.dispatchToStores('setTestPage', { page: message.page });
       }
-      switch (store.state.popup.profile.defaultAction) {
+      switch (store.state.popup.profile.defaultLinkAction) {
         case 'save':
           storePage(message.page, senderUrl, 'save');
           break;

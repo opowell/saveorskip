@@ -1,50 +1,11 @@
 <template>
   <div id="menu">
-    <div style="display: flex; padding-bottom: 2px;">
-      <span class="menu-tile" @click="saveAndGo" title="Set current link as saved, and go to the next suggestion.">
-        <div class="large-tile">
-          <i class="far fa-star" style="color: green"></i>
-          <i class="fas fa-arrow-right" style="color: #444;"></i>
-        </div>
-        <div>
-          save and go
-        </div>
-      </span>
-      <span class="menu-tile" @click="skipAndGo" title="Set current link as not saved, and go to the next suggestion.">
-        <div class="large-tile">
-          <i class="far fa-star" style="color: red"></i>
-          <i class="fas fa-arrow-right" style="color: #444;"></i>
-        </div>
-        <div>
-          skip and go
-        </div>
-      </span>
-      <span class="menu-tile" @click="go" title="Go to the next suggestion.">
-        <div class="large-tile">
-          <i class="fas fa-arrow-right" style="color: #444;"></i>
-        </div>
-        <div>
-          go
-        </div>
-      </span>
+    <div style="display: flex; padding-bottom: 2px; justify-content: center; font-size: 200%;">
+      <span class="menu-tile" @click="go" title="Go to the next suggestion."> go forward&nbsp;<i class="fas fa-arrow-right" style="color: #444;"></i> </span>
     </div>
-    <div class="menu-item" title="The current profile to save links and sources to.">
-      <span style="flex: 1 1 auto;">Profile:&nbsp;</span>
-      <select v-if="profiles.length > 0" id="target-select" @change="setTargetEv">
-        <option v-for="profile in personalProfiles" :key="profile.id" :value="profile.id" :selected="profile.id == targetId">
-          {{ profile.name }}
-        </option>
-      </select>
-      <div v-else>----</div>
-    </div>
-    <div class="menu-item" title="Default action to take on newly opened pages.">
-      <span style="flex: 1 1 auto;">Default action:&nbsp;</span>
-      <select v-if="profiles.length > 0" id="profile-default-action" @change="setDefaultActionEv">
-        <option v-for="action in ['save', 'skip', 'nothing']" :key="action" :value="action" :selected="action == defaultAction">
-          {{ action }}
-        </option>
-      </select>
-      <div v-else>----</div>
+    <div class="menu-item" :title="curLink.url">
+      <span style="flex: 1 1 auto; margin-right: 10px;">Current page: </span>
+      <span style="text-overflow: ellipsis; white-space: nowrap; overflow: hidden;">{{ curLink.url }}</span>
     </div>
     <div class="menu-item" title="The status of the current link on the current profile as a link.">
       <span style="flex: 1 1 auto;">Link:&nbsp;</span>
@@ -62,8 +23,37 @@
         <i title="Current link is a not a source on the current profile." class="fas fa-trash" @click="deleteSource" :class="{ bgselected: sourceNeither }" style="color: grey"></i>
       </span>
     </div>
+    <div class="menu-item" title="The current profile to save links and sources to.">
+      <span style="flex: 1 1 auto;">Profile:&nbsp;</span>
+      <select v-if="profiles.length > 0" id="target-select" @change="setTargetEv">
+        <option v-for="profile in personalProfiles" :key="profile.id" :value="profile.id" :selected="profile.id == targetId">
+          {{ profile.name }}
+        </option>
+      </select>
+      <div v-else>----</div>
+    </div>
     <div class="menu-divider" />
-    <div class="menu-item">Current page</div>
+    <div class="menu-item" title="Default link action to take on newly opened pages.">
+      <span style="flex: 1 1 auto;">Default link action:&nbsp;</span>
+      <select v-if="profiles.length > 0" @change="setDefaultLinkActionEv">
+        <option v-for="action in ['save', 'skip', 'nothing']" :key="action" :value="action" :selected="action == defaultLinkAction">
+          {{ action }}
+        </option>
+      </select>
+      <div v-else>----</div>
+    </div>
+    <div class="menu-item" title="Default source action to take on newly opened pages.">
+      <span style="flex: 1 1 auto;">Default source action:&nbsp;</span>
+      <select v-if="profiles.length > 0" @change="setDefaultSourceActionEv">
+        <option v-for="action in ['save', 'skip', 'nothing']" :key="action" :value="action" :selected="action == defaultSourceAction">
+          {{ action }}
+        </option>
+      </select>
+      <div v-else>----</div>
+    </div>
+    <!-- <div class="menu-divider" /> -->
+
+    <!-- <div class="menu-item">Current page</div>
     <template v-for="(value, name) in curLink">
       <div :key="name" v-if="name !== 'links' && name !== 'sources' && name !== 'profileId'" class="menu-item" :title="value">
         <span style="flex: 1 1 auto; margin-right: 10px;">{{ name }}: </span>
@@ -73,18 +63,19 @@
     <div class="menu-item">
       <span style="flex: 1 1 auto;">Links:</span>
       <span>{{ numLinks }}</span>
-    </div>
+    </div> -->
+    -->
     <!-- <div class="menu-item" style="word-break: break-all; white-space: initial;" v-for="(link, index) in links" :title="link" :key="link.url">{{ index + 1 }}. {{ link }}</div>
     <div class="menu-divider" /> -->
-    <div class="menu-item">
+    <!-- <div class="menu-item">
       <span style="flex: 1 1 auto;">Sources:</span>
       <span>{{ numSources }}</span>
-    </div>
+    </div> -->
     <!-- <div class="menu-item" style="word-break: break-all; white-space: initial;" v-for="(source, index) in sources" :title="source" :key="source.url">
       {{ index + 1 }}. {{ source }}
     </div> -->
     <div class="menu-divider" />
-    <div class="menu-item" :title="nextLink">Next Link: {{ nextLink }}</div>
+    <!-- <div class="menu-item" :title="nextLink">Next Link: {{ nextLink }}</div> -->
     <div class="menu-item menu-button" @click="showOptions">Manage...</div>
   </div>
 </template>
@@ -106,14 +97,23 @@ export default {
     await idb.setCurUrlSourceStatus();
   },
   computed: {
-    defaultAction() {
+    defaultLinkAction() {
       if (this.$store.state.targetId == null) {
         return 'nothing';
       }
       if (this.$store.state.popup.profile == null) {
         return 'nothing';
       }
-      return this.$store.state.popup.profile.defaultAction;
+      return this.$store.state.popup.profile.defaultLinkAction;
+    },
+    defaultSourceAction() {
+      if (this.$store.state.targetId == null) {
+        return 'nothing';
+      }
+      if (this.$store.state.popup.profile == null) {
+        return 'nothing';
+      }
+      return this.$store.state.popup.profile.defaultSourceAction;
     },
     personalProfiles() {
       let out = [];
@@ -188,8 +188,11 @@ export default {
     },
   },
   methods: {
-    setDefaultActionEv(event) {
-      idb.setDefaultAction(this.targetId, event.target.value);
+    setDefaultLinkActionEv(event) {
+      idb.setDefaultLinkAction(this.targetId, event.target.value);
+    },
+    setDefaultSourceActionEv(event) {
+      idb.setDefaultSourceAction(this.targetId, event.target.value);
     },
     deleteSource() {
       this.$store.dispatch('removeSource', {
@@ -296,7 +299,6 @@ p {
   margin: 1px;
   padding: 5px;
   display: flex;
-  flex-direction: column;
   background-color: #efefef;
   align-items: center;
   border-radius: 4px;

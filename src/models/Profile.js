@@ -1,7 +1,8 @@
 export default class {
   constructor(name) {
     this.name = name;
-    this.defaultAction = 'save';
+    this.defaultLinkAction = 'save';
+    this.defaultSourceAction = 'nothing';
     this.getSuggestion = `
 async function loadNextSuggestion() {
   try {

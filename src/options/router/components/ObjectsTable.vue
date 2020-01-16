@@ -43,6 +43,7 @@
       <div style="flex: 1 1 auto">&nbsp;</div>
       <div>
         <span v-show="hasSelection">
+          <button @click="clearSelection" title="De-select all selected objects.">Clear selection</button>
           <button @click="deletePrompt" title="Delete selected objects.">Delete {{ selection.length }}...</button>
         </span>
         <slot name="header"></slot>
@@ -77,10 +78,10 @@
       no-border-collapse
       sticky-header
       :tbody-tr-class="isObjArray ? 'click-row' : ''"
-      style="margin-left: 1em; margin-right: 0em; margin-top: 0rem !important; max-height: unset; flex: 1 1 auto; align-items: flex-start; align-self: flex-start; max-width: calc(100% - 1em); margin-bottom: 0em;"
+      style="margin-left: 1em; margin-right: 0em; margin-top: 0rem !important; max-height: unset; flex: 1 1 auto; align-items: flex-start; align-self: flex-start; max-width: calc(100% - 1em); margin-bottom: 0px;"
     >
       <template v-slot:head(__checkbox)="data">
-        <input type="checkbox" v-model="selectAll" @change="selectAllChange($event)" />
+        <input id="checkBoxHeader" type="checkbox" v-model="selectAll" @change="selectAllChange($event)" />
       </template>
 
       <template v-slot:head()="data">
@@ -208,9 +209,13 @@ export default {
     };
   },
   methods: {
+    clearSelection() {
+      this.$refs.table.clearSelected();
+      document.getElementById('checkBoxHeader').checked = false;
+    },
     tryDecodeURIComponent(text) {
       try {
-        let x = tryDecodeURIComponent(text);
+        let x = decodeURIComponent(text);
         return x;
       } catch (err) {
         console.log('error converting ' + text);
@@ -790,5 +795,17 @@ button {
 
 .click-row {
   cursor: pointer;
+}
+
+.breadcrumb {
+  margin-bottom: 0em !important;
+}
+
+button {
+  margin-bottom: 0px !important;
+}
+
+.click-row:hover {
+  background-color: rgba(121, 200, 239, 0.34) !important;
 }
 </style>

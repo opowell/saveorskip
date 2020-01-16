@@ -30,7 +30,8 @@
         id: 'Unique identifier for this profile.',
         Links: 'Number of links stored for this profile.',
         Sources: 'Number of sources stored for this profile.',
-        defaultAction: `*save* to save pages when they are opened, *skip* to skip pages when they are opened. Any other value does nothing.`,
+        defaultLinkAction: `*save* to save pages as links when they are opened, *skip* to skip them. Any other value does nothing.`,
+        defaultSourceAction: `*save* to save pages as sources when they are opened, *skip* to skip them opened. Any other value does nothing.`,
       }"
       @save="saveObject"
       :fetchData="fetchData"

@@ -277,7 +277,14 @@ chrome.runtime.onMessage.addListener(async function(message, sender, sendRespons
       if (senderUrl === store.state.testPageUrl) {
         idb.dispatchToStores('setTestPage', { page: message.page });
       }
-      storePage(message.page, senderUrl);
+      switch (store.state.popup.profile.defaultAction) {
+        case 'save':
+          storePage(message.page, senderUrl, 'save');
+          break;
+        case 'skip':
+          storePage(message.page, senderUrl, 'skip');
+          break;
+      }
       break;
     case 'pageLoaded':
       let closeWhenDone = false;
@@ -338,7 +345,7 @@ chrome.runtime.onMessage.addListener(async function(message, sender, sendRespons
   }
 });
 
-async function storePage(page, url) {
+async function storePage(page, url, pageAction) {
   // Page as a profile.
   for (let i in page.links) {
     let link = page.links[i];
@@ -377,7 +384,7 @@ async function storePage(page, url) {
     idb.saveOrSkipLink({
       link: page,
       targetId: store.state.targetId,
-      action: 'save',
+      action: pageAction,
     });
   }
 }

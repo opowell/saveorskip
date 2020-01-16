@@ -57,6 +57,8 @@
     <!-- Main table element -->
     <!-- responsive='true' -->
     <b-table
+      :sort-by="sortBy"
+      :sort-desc="sortDesc"
       ref="table"
       :hover="isObjArray"
       show-empty
@@ -71,6 +73,7 @@
       @row-selected="rowSelected"
       no-select-on-click
       :thClass="thClass"
+      sort-icon-left
       :tbody-tr-class="isObjArray ? 'click-row' : ''"
       style="margin-top: 0rem !important;"
     >
@@ -144,6 +147,8 @@ import Vue from 'vue';
 export default {
   // eslint-disable-next-line prettier/prettier
   props: [
+    'sortBy',
+    'sortDesc',
     'object',
     'ineditableRowNames',
     'ineditableColNames',
@@ -184,7 +189,6 @@ export default {
   },
   data() {
     return {
-      sortDesc: true,
       deleteItemSelect: null,
       changesPending: false,
       selectAll: false,
@@ -684,11 +688,12 @@ export default {
   align-items: baseline;
 }
 .filter {
-  background-color: #eee;
+  background-color: #f7f7f7;
   border-radius: 3px;
-  padding: 3px 7px;
+  padding: 2px 6px;
   margin-left: 5px;
   color: #444;
+  border: 1px solid #ddd;
 }
 .filter:hover {
   text-decoration-line: line-through;

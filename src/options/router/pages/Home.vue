@@ -100,4 +100,7 @@ export default {
 .hidden_header {
   display: none;
 }
+.breadcrumb {
+  padding: 0.2rem 0.5rem !important;
+}
 </style>

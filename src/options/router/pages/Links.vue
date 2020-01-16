@@ -19,6 +19,8 @@
       :colLabels="{ timeAdded: 'Time added' }"
       :crumbs="crumbs"
       @deleteSelectedRows="deleteLinks"
+      sortBy="timeAdded"
+      sortDesc="true"
     />
   </div>
 </template>

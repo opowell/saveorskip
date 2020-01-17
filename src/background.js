@@ -235,19 +235,25 @@ chrome.tabs.onActivated.addListener(function(activeInfo) {
   store.commit(types.SET_ACTIVE_TAB_ID, {
     tabId: activeInfo.tabId,
   });
-  // chrome.tabs.sendMessage(activeInfo.tabId, { action: 'getLink' }, getLinkCB);
+  chrome.tabs.sendMessage(activeInfo.tabId, { action: 'getPage' }, getPageCB);
 });
 
 chrome.tabs.onUpdated.addListener(async function(tabId, changeInfo, tab) {
   if (tabId === store.state.activeTabId) {
-    // chrome.tabs.sendMessage(tab.id, { action: 'getLink' }, getLinkCB);
+    chrome.tabs.sendMessage(tab.id, { action: 'getPage' }, getPageCB);
   }
 });
 
-async function getLinkCB(link) {
-  await idb.setCurPage(link);
-  await idb.setSkippedLinkIfNew(store.state.targetId, link);
-  await idb.setSkippedSourceIfNew(store.state.targetId, link);
+async function getPageCB(page) {
+  doGetPage('', { page });
+}
+
+async function doGetPage(senderUrl, message) {
+  await idb.setCurPage(message.page);
+  if (senderUrl === store.state.testPageUrl) {
+    idb.dispatchToStores('setTestPage', { page: message.page });
+  }
+  await storePage(message.page, senderUrl, store.state.popup.profile.defaultLinkAction, store.state.popup.profile.defaultSourceAction);
 }
 
 chrome.runtime.onMessage.addListener(async function(message, sender, sendResponse) {
@@ -274,17 +280,7 @@ chrome.runtime.onMessage.addListener(async function(message, sender, sendRespons
       saveSourcesOfUrl(message.url, null, 'save');
       break;
     case 'getPage':
-      if (senderUrl === store.state.testPageUrl) {
-        idb.dispatchToStores('setTestPage', { page: message.page });
-      }
-      switch (store.state.popup.profile.defaultLinkAction) {
-        case 'save':
-          storePage(message.page, senderUrl, 'save');
-          break;
-        case 'skip':
-          storePage(message.page, senderUrl, 'skip');
-          break;
-      }
+      doGetPage(senderUrl, message);
       break;
     case 'pageLoaded':
       let closeWhenDone = false;
@@ -345,7 +341,11 @@ chrome.runtime.onMessage.addListener(async function(message, sender, sendRespons
   }
 });
 
-async function storePage(page, url, pageAction) {
+async function storePage(page, url, linkAction, sourceAction) {
+  if (page == null) {
+    return;
+  }
+
   // Page as a profile.
   for (let i in page.links) {
     let link = page.links[i];
@@ -384,7 +384,12 @@ async function storePage(page, url, pageAction) {
     idb.saveOrSkipLink({
       link: page,
       targetId: store.state.targetId,
-      action: pageAction,
+      action: linkAction,
+    });
+    idb.saveOrSkipSource({
+      source: page,
+      targetId: store.state.targetId,
+      action: sourceAction,
     });
   }
 }

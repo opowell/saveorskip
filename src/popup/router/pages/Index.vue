@@ -3,9 +3,9 @@
     <div style="display: flex; padding-bottom: 2px; justify-content: center; font-size: 200%;">
       <span class="menu-tile" @click="go" title="Go to the next suggestion."> go forward&nbsp;<i class="fas fa-arrow-right" style="color: #444;"></i> </span>
     </div>
-    <div class="menu-item" :title="curLink.url">
+    <div class="menu-item" :title="curPage.url">
       <span style="flex: 1 1 auto; margin-right: 10px;">Current page: </span>
-      <span style="text-overflow: ellipsis; white-space: nowrap; overflow: hidden;">{{ curLink.url }}</span>
+      <span style="text-overflow: ellipsis; white-space: nowrap; overflow: hidden;">{{ curPageUrl }}</span>
     </div>
     <div class="menu-item" title="The status of the current link on the current profile as a link.">
       <span style="flex: 1 1 auto;">Link:&nbsp;</span>
@@ -23,6 +23,7 @@
         <i title="Current link is a not a source on the current profile." class="fas fa-trash" @click="deleteSource" :class="{ bgselected: sourceNeither }" style="color: grey"></i>
       </span>
     </div>
+    <div class="menu-divider" />
     <div class="menu-item" title="The current profile to save links and sources to.">
       <span style="flex: 1 1 auto;">Profile:&nbsp;</span>
       <select v-if="profiles.length > 0" id="target-select" @change="setTargetEv">
@@ -32,7 +33,6 @@
       </select>
       <div v-else>----</div>
     </div>
-    <div class="menu-divider" />
     <div class="menu-item" title="Default link action to take on newly opened pages.">
       <span style="flex: 1 1 auto;">Default link action:&nbsp;</span>
       <select v-if="profiles.length > 0" @change="setDefaultLinkActionEv">
@@ -64,7 +64,7 @@
       <span style="flex: 1 1 auto;">Links:</span>
       <span>{{ numLinks }}</span>
     </div> -->
-    -->
+
     <!-- <div class="menu-item" style="word-break: break-all; white-space: initial;" v-for="(link, index) in links" :title="link" :key="link.url">{{ index + 1 }}. {{ link }}</div>
     <div class="menu-divider" /> -->
     <!-- <div class="menu-item">
@@ -139,10 +139,10 @@ export default {
       return this.$store.state.curUrlAsLink;
     },
     links() {
-      return this.curLink == null ? [] : this.curLink.links;
+      return this.curPage == null ? [] : this.curPage.links;
     },
     sources() {
-      return this.curLink == null ? [] : this.curLink.sources;
+      return this.curPage == null ? [] : this.curPage.sources;
     },
     linkSaved() {
       return this.linkStatus === true;
@@ -171,7 +171,7 @@ export default {
     targetId() {
       return this.$store.state.targetId;
     },
-    curLink() {
+    curPage() {
       return this.$store.state.curPage;
     },
     target() {
@@ -185,6 +185,15 @@ export default {
     },
     numSources() {
       return this.sources == null ? '-' : this.sources.length;
+    },
+    curPageUrl() {
+      if (this.curPage == null) {
+        return '---';
+      }
+      if (this.curPage.url == null) {
+        return this.curPage.id;
+      }
+      return this.curPage.url;
     },
   },
   methods: {

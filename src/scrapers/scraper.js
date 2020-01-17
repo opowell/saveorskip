@@ -69,10 +69,10 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
     sos.getSourcesForUrl(request.url, sendResponse);
   } else if (request.action === 'getLinks') {
     sos.getLinksWithResponse(sendResponse);
-  } else if (request.action === 'getLink') {
-    let link = sos.getLink();
-    console.log('got link: ' + JSON.stringify(link));
-    sendResponse(link);
+  } else if (request.action === 'getPage') {
+    let page = sos.getPage();
+    console.log('got page: ' + JSON.stringify(page));
+    sendResponse(page);
   } else {
     console.log('sos unknown message: ' + request.action);
     sendResponse({}); // Send nothing..
@@ -122,8 +122,6 @@ sos.finishScraperLoad = function() {
     action: 'getPage',
     page,
   });
-
-  debugger;
 
   if (sos.closeWhenDone === true) {
     window.close();

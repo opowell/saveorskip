@@ -46,13 +46,17 @@
           <button @click="clearSelection" title="De-select all selected objects.">Clear selection</button>
           <button @click="deletePrompt" title="Delete selected objects.">Delete {{ selection.length }}...</button>
         </span>
-        <slot name="header"></slot>
-        <button v-if="showAddComputed" @click="addItemPrompt">Add...</button>
-        <button @click="openFilter">Filter...</button>
-        <button v-if="!isObjArray" @click="duplicate">Duplicate</button>
-        <button v-if="!isObjArray" @click="deleteObject" title="Delete this object.">Delete...</button>
-        <button v-if="!isObjArray" title="Save the changes to this object." :disabled="!changesPending" :class="{ 'btn-primary': changesPending }" @click="saveObject">Save</button>
-        <button v-if="!isObjArray" title="Reset this object to its original form" @click="reset" :disabled="!changesPending">Reset</button>
+        <span v-show="!hasSelection">
+          <slot name="header"></slot>
+          <button v-if="showAddComputed" @click="addItemPrompt">Add...</button>
+          <button @click="openFilter">Filter...</button>
+          <button v-if="!isObjArray" @click="duplicate">Duplicate</button>
+          <button v-if="!isObjArray" @click="deleteObject" title="Delete this object.">Delete...</button>
+          <button v-if="!isObjArray" title="Save the changes to this object." :disabled="!changesPending" :class="{ 'btn-primary': changesPending }" @click="saveObject">
+            Save
+          </button>
+          <button v-if="!isObjArray" title="Reset this object to its original form" @click="reset" :disabled="!changesPending">Reset</button>
+        </span>
       </div>
     </div>
     <!-- Main table element -->

@@ -1,6 +1,6 @@
 import { openDB } from 'idb';
 import { resetState } from '../store/index.js';
-import { addProfile, addScraper } from './idb.js';
+import { storeProfile, addScraper } from './idb.js';
 import RedditScraper from '../scrapers/reddit.js';
 import DefaultScraper from '../scrapers/default.js';
 export const DB_NAME = 'saveorskip';
@@ -60,7 +60,7 @@ export const dbPromise = openDB(DB_NAME, DB_VERSION, {
         autoIncrement: true,
       });
 
-      await addProfile({
+      await storeProfile({
         name: 'myProfile',
       });
 

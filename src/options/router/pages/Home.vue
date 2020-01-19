@@ -45,7 +45,11 @@ export default {
         },
         {
           name: 'Settings',
-          description: 'Everything else.',
+          description: 'Change extension-wide settings.',
+        },
+        {
+          name: 'Logs',
+          description: 'Log of actions.',
         },
       ],
       tableLinks: {

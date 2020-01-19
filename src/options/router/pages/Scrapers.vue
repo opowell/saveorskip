@@ -14,6 +14,7 @@
       :ineditable-row-names="[]"
       :crumbs="crumbs"
       @deleteSelectedRows="deleteScrapers"
+      :givenCols="['id', 'priority', 'name', 'domain']"
     />
   </div>
 </template>

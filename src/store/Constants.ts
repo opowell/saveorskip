@@ -21,6 +21,8 @@ export const STORE_SOURCES_CONSUMERID = 'consumerId'; // The user of links.
 export const STORE_SOURCES_PROVIDERID = 'providerId'; // The provider of links.
 export const INDEX_SOURCES_CONSUMERID = STORE_SOURCES_CONSUMERID;
 
+export const STORE_LOGS = 'logs';
+
 export const STORE_SCRAPERS = 'scrapers';
 
 const DB_VERSION = 5;
@@ -28,6 +30,20 @@ const DB_VERSION = 5;
 if (!('indexedDB' in window)) {
   console.log("This browser doesn't support IndexedDB");
 }
+
+export const reset = async function() {
+  await storeProfile(
+    {
+      name: 'myProfile',
+      defaultLinkAction: 'save',
+      defaultSourceAction: 'forget',
+    },
+    {}
+  );
+  await addScraper(RedditScraper);
+  await addScraper(DefaultScraper);
+  resetState();
+};
 
 // When anything below changes, increment DB_VERSION. This forces the database schema to be updated.
 export const dbPromise = openDB(DB_NAME, DB_VERSION, {
@@ -60,14 +76,12 @@ export const dbPromise = openDB(DB_NAME, DB_VERSION, {
         autoIncrement: true,
       });
 
-      await storeProfile({
-        name: 'myProfile',
+      let logsStore = db.createObjectStore(STORE_LOGS, {
+        keyPath: 'id',
+        autoIncrement: true,
       });
 
-      await addScraper(RedditScraper);
-      await addScraper(DefaultScraper);
-
-      resetState();
+      await reset();
     }
   },
 });

@@ -79,7 +79,7 @@ export function drawRandomElFromObject(object, scoreFn) {
     }
     let obj = object[keys[k]];
     try {
-      console.log(selText + ' ' + score + ' - ' + obj.points + ' - ' + obj.nextScrape + ' - ' + obj.url);
+      console.log(selText + ' ' + score + ' - ' + obj.saved + ' - ' + obj.points + ' - ' + obj.providerId);
     } catch (err) {
       console.error('ERROR');
     }

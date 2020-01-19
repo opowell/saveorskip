@@ -72,7 +72,7 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
   } else if (request.action === 'getPage') {
     let page = sos.getPage();
     console.log('got page: ' + JSON.stringify(page));
-    sendResponse(page);
+    chrome.runtime.sendMessage({ action: 'getPage', page });
   } else {
     console.log('sos unknown message: ' + request.action);
     sendResponse({}); // Send nothing..
@@ -87,6 +87,7 @@ sos.getPage = function() {
     title: document.title,
     sources,
     links,
+    scraperId: sos.scraper.id,
   };
   sos.getPageAttributes(out);
   return out;

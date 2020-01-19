@@ -165,11 +165,16 @@ function showNextPage(profileId) {
   loadNextSuggestion(profileId);
 }
 
-function scrapeIfNecessary(source) {
+async function scrapeIfNecessary(source) {
+  let profileId = source.id;
+  if (source.providerId != null) {
+    profileId = source.providerId;
+  }
   let now = new Date();
-  console.log('comparing now to next scrape date: ' + now + ' vs. ' + source.nextScrape);
-  if (source.nextScrape == null || new Date(source.nextScrape) < now) {
-    scrapeProfile(source.id);
+  let profile = await idb.getProfile(profileId);
+  console.log('comparing now to next scrape date: ' + now + ' vs. ' + profile.nextScrape);
+  if (profile.nextScrape == null || new Date(profile.nextScrape) < now) {
+    scrapeProfile(profileId);
   }
 }
 
@@ -188,13 +193,13 @@ async function loadNextSuggestion(profileId) {
         console.log('error loading suggestion: no source found');
         return;
       }
-      scrapeIfNecessary(source);
+      await scrapeIfNecessary(source);
 
-      console.log('DRAWING SUGGESTION from ' + source.url);
-      await idb.dispatchToStores('setSourceForCurUrl', trimmedUrl(source.url));
-      let linksCursor = await idb.getLinksByTimeAdded(profileId);
+      console.log('DRAWING SUGGESTION from ' + source.providerId);
+      await idb.dispatchToStores('setSourceForCurUrl', trimmedUrl(source.providerId));
+      let linksCursor = await idb.getLinksByTimeAdded(source.providerId);
       if (linksCursor == null) {
-        console.log('no links, skipping ' + source.url);
+        console.log('no links, skipping ' + source.providerId);
         sources.splice(index, 1);
         continue;
       }
@@ -210,20 +215,15 @@ async function loadNextSuggestion(profileId) {
           nextUrl = linksCursor.value.url;
         } else {
           try {
-            await idb.deleteLink({
-              profileId,
-              sourceId: source.url,
-              linkId: linksCursor.value.url,
-            });
             await linksCursor.continue();
           } catch (err) {
-            nextUrl = null;
+            break;
           }
         }
       }
 
       if (nextUrl !== null) {
-        changeActiveTabToUrl(linksCursor.value.url);
+        changeActiveTabToUrl(nextUrl);
         return;
       }
     }
@@ -237,23 +237,21 @@ chrome.tabs.onActivated.addListener(function(activeInfo) {
   store.commit(types.SET_ACTIVE_TAB_ID, {
     tabId: activeInfo.tabId,
   });
-  chrome.tabs.sendMessage(activeInfo.tabId, { action: 'getPage' }, getPageCB);
+  chrome.tabs.sendMessage(activeInfo.tabId, { action: 'getPage' });
 });
 
 chrome.tabs.onUpdated.addListener(async function(tabId, changeInfo, tab) {
   if (tabId === store.state.activeTabId) {
-    chrome.tabs.sendMessage(tab.id, { action: 'getPage' }, getPageCB);
+    chrome.tabs.sendMessage(tab.id, { action: 'getPage' });
   }
 });
 
-async function getPageCB(page) {
-  doGetPage('', { page });
-}
-
-async function doGetPage(senderUrl, message) {
-  await idb.setCurPage(message.page);
+async function doGetPage(senderUrl, message, sender) {
+  if (sender.tab.active) {
+    await idb.setCurPage(message.page);
+  }
   if (senderUrl === store.state.testPageUrl) {
-    // idb.dispatchToStores('setTestPage', { page: message.page });
+    idb.dispatchToStores('setTestPage', { page: message.page });
   }
   await idb.storePage(message.page, senderUrl, store.state.popup.profile.defaultLinkAction, store.state.popup.profile.defaultSourceAction);
 }
@@ -269,7 +267,7 @@ chrome.runtime.onMessage.addListener(async function(message, sender, sendRespons
 
   switch (action) {
     case 'scrapeIfNecessary':
-      scrapeIfNecessary(message.profile);
+      await scrapeIfNecessary(message.profile);
       break;
     case 'testPage':
       idb.dispatchToStores('setTestPageUrl', {
@@ -285,7 +283,7 @@ chrome.runtime.onMessage.addListener(async function(message, sender, sendRespons
       saveSourcesOfUrl(message.url, null, 'save');
       break;
     case 'getPage':
-      doGetPage(senderUrl, message);
+      doGetPage(senderUrl, message, sender);
       break;
     case 'pageLoaded':
       let closeWhenDone = false;
@@ -362,6 +360,9 @@ function getScraper(url) {
 }
 
 function scrapeProfile(url) {
+  if (url == null || url.length < 1) {
+    return;
+  }
   console.log('scraping ' + url);
   store.commit(types.ADD_PROFILE_TO_SCRAPE, url);
   chrome.tabs.create({ url: 'http://' + url, active: false });

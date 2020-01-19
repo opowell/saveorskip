@@ -13,7 +13,7 @@ async function loadNextSuggestion() {
         console.log('error loading suggestion: no source found');
         return;
       }
-      scrapeIfNecessary(source);
+      await scrapeIfNecessary(source);
 
       console.log('DRAWING SUGGESTION from ' + source.url);
       await idb.dispatchToStores('setSourceForCurUrl', trimmedUrl(source.url));

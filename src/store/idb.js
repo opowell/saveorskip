@@ -296,7 +296,11 @@ export async function getProfile(id) {
   return out;
 }
 
-export async function storeProfile(profile, { overwriteProps, updateScrapeSettings, numNewLinksFound }) {
+export async function storeProfile(profile, { overwriteProps, updateScrapeSettings, numNewLinksFound, keepExistingProps }) {
+  if (keepExistingProps == null) {
+    keepExistingProps = true;
+  }
+
   if (profile.id == null && profile.url != null) {
     profile.id = profile.url;
   }
@@ -318,7 +322,10 @@ export async function storeProfile(profile, { overwriteProps, updateScrapeSettin
     delete profile[field];
   }
 
-  let storeProfile = await getProfile(profile.id);
+  let storeProfile = null;
+  if (keepExistingProps) {
+    storeProfile = await getProfile(profile.id);
+  }
   if (storeProfile == null) {
     storeProfile = profile;
   }

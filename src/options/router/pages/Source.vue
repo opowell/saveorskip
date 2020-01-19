@@ -96,6 +96,9 @@ export default {
       if (typeof this.profile.name === 'object') {
         return JSON.stringify(this.profile.name);
       }
+      if (this.profile.name == null || this.profile.name === '') {
+        return decodeURIComponent(this.profile.id);
+      }
       return this.profile.name;
     },
     sourceId() {

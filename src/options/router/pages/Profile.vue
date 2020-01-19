@@ -174,7 +174,7 @@ export default {
       this.$bvModal.show('deleteProfileModal');
     },
     async saveObject() {
-      await idb.storeProfile(this.profile, true);
+      await idb.storeProfile(this.profile, { overwriteProps: true, keepExistingProps: false });
       this.fetchData();
     },
     deleteObject() {
@@ -217,7 +217,7 @@ export default {
       if (typeof this.profile.name === 'object') {
         return JSON.stringify(this.profile.name);
       }
-      if (this.profile.name === '') {
+      if (this.profile.name == null || this.profile.name === '') {
         return decodeURIComponent(this.profile.id);
       }
       return this.profile.name;

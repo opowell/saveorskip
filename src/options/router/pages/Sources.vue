@@ -91,7 +91,16 @@ export default {
       return this.$store.state.profile;
     },
     profileName() {
-      return this.profile == null ? '' : this.profile.name;
+      if (this.profile == null) {
+        return '';
+      }
+      if (typeof this.profile.name === 'object') {
+        return JSON.stringify(this.profile.name);
+      }
+      if (this.profile.name == null || this.profile.name === '') {
+        return decodeURIComponent(this.profile.id);
+      }
+      return this.profile.name;
     },
     crumbs: function() {
       return [

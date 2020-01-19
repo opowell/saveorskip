@@ -1,8 +1,5 @@
 <template>
   <div style="display: flex; flex-direction: column; height: 100%">
-    <b-modal id="deleteSelectionModal" title="Delete items" @ok="deleteSelectedRows" no-fade>
-      <div>Are you sure you want to delete {{ selection.length }} item<span v-show="selection.length !== 1">s</span>?</div>
-    </b-modal>
     <b-modal id="addFilterModal" title="Add Filter" @ok="addFilter" no-fade>
       <div style="margin-bottom: 1rem;">
         <span style="width: 100px;">Field:</span>
@@ -44,7 +41,7 @@
       <div>
         <span v-show="hasSelection">
           <button @click="clearSelection" title="De-select all selected objects.">Clear selection</button>
-          <button @click="deletePrompt" title="Delete selected objects.">Delete {{ selection.length }}...</button>
+          <button @click="deleteSelectedRows" title="Delete selected objects.">Delete {{ selection.length }}...</button>
         </span>
         <span v-show="!hasSelection">
           <slot name="header"></slot>
@@ -372,12 +369,20 @@ export default {
         this.$refs.table.clearSelected();
       }
     },
-    deletePrompt() {
-      this.$bvModal.show('deleteSelectionModal');
-    },
     deleteSelectedRows() {
-      this.$bvModal.hide('deleteSelectionModal');
-      this.$emit('deleteSelectedRows', this.selection);
+      if (this.selection.length === 0) {
+        return;
+      }
+      if (this.isObjArray) {
+        this.$emit('deleteSelectedRows', this.selection);
+      } else {
+        for (let i in this.selection) {
+          let field = this.selection[i];
+          Vue.delete(this.object, field.name);
+        }
+        this.changesPending = true;
+        this.clearSelection();
+      }
     },
     removeFilter(index) {
       this.filters.splice(index, 1);
@@ -393,7 +398,7 @@ export default {
       }
     },
     rowSelected(rows) {
-      console.log('selected ' + rows.length);
+      // console.log('selected ' + rows.length);
       this.selection = rows;
     },
     isSelected(data) {
@@ -497,6 +502,7 @@ export default {
         if (this.object[fieldName + i] == null) {
           break;
         }
+        i++;
       }
       fieldName = fieldName + i;
       Vue.set(this.object, fieldName, '');
@@ -517,7 +523,15 @@ export default {
       }
     },
     clickItem(item, index, event) {
-      this.$emit('click', { item, index, event });
+      if (this.hasSelection) {
+        if (this.$refs.table.isRowSelected(index)) {
+          this.$refs.table.unselectRow(index);
+        } else {
+          this.$refs.table.selectRow(index);
+        }
+      } else {
+        this.$emit('click', { item, index, event });
+      }
     },
     canEditCell(field, obj) {
       if (this.isObjArray) {

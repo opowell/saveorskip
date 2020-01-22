@@ -104,7 +104,13 @@ export default {
       if (this.$store.state.popup.profile == null) {
         return 'nothing';
       }
-      return this.$store.state.popup.profile.defaultLinkAction;
+      switch (this.$store.state.popup.profile.defaultLinkAction) {
+        case 'save':
+          return 'save';
+        case 'skip':
+          return 'skip';
+      }
+      return 'nothing';
     },
     defaultSourceAction() {
       if (this.$store.state.targetId == null) {
@@ -113,7 +119,13 @@ export default {
       if (this.$store.state.popup.profile == null) {
         return 'nothing';
       }
-      return this.$store.state.popup.profile.defaultSourceAction;
+      switch (this.$store.state.popup.profile.defaultSourceAction) {
+        case 'save':
+          return 'save';
+        case 'skip':
+          return 'skip';
+      }
+      return 'nothing';
     },
     personalProfiles() {
       let out = [];

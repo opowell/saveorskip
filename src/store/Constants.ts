@@ -1,7 +1,8 @@
 import { openDB } from 'idb';
 import { resetState } from '../store/index.js';
-import { storeProfile, addScraper } from './idb.js';
+import { storeProfile, addScraper, storeSource } from './idb.js';
 import RedditScraper from '../scrapers/reddit.js';
+import HackerNewsScraper from '../scrapers/hackernews.js';
 import DefaultScraper from '../scrapers/default.js';
 export const DB_NAME = 'saveorskip';
 
@@ -40,8 +41,22 @@ export const reset = async function() {
     },
     {}
   );
-  await addScraper(RedditScraper);
+  let sources = ['www.reddit.com', 'news.ycombinator.com', 'www.theguardian.com/international'];
+  for (let i in sources) {
+    let srcObj = {
+      source: {
+        saved: false,
+      },
+      providerId: sources[i],
+      consumerId: 1,
+      pointsChange: 5,
+      overwrite: false,
+    };
+    await storeSource(srcObj);
+  }
   await addScraper(DefaultScraper);
+  await addScraper(RedditScraper);
+  await addScraper(HackerNewsScraper);
   resetState();
 };
 

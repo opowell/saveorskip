@@ -3,7 +3,6 @@ let out = {};
 
 out.name = 'www.reddit.com';
 out.domain = 'www.reddit.com';
-out.priority = 2;
 
 out.getLinks = function() {
   let links = [];
@@ -125,6 +124,7 @@ out.getPageAttributes = function(page) {
     page.subreddit = sos.getSubredditName();
     page.poster = sos.getPosterName();
   }
+  page.title = document.title;
 };
 
 out.onScriptLoad = function() {

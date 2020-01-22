@@ -1,6 +1,6 @@
 var sos = {};
 
-sos.priority = 1; // higher value, higher priority
+sos.priority = 0; // higher value, higher priority
 
 sos.name = 'All other pages.';
 sos.domain = ''; // match any url.
@@ -50,16 +50,24 @@ sos.getSources = function() {
     if (!sos.isParentUrl(url)) {
       continue;
     }
-    if (!sources.includes(url)) {
-      sources.push(url);
+    let alreadyInArray = false;
+    for (let j in sources) {
+      if (sources[j].url === url) {
+        alreadyInArray = true;
+        break;
+      }
+    }
+    if (!alreadyInArray) {
+      sources.push({
+        url,
+        points: 3,
+      });
     }
   }
   return sources;
 };
 
 sos.onScriptLoad = function() {
-  sos.SUGGESTIONS_PER_SAVE = 2;
-
   sos.isParentUrl = function(url) {
     let curUrl = sos.buildUrl(window.location.href);
     if (curUrl.includes(url) && url !== curUrl) {
@@ -67,6 +75,10 @@ sos.onScriptLoad = function() {
     }
     return false;
   };
+};
+
+sos.getPageAttributes = function(page) {
+  sos.title = document.title;
 };
 
 export default sos;

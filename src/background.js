@@ -348,13 +348,25 @@ chrome.runtime.onMessage.addListener(async function(message, sender, sendRespons
   }
 });
 
+let DEFAULT_SCRAPER_PRIORITY = 1;
+
 function getScraper(url) {
   let scraper = null;
   for (let i in store.state.scrapers) {
     let curScraper = store.state.scrapers[i];
-    if (url.startsWith(curScraper.domain) && (scraper == null || scraper.priority < curScraper.priority)) {
-      scraper = curScraper;
+    if (!url.startsWith(curScraper.domain)) {
+      continue;
     }
+    if (scraper == null) {
+      scraper = curScraper;
+      continue;
+    }
+    let selScraperPriority = scraper.priority == null ? scraper.priority : DEFAULT_SCRAPER_PRIORITY;
+    let curScraperPriority = curScraper.priority == null ? curScraper.priority : DEFAULT_SCRAPER_PRIORITY;
+    if (selScraperPriority >= curScraperPriority) {
+      continue;
+    }
+    scraper = curScraper;
   }
   return scraper;
 }

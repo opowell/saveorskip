@@ -689,6 +689,9 @@ export async function storeSource({ source, providerId, consumerId, pointsChange
     storeObject = source;
     storeObject.timeAdded = new Date();
   }
+
+  storeObject.consumerId = consumerId;
+  storeObject.providerId = providerId;
   await db.put(STORE_SOURCES, storeObject);
 
   source.id = providerId;

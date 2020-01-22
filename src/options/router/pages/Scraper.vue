@@ -34,7 +34,7 @@
       :rowDescriptions="{
         id: 'Unique identifier.',
         domain: 'The domain to use this scraper on.',
-        priority: 'The order in which scrapers are processed. Higher values take precendence.',
+        priority: 'The order in which scrapers are processed. Higher values take precendence. Missing value is given a value of 1.',
         getLinks: 'Function that returns an array of this page\'s links. Links should be strings.',
         getSources:
           'Function that returns an array of this page\'s sources. Each source can either be a string (with the url of the source), or an object with the properties \'url\' and \'points\'. Alternatively, you can return \'pointsSave\' and \'pointsSkip\' to differentiate points changes for save and skip actions. For the save action, the points are added to the source score. For skip actions, the points are deducted from the source score.',

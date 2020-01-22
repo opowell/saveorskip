@@ -5,6 +5,12 @@ export function convertId(id) {
   return Number.parseInt(id);
 }
 
+export function setIfNotNull(obj, field) {
+  if (obj[field] != null) {
+    eval(`obj[field] = ${obj[field]}`);
+  }
+}
+
 // eslint-disable-next-line no-unused-vars
 export function scoreFnHot(src) {
   if (src.points < 1) {

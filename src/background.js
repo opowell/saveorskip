@@ -181,51 +181,10 @@ async function scrapeIfNecessary(source) {
 async function loadNextSuggestion(profileId) {
   try {
     console.log('Loading next link');
-    let sources = await idb.getProfileSources(profileId);
-    if (sources == null) {
-      console.log('no sources found');
+    let nextLink = await idb.getSuggestion(profileId);
+    if (nextLink != null) {
+      changeActiveTabToUrl(nextLink.url);
       return;
-    }
-
-    while (true) {
-      let [source, index] = drawRandomElFromObject(sources, scoreFn);
-      if (source == null) {
-        console.log('error loading suggestion: no source found');
-        return;
-      }
-      await scrapeIfNecessary(source);
-
-      console.log('DRAWING SUGGESTION from ' + source.providerId);
-      await idb.dispatchToStores('setSourceForCurUrl', trimmedUrl(source.providerId));
-      let linksCursor = await idb.getLinksByTimeAdded(source.providerId);
-      if (linksCursor == null) {
-        console.log('no links, skipping ' + source.providerId);
-        sources.splice(index, 1);
-        continue;
-      }
-      let nextUrl = null;
-      while (nextUrl === null) {
-        // Check if current link already exists on profile.
-        let storeLink = await idb.getLink({
-          profileId,
-          linkId: linksCursor.value.url,
-        });
-        let alreadyExists = storeLink != null;
-        if (!alreadyExists) {
-          nextUrl = linksCursor.value.url;
-        } else {
-          try {
-            await linksCursor.continue();
-          } catch (err) {
-            break;
-          }
-        }
-      }
-
-      if (nextUrl !== null) {
-        changeActiveTabToUrl(nextUrl);
-        return;
-      }
     }
   } catch (err) {
     console.log(err);

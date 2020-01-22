@@ -15,8 +15,8 @@ import {
 } from './Constants.ts';
 import * as AutoGenProfile from '../models/AutoGenProfile.js';
 import * as types from './mutation-types.js';
-import Vue from 'vue';
-import { trimmedUrl, drawRandomElFromObject, scoreFnJustPoints } from '../Utils.js';
+// eslint-disable-next-line prettier/prettier
+import { trimmedUrl, drawRandomElFromObject, scoreFnJustPoints, setIfNotNull } from '../Utils.js';
 
 /**
  * Should not call Vuex store directly. Instead, broadcast messages to all tabs with the corresponding store modification. Tabs then update their own stores (and Vue instances).
@@ -422,18 +422,22 @@ export async function getSuggestion(profileId) {
       return;
     }
 
+    let consumer = await getProfile(profileId);
     while (true) {
       let [source, index] = drawRandomElFromObject(sources, scoreFnJustPoints);
       if (source == null) {
         console.log('error loading suggestion: no source found');
         return;
       }
-      let provider = await getProfile(source.providerId);
-      // if (provider.nextScrape == null || provider.nextScrape < new Date()) {
-      await chrome.runtime.sendMessage({ action: 'scrapeIfNecessary', profile: provider });
-      // }
 
-      // TODO: scrape if necessary.
+      // TODO: Make customizable.
+      source.points--;
+      let db = await dbPromise;
+      await db.put(STORE_SOURCES, source);
+
+      let provider = await getProfile(source.providerId);
+      await chrome.runtime.sendMessage({ action: 'scrapeIfNecessary', profile: provider });
+
       let linksCursor = null;
       try {
         linksCursor = await getLinksByTimeAdded(source.providerId);
@@ -670,8 +674,15 @@ export async function saveOrSkipLink(payload) {
 
 export async function storeSource({ source, providerId, consumerId, pointsChange, overwrite }) {
   const db = await dbPromise;
-  let storeObject = null;
 
+  let profile = await db.get(STORE_PROFILES, consumerId);
+  if (profile.storeSource != null) {
+    setIfNotNull(profile, 'storeSource');
+    profile.storeSource({ source, providerId, consumerId, pointsChange, overwrite });
+    return;
+  }
+
+  let storeObject = null;
   if (!overwrite) {
     storeObject = await db.get(STORE_SOURCES, [consumerId, providerId]);
     if (storeObject != null) {
@@ -825,6 +836,12 @@ export async function addScraper(scraper) {
     }
   }
   await db.put(STORE_SCRAPERS, scraper);
+  await loadScrapers();
+}
+
+export async function saveScraper(scraper) {
+  await saveObject(STORE_SCRAPERS, scraper);
+  await loadScrapers();
 }
 
 // export async function addProfile(profile) {

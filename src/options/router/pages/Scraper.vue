@@ -55,8 +55,6 @@ import ObjectsTable from '../components/ObjectsTable.vue';
 import * as idb from '../../../store/idb.js';
 import { STORE_SCRAPERS } from '../../../store/Constants.ts';
 import { convertId } from '../../../Utils.js';
-import Vue from 'vue';
-import * as types from '../../../store/mutation-types.js';
 
 export default {
   name: 'Scraper',
@@ -104,7 +102,7 @@ export default {
       this.$bvModal.show('deleteScraperModal');
     },
     async saveObject() {
-      await idb.saveObject(STORE_SCRAPERS, this.scraper);
+      await idb.saveScraper(this.scraper);
       this.fetchData();
     },
     async deleteObject() {

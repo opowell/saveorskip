@@ -15,7 +15,8 @@
       :crumbs="crumbs"
       @deleteSelectedRows="deleteProfiles"
       :givenCols="['id', 'name', 'links', 'sources']"
-    />
+    >
+    </objects-table>
   </div>
 </template>
 

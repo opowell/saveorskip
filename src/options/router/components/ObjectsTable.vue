@@ -81,6 +81,8 @@
       :tbody-tr-class="isObjArray ? 'click-row' : ''"
       style="margin-left: 1em; margin-right: 0em; margin-top: 0rem !important; max-height: unset; flex: 1 1 auto; align-items: flex-start; align-self: flex-start; max-width: calc(100% - 1em); margin-bottom: 0px;"
     >
+      <slot></slot>
+
       <template v-slot:head(__checkbox)="data">
         <input id="checkBoxHeader" type="checkbox" v-model="selectAll" @change="selectAllChange($event)" />
       </template>

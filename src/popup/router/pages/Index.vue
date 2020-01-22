@@ -3,7 +3,7 @@
     <div style="display: flex; padding-bottom: 2px; justify-content: center; font-size: 200%;">
       <span class="menu-tile" @click="go" title="Go to the next suggestion."> go forward&nbsp;<i class="fas fa-arrow-right" style="color: #444;"></i> </span>
     </div>
-    <div class="menu-item" :title="curPage.url">
+    <div class="menu-item" :title="curPageUrl">
       <span style="flex: 1 1 auto; margin-right: 10px;">Current page: </span>
       <span style="text-overflow: ellipsis; white-space: nowrap; overflow: hidden;">{{ curPageUrl }}</span>
     </div>

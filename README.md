@@ -1,6 +1,6 @@
 # Save or skip
 
-Save pages you visit. Get recommendations based on your previous saves.
+Go "Forward" in your browser (get a new page recommendation). Turn any page into an RSS feed. Suggestions based on previous pages you have visited.
 
 ## Installation
 
@@ -14,19 +14,10 @@ The extension should now be accessible from the top right of the browser (green 
 
 ## How to use
 
-1. Visit a website you like.
-2. Click the green icon.
-3. Click "Save and go".
+1. Click the green icon.
+2. Click "go forward".
 
-This saves the current link, searches for further recommendations, picks one and then sends you to it.
-
-## Finding links
-
-This extension has generic code for finding links on any webpage, however it also contains specialized code for finding links from particular sources. Sites with customized code are:
-
-- reddit.com
-- news.ycombinator.com
-- youtube.com
+By default, pages you visit are marked as "saved" and generate new suggestions in the future. But this can of course be changed.
 
 ## Development setup
 

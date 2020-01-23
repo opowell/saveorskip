@@ -31,7 +31,13 @@ sos.getSourcesForUrl = function(url) {
     let linkUrl = linkEls[i].getAttribute('href');
     linkUrl = sos.buildUrl(linkUrl);
     if (url === linkUrl) {
-      sources.push(sos.trimmedUrl(location.href));
+      sources.push({
+        linkId: url,
+        source: {
+          id: sos.trimmedUrl(location.href),
+          points: 1,
+        },
+      });
       break;
     }
   }

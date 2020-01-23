@@ -23,10 +23,16 @@ sos.getSourcesForUrl = function(targetUrl) {
   let sources = [];
   let linkEls = document.querySelectorAll('a');
   for (let i = 0; i < linkEls.length; i++) {
-    let url = linkEls[i].getAttribute('href');
-    url = sos.buildUrl(url);
-    if (targetUrl === url) {
-      sources.push(sos.trimmedUrl(location.href));
+    let linkUrl = linkEls[i].getAttribute('href');
+    linkUrl = sos.buildUrl(linkUrl);
+    if (targetUrl === linkUrl) {
+      sources.push({
+        linkId: targetUrl,
+        source: {
+          id: sos.trimmedUrl(location.href),
+          points: 1,
+        },
+      });
       break;
     }
   }

@@ -66,7 +66,8 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
     let sources = sos.getSources();
     sendResponse({ sources });
   } else if (request.action === 'getUrlSources') {
-    sos.getSourcesForUrl(request.url, sendResponse);
+    let sources = sos.getSourcesForUrl(request.url);
+    sendResponse({ sources });
   } else if (request.action === 'getLinks') {
     sos.getLinksWithResponse(sendResponse);
   } else if (request.action === 'getPage') {

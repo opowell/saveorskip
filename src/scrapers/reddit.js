@@ -99,24 +99,21 @@ out.getSources = function() {
 out.getSourcesOfUrl = function() {
   let sources = [];
   let linkEls = document.getElementsByClassName('SQnoC3ObvgnGjWt90zD9Z');
-  for (let i = 0; i < linkEls; i++) {
-    let url = linkEls[i].getAttribute('href');
-    if (!url.includes('://')) {
-      url = location.host + '/' + sos.trimmedUrl(url);
-    } else {
-      url = sos.trimmedUrl(url);
-    }
-    if (targetUrl === url) {
+  for (let i = 0; i < linkEls.length; i++) {
+    let linkUrl = linkEls[i].getAttribute('href');
+    linkUrl = sos.buildUrl(linkUrl);
+    if (url === linkUrl) {
       sources.push({
-        url: sos.trimmedUrl(location.href),
-        pointsSave: sos.save.URL_SOURCE,
-        pointsSkip: sos.skip.URL_SOURCE,
+        linkId: url,
+        source: {
+          id: sos.trimmedUrl(location.href),
+          points: 1,
+        },
       });
       break;
     }
   }
-  console.log('returning sources of url ' + targetUrl + ':\n' + sos.objJoin(sources, '\n'));
-  sendResponse(sources);
+  return sources;
 };
 
 out.getPageAttributes = function(page) {

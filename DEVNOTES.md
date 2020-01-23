@@ -26,7 +26,7 @@ Reload any previously open tabs that you want to test content scripts on.
 
 ## Deployment
 
-1. Increase version number.
+1. Increase version number in `package.json` and `src/manifest.json`.
 2. Compile the extension: `npm run build`
 3. Zip it up: `npm run build-zip`
 4. Commit to Github.

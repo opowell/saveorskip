@@ -25,6 +25,7 @@ sos.getSourcesForUrl = function(targetUrl) {
   for (let i = 0; i < linkEls.length; i++) {
     let linkUrl = linkEls[i].getAttribute('href');
     linkUrl = sos.buildUrl(linkUrl);
+    console.log('compare ' + targetUrl + ' vs. ' + linkUrl);
     if (targetUrl === linkUrl) {
       sources.push({
         linkId: targetUrl,

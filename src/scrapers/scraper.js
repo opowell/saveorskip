@@ -107,7 +107,7 @@ let getScraperCallback = function({ scraper, closeWhenDone }) {
   sos.setIfNotNull(scraper, 'getPageAttributes');
   sos.setIfNotNull(scraper, 'getLinks');
   sos.setIfNotNull(scraper, 'getSources');
-  sos.setIfNotNull(scraper, 'getSourcesOfUrl');
+  sos.setIfNotNull(scraper, 'getSourcesForUrl');
   sos.setIfNotNull(scraper, 'onScriptLoad');
 
   sos.onScriptLoad();

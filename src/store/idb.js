@@ -414,6 +414,28 @@ export async function getScrapers() {
   return values;
 }
 
+export async function scrapeIfNecessary(source) {
+  let profileId = source.id;
+  if (source.providerId != null) {
+    profileId = source.providerId;
+  }
+  let now = new Date();
+  let profile = await getProfile(profileId);
+  console.log('comparing now to next scrape date: ' + now + ' vs. ' + profile.nextScrape);
+  if (profile.nextScrape == null || new Date(profile.nextScrape) < now) {
+    scrapeProfile(profileId);
+  }
+}
+
+export async function scrapeProfile(url) {
+  if (url == null || url.length < 1) {
+    return;
+  }
+  console.log('scraping ' + url);
+  store.commit(types.ADD_PROFILE_TO_SCRAPE, url);
+  chrome.tabs.create({ url: 'http://' + url, active: false });
+}
+
 export async function getSuggestion(profileId) {
   try {
     let sources = await getProfileSources(profileId);
@@ -436,7 +458,7 @@ export async function getSuggestion(profileId) {
       await db.put(STORE_SOURCES, source);
 
       let provider = await getProfile(source.providerId);
-      await chrome.runtime.sendMessage({ action: 'scrapeIfNecessary', profile: provider });
+      await scrapeIfNecessary(provider);
 
       let linksCursor = null;
       try {
@@ -844,9 +866,10 @@ export async function saveScraper(scraper) {
   await loadScrapers();
 }
 
-export async function storeLinkSources(sources) {
+export async function storeLinkSources(sources, profileId) {
   for (let i in sources) {
     let source = sources[i];
+    source.profileId = profileId;
     storeLinkSource(source);
   }
 }

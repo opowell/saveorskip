@@ -1,4 +1,4 @@
-// CAREFUL ABOUT EXPORTING FUNCTIONS FROM HERE. DO NOT GENERAL CODE RUNNING OUTSIDE OF THE BACKGROUND PAGE.
+// CAREFUL ABOUT EXPORTING FUNCTIONS FROM HERE. DO NOT IMPORT GENERAL CODE RUNNING OUTSIDE OF THE BACKGROUND PAGE.
 
 import store from './store';
 import * as idb from './store/idb.js';
@@ -165,19 +165,6 @@ function showNextPage(profileId) {
   loadNextSuggestion(profileId);
 }
 
-async function scrapeIfNecessary(source) {
-  let profileId = source.id;
-  if (source.providerId != null) {
-    profileId = source.providerId;
-  }
-  let now = new Date();
-  let profile = await idb.getProfile(profileId);
-  console.log('comparing now to next scrape date: ' + now + ' vs. ' + profile.nextScrape);
-  if (profile.nextScrape == null || new Date(profile.nextScrape) < now) {
-    scrapeProfile(profileId);
-  }
-}
-
 async function loadNextSuggestion(profileId) {
   try {
     console.log('Loading next link');
@@ -224,7 +211,7 @@ async function getSourcesOfUrl({ url, profileId }) {
           console.log(tab.url + ' returned no sources of ' + url);
           return;
         }
-        idb.storeLinkSources(response.sources);
+        idb.storeLinkSources(response.sources, profileId);
       });
     }
   });
@@ -241,7 +228,7 @@ chrome.runtime.onMessage.addListener(async function(message, sender, sendRespons
 
   switch (action) {
     case 'scrapeIfNecessary':
-      await scrapeIfNecessary(message.profile);
+      await idb.scrapeIfNecessary(message.profile);
       break;
     case 'testPage':
       idb.dispatchToStores('setTestPageUrl', {
@@ -279,7 +266,7 @@ chrome.runtime.onMessage.addListener(async function(message, sender, sendRespons
       });
       break;
     case 'scrapeProfile':
-      scrapeProfile(message.url);
+      idb.scrapeProfile(message.url);
       break;
     // NOT SURE NEEDED
     case 'showNextPage':
@@ -346,16 +333,10 @@ function getScraper(url) {
     }
     scraper = curScraper;
   }
-  return scraper;
-}
-
-function scrapeProfile(url) {
-  if (url == null || url.length < 1) {
-    return;
+  if (scraper == null) {
+    console.log('Error, no scraper found for ' + url);
   }
-  console.log('scraping ' + url);
-  store.commit(types.ADD_PROFILE_TO_SCRAPE, url);
-  chrome.tabs.create({ url: 'http://' + url, active: false });
+  return scraper;
 }
 
 // Save current tab as a source.

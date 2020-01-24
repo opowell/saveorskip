@@ -425,6 +425,7 @@ export async function fetchProfiles() {
   //   });
   // }
   await dispatchToStores('fetchProfiles', profiles);
+  return profiles;
 }
 
 export async function getScrapers() {

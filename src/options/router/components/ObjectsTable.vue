@@ -144,8 +144,7 @@
       </template>
 
       <template v-slot:cell()="data">
-        <span v-if="isDate(data.value)" :title="data.value">{{ timeAgo(data.value) }}</span>
-        <span v-else :title="data.value">{{ data.value }}</span>
+        <objects-table-cell :value="data.value" />
       </template>
     </b-table>
   </div>
@@ -153,9 +152,12 @@
 
 <script>
 import Vue from 'vue';
-import * as moment from 'moment';
+import ObjectsTableCell from './ObjectsTableCell.vue';
 
 export default {
+  components: {
+    ObjectsTableCell,
+  },
   // eslint-disable-next-line prettier/prettier
   props: [
     'sortBy',
@@ -433,9 +435,6 @@ export default {
         return false;
       }
       return this.links[propertyName] != null;
-    },
-    timeAgo(obj) {
-      return moment(obj).fromNow();
     },
     isDate(obj) {
       return obj instanceof Date;

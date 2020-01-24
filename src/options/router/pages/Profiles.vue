@@ -14,7 +14,7 @@
       :ineditable-row-names="[]"
       :crumbs="crumbs"
       @deleteSelectedRows="deleteProfiles"
-      :givenCols="['id', 'name', 'links', 'sources']"
+      :givenCols="['timeAdded', 'links', 'sources', 'id', 'name']"
     >
     </objects-table>
   </div>
@@ -32,10 +32,12 @@ export default {
   mounted() {
     this.fetchData();
   },
+  data() {
+    return {
+      profiles: [],
+    };
+  },
   computed: {
-    profiles() {
-      return this.$store.state.profiles;
-    },
     crumbs() {
       return [
         {
@@ -57,8 +59,8 @@ export default {
         });
       }
     },
-    fetchData() {
-      idb.fetchProfiles();
+    async fetchData() {
+      this.profiles = await idb.fetchProfiles();
     },
     addProfilePrompt() {
       this.$bvModal.show('addProfileModal');

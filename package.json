@@ -1,6 +1,6 @@
 {
   "name": "saveorskip",
-  "version": "1.0.9",
+  "version": "1.0.10",
   "description": "Save pages you visit. Get recommendations based on your previous saves.",
   "author": "opowell <opowell@gmail.com>",
   "scripts": {

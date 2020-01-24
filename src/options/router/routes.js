@@ -1,6 +1,7 @@
 import Home from './pages/Home';
 import Link from './pages/Link';
 import Links from './pages/Links';
+import Logs from './pages/Logs';
 import Profile from './pages/Profile';
 import Profiles from './pages/Profiles';
 import Scraper from './pages/Scraper';
@@ -54,6 +55,11 @@ export default [
     path: '/scrapers',
     component: Scrapers,
     name: 'scrapers',
+  },
+  {
+    path: '/logs',
+    component: Logs,
+    name: 'logs',
   },
   {
     path: '/scrapers/:id',

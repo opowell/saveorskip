@@ -1,6 +1,6 @@
 import { openDB } from 'idb';
 import { resetState } from '../store/index.js';
-import { storeProfile, addScraper, storeSource } from './idb.js';
+import { storeProfile, addScraper, storeSource, addLog } from './idb.js';
 import RedditScraper from '../scrapers/reddit.js';
 import HackerNewsScraper from '../scrapers/hackernews.js';
 import DefaultScraper from '../scrapers/default.js';
@@ -23,6 +23,7 @@ export const STORE_SOURCES_PROVIDERID = 'providerId'; // The provider of links.
 export const INDEX_SOURCES_CONSUMERID = STORE_SOURCES_CONSUMERID;
 
 export const STORE_LOGS = 'logs';
+export const INDEX_LOGS_PROFILEID = 'profile';
 
 export const STORE_SCRAPERS = 'scrapers';
 
@@ -33,6 +34,11 @@ if (!('indexedDB' in window)) {
 }
 
 export const reset = async function() {
+  addLog({
+    objectKeys: [],
+    objectType: 'System',
+    message: 'Reset database.',
+  });
   await storeProfile(
     {
       name: 'myProfile',
@@ -95,6 +101,7 @@ export const dbPromise = openDB(DB_NAME, DB_VERSION, {
         keyPath: 'id',
         autoIncrement: true,
       });
+      logsStore.createIndex(INDEX_LOGS_PROFILEID, ['objectType', 'objectKeys']);
 
       await reset();
     }

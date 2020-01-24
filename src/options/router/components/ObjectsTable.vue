@@ -63,7 +63,7 @@
       :sort-by="sortBy"
       :sort-desc="sortDesc"
       ref="table"
-      :hover="isObjArray"
+      :hover="hoverRows"
       show-empty
       :items="items"
       :fields="fieldNames"
@@ -75,7 +75,6 @@
       @row-selected="rowSelected"
       no-select-on-click
       :thClass="thClass"
-      sort-icon-left
       no-border-collapse
       sticky-header
       :tbody-tr-class="isObjArray ? 'click-row' : ''"
@@ -145,7 +144,8 @@
       </template>
 
       <template v-slot:cell()="data">
-        <span :title="data.value">{{ data.value }}</span>
+        <span v-if="isDate(data.value)" :title="data.value">{{ timeAgo(data.value) }}</span>
+        <span v-else :title="data.value">{{ data.value }}</span>
       </template>
     </b-table>
   </div>
@@ -153,6 +153,7 @@
 
 <script>
 import Vue from 'vue';
+import * as moment from 'moment';
 
 export default {
   // eslint-disable-next-line prettier/prettier
@@ -176,6 +177,7 @@ export default {
     'crumbs',
     'givenCols',
     'givenRows',
+    'hoverProp',
   ],
   mounted() {
     let str = this.$route.query.filters;
@@ -238,28 +240,20 @@ export default {
       switch (operator) {
         case 'contains':
           return 'contains';
-          break;
         case 'notC':
           return 'does NOT contain';
-          break;
         case 'eq':
           return '=';
-          break;
         case 'ne':
           return '&ne;';
-          break;
         case 'gt':
           return '&gt;';
-          break;
         case 'ge':
           return '&ge;';
-          break;
         case 'lt':
           return '&lt;';
-          break;
         case 'le':
           return '&le;';
-          break;
       }
     },
     filterFunction(rowData, filters) {
@@ -440,6 +434,12 @@ export default {
       }
       return this.links[propertyName] != null;
     },
+    timeAgo(obj) {
+      return moment(obj).fromNow();
+    },
+    isDate(obj) {
+      return obj instanceof Date;
+    },
     changeFieldName(field, value) {
       if (value.target != null) {
         value = value.target.value;
@@ -570,6 +570,13 @@ export default {
     },
   },
   computed: {
+    hoverRows() {
+      if (this.hoverProp == null) {
+        return this.isObjArray;
+      } else {
+        return this.hover;
+      }
+    },
     selectableComputed() {
       if (this.selectable === false) {
         return false;

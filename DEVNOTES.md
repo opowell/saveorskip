@@ -22,7 +22,7 @@
 
 - `npm run watch:dev`
 
-Reload any previously open tabs that you want to test content scripts on.
+3. Install extension in browser (see README.md, substituting the zip file contents with the "dist" folder contents).
 
 ## Deployment
 

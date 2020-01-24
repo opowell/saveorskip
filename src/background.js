@@ -199,7 +199,9 @@ async function doGetPage(senderUrl, message, sender) {
   if (senderUrl === store.state.testPageUrl) {
     idb.dispatchToStores('setTestPage', { page: message.page });
   }
-  await idb.storePage(message.page, senderUrl, store.state.popup.profile.defaultLinkAction, store.state.popup.profile.defaultSourceAction);
+  let profile = await idb.getProfile(store.state.targetId);
+  // eslint-disable-next-line prettier/prettier
+  await idb.storePage(message.page, senderUrl, profile.defaultLinkAction, store.state.popup.profile.defaultSourceAction);
 }
 
 async function getSourcesOfUrl({ url, profileId }) {
@@ -315,10 +317,11 @@ chrome.runtime.onMessage.addListener(async function(message, sender, sendRespons
 
 let DEFAULT_SCRAPER_PRIORITY = 1;
 
-function getScraper(url) {
+async function getScraper(url) {
+  let scrapers = await idb.getScrapers();
   let scraper = null;
-  for (let i in store.state.scrapers) {
-    let curScraper = store.state.scrapers[i];
+  for (let i in scrapers) {
+    let curScraper = scrapers[i];
     if (!url.startsWith(curScraper.domain)) {
       continue;
     }

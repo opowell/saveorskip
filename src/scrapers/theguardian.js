@@ -1,11 +1,11 @@
 var sos = {};
 
-sos.name = 'Hacker News';
-sos.domain = 'news.ycombinator.com';
+sos.name = 'The Guardian';
+sos.domain = 'www.theguardian.com';
 
 sos.getLinks = function() {
   let links = [];
-  let linkEls = document.querySelectorAll('.storyLink');
+  let linkEls = document.querySelectorAll('a[data-link-name="article"]');
   for (let i = 0; i < linkEls.length; i++) {
     let url = linkEls[i].getAttribute('href');
     url = sos.buildUrl(url);
@@ -21,7 +21,7 @@ sos.getLinks = function() {
 
 sos.getSourcesForUrl = function(targetUrl) {
   let sources = [];
-  let linkEls = document.querySelectorAll('a');
+  let linkEls = document.querySelectorAll('a[data-link-name="article"]');
   for (let i = 0; i < linkEls.length; i++) {
     let linkUrl = linkEls[i].getAttribute('href');
     linkUrl = sos.buildUrl(linkUrl);
@@ -42,22 +42,26 @@ sos.getSourcesForUrl = function(targetUrl) {
 
 sos.getSources = function() {
   let sources = [];
-  let userEls = document.querySelectorAll('.hnuser');
-  for (let i = 0; i < userEls.length; i++) {
-    let url = userEls[i].getAttribute('href');
-    url = sos.buildUrl(url);
-    let alreadyInArray = false;
-    for (let j in sources) {
-      if (sources[j].url === url) {
-        alreadyInArray = true;
-        break;
+  // eslint-disable-next-line prettier/prettier
+  let selectorStrings = ['.submeta__link', '[rel="author"]', '.pillar-link--current-section'];
+  for (let sel in selectorStrings) {
+    let els = document.querySelectorAll(selectorStrings[sel]);
+    for (let i = 0; i < els.length; i++) {
+      let url = els[i].getAttribute('href');
+      url = sos.buildUrl(url);
+      let alreadyInArray = false;
+      for (let j in sources) {
+        if (sources[j].url === url) {
+          alreadyInArray = true;
+          break;
+        }
       }
-    }
-    if (!alreadyInArray) {
-      sources.push({
-        url,
-        points: 3,
-      });
+      if (!alreadyInArray) {
+        sources.push({
+          url,
+          points: 3,
+        });
+      }
     }
   }
   return sources;

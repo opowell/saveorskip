@@ -4,6 +4,7 @@ import { storeProfile, addScraper, storeSource, addLog } from './idb.js';
 import RedditScraper from '../scrapers/reddit.js';
 import HackerNewsScraper from '../scrapers/hackernews.js';
 import DefaultScraper from '../scrapers/default.js';
+import TheGuardianScraper from '../scrapers/theguardian.js';
 export const DB_NAME = 'saveorskip';
 
 export const STORE_LINKS = 'links';
@@ -63,6 +64,7 @@ export const reset = async function() {
   await addScraper(DefaultScraper);
   await addScraper(RedditScraper);
   await addScraper(HackerNewsScraper);
+  await addScraper(TheGuardianScraper);
   resetState();
 };
 

@@ -96,7 +96,7 @@ out.getSources = function() {
   return sources;
 };
 
-out.getSourcesOfUrl = function() {
+out.getSourcesForUrl = function() {
   let sources = [];
   let linkEls = document.getElementsByClassName('SQnoC3ObvgnGjWt90zD9Z');
   for (let i = 0; i < linkEls.length; i++) {

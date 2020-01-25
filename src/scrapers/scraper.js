@@ -62,7 +62,9 @@ sos.getLinksWithResponse = function(sendResponse) {
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
   console.log('sos received message: ' + request.action);
 
-  if (request.action === 'getSources') {
+  if (request.action === 'getScraper') {
+    getScraperCallback(request.payload);
+  } else if (request.action === 'getSources') {
     let sources = sos.getSources();
     sendResponse({ sources });
   } else if (request.action === 'getUrlSources') {
@@ -81,6 +83,10 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 });
 
 sos.getPage = function() {
+  if (sos.scraper == null) {
+    console.log('No scraper, stopping.');
+    return;
+  }
   let links = sos.getLinks();
   let sources = sos.getSources();
   let out = {
@@ -100,7 +106,15 @@ sos.setIfNotNull = function(scraper, field) {
   }
 };
 
-let getScraperCallback = function({ scraper, closeWhenDone }) {
+let getScraperCallback = function(response) {
+  if (response == null) {
+    return;
+  }
+  if (response.scraper == null) {
+    return;
+  }
+  let { scraper, closeWhenDone } = response;
+  console.log('got scraper ' + scraper.id);
   sos.scraper = scraper;
   sos.closeWhenDone = closeWhenDone;
 
@@ -131,12 +145,7 @@ sos.finishScraperLoad = function() {
 };
 
 console.log('finished running, sending pageLoaded message');
-chrome.runtime.sendMessage(
-  {
-    action: 'pageLoaded',
-  },
-  getScraperCallback
-);
+chrome.runtime.sendMessage({ action: 'pageLoaded' });
 
 // Functions to overwrite in scraper instances.
 sos.getLinks = function() {

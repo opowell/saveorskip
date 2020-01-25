@@ -201,7 +201,7 @@ async function doGetPage(senderUrl, message, sender) {
   }
   let profile = await idb.getProfile(store.state.targetId);
   // eslint-disable-next-line prettier/prettier
-  await idb.storePage(message.page, senderUrl, profile.defaultLinkAction, store.state.popup.profile.defaultSourceAction);
+  await idb.storePage(message.page, senderUrl, profile.defaultLinkAction, profile.defaultSourceAction);
 }
 
 async function getSourcesOfUrl({ url, profileId }) {
@@ -257,11 +257,14 @@ chrome.runtime.onMessage.addListener(async function(message, sender, sendRespons
         closeWhenDone = true;
         store.commit(types.REMOVE_URL_TO_SCRAPE, senderUrl);
       }
-      let scraper = getScraper(senderUrl);
-      sendResponse({
+      let scraper = await getScraper(senderUrl);
+      console.log('sending response with scraper ' + scraper.id);
+      let payload = {
         scraper,
         closeWhenDone,
-      });
+      };
+      chrome.tabs.sendMessage(sender.tab.id, { action: 'getScraper', payload });
+      // sendResponse(payload);
       getSourcesOfUrl({
         url: senderUrl,
         profileId: store.state.targetId,
@@ -329,8 +332,8 @@ async function getScraper(url) {
       scraper = curScraper;
       continue;
     }
-    let selScraperPriority = scraper.priority == null ? scraper.priority : DEFAULT_SCRAPER_PRIORITY;
-    let curScraperPriority = curScraper.priority == null ? curScraper.priority : DEFAULT_SCRAPER_PRIORITY;
+    let selScraperPriority = scraper.priority == null ? DEFAULT_SCRAPER_PRIORITY : scraper.priority;
+    let curScraperPriority = curScraper.priority == null ? DEFAULT_SCRAPER_PRIORITY : curScraper.priority;
     if (selScraperPriority >= curScraperPriority) {
       continue;
     }

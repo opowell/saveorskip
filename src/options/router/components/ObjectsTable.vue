@@ -43,7 +43,7 @@
           <button @click="clearSelection" title="De-select all selected objects.">Clear selection</button>
           <button @click="deleteSelectedRows" title="Delete selected objects.">Delete {{ selection.length }}...</button>
         </span>
-        <span v-show="!hasSelection">
+        <span v-show="!hasSelection" style="display: flex">
           <slot name="header"></slot>
           <button v-if="showAddComputed" @click="addItemPrompt">Add...</button>
           <button @click="openFilter">Filter...</button>
@@ -59,6 +59,10 @@
     <!-- Main table element -->
     <!-- responsive='true' -->
     <!-- <div style="flex: 1 1 auto; align-items: flex-start;"> -->
+    <!-- <div
+      style="display: flex; flex-direction: column; margin-right: 0em; margin-top: 0rem !important; max-height: unset; flex: 1 1 auto; align-items: flex-start; align-self: flex-start; margin-bottom: 0px; width: 100%;"
+    >
+    </div> -->
     <b-table
       :sort-by="sortBy"
       :sort-desc="sortDesc"
@@ -73,12 +77,14 @@
       class="mt-3"
       selectable
       @row-selected="rowSelected"
+      :per-page="perPage"
+      :current-page="currentPage"
       no-select-on-click
       :thClass="thClass"
       no-border-collapse
       sticky-header
       :tbody-tr-class="isObjArray ? 'click-row' : ''"
-      style="margin-left: 1em; margin-right: 0em; margin-top: 0rem !important; max-height: unset; flex: 1 1 auto; align-items: flex-start; align-self: flex-start; max-width: calc(100% - 1em); margin-bottom: 0px;"
+      style="margin-left: 1em; margin-right: 0em; margin-top: 0rem !important; max-height: unset; flex: 1 1 auto; align-items: flex-start; align-self: flex-start; width: calc(100% - 1em); margin-bottom: 0px;"
     >
       <slot></slot>
 
@@ -147,6 +153,20 @@
         <objects-table-cell :value="data.value" />
       </template>
     </b-table>
+    <div style="display: flex; padding: 1rem; background-color: rgb(226, 226, 226); width: 100%; align-items: baseline;">
+      <b-pagination v-model="currentPage" :total-rows="totalRowsAdj" :per-page="perPage" aria-controls="my-table" style="margin: 0px;" @change="pageChanged" />
+      <span style="flex: 1 1 auto; margin-left: 1em;">
+        {{ 1 + (currentPage - 1) * perPage }} - {{ Math.min(currentPage * perPage, numRows) }} / {{ numRows }} ({{ totalRowsAdj }})
+      </span>
+      <span>
+        <select v-model="perPage">
+          <option value="50">50</option>
+          <option value="200">200</option>
+          <option value="1000">1000</option>
+        </select>
+        <span>entries per page</span>
+      </span>
+    </div>
   </div>
 </template>
 
@@ -180,6 +200,7 @@ export default {
     'givenCols',
     'givenRows',
     'hoverProp',
+    'totalRows',
   ],
   mounted() {
     let str = this.$route.query.filters;
@@ -213,6 +234,8 @@ export default {
       showColFilters: false,
       addFilterField: '',
       filters: [],
+      perPage: 50,
+      currentPage: 1,
     };
   },
   methods: {
@@ -283,12 +306,12 @@ export default {
             }
             break;
           case 'eq':
-            if (x != filter.value) {
+            if (x !== filter.value) {
               return false;
             }
             break;
           case 'ne':
-            if (x == filter.value) {
+            if (x === filter.value) {
               return false;
             }
             break;
@@ -356,6 +379,9 @@ export default {
       this.filters.push(filter);
       this.updateFilterQuery();
     },
+    pageChanged(event) {
+      this.$emit('pageChanged', event);
+    },
     selectAllChange(event) {
       if (event.target.checked) {
         for (let i = 0; i < this.items.length; i++) {
@@ -396,7 +422,6 @@ export default {
       }
     },
     rowSelected(rows) {
-      // console.log('selected ' + rows.length);
       this.selection = rows;
     },
     isSelected(data) {
@@ -591,6 +616,9 @@ export default {
     hasSelection() {
       return this.selection.length > 0;
     },
+    numRows() {
+      return this.items.length;
+    },
     selectedRows() {
       let out = [];
       let tableRows = this.$refs.table.selectedRows;
@@ -626,6 +654,12 @@ export default {
         }
       }
       return out;
+    },
+    totalRowsAdj() {
+      if (this.totalRows == null) {
+        return this.items.length;
+      }
+      return this.totalRows;
     },
     sortOptions() {
       // Create an options list from our fields

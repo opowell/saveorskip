@@ -7,6 +7,7 @@ import {
   STORE_SOURCES,
   INDEX_LINKS_PROFILEID,
   INDEX_LOGS_PROFILEID,
+  INDEX_LOGS_TIME,
   INDEX_SOURCES_CONSUMERID,
   INDEX_LINKS_PROFILEID_TIMEADDED,
   STORE_LINKS_TIME_ADDED,
@@ -940,9 +941,56 @@ export async function storeLinkSource(source) {
   });
 }
 
-export async function getLogs() {
+export async function getLogsCursor() {
+  let out = null;
+  const db = await dbPromise;
+  let tx = await db.transaction(STORE_LOGS);
+  let objStore = await tx.objectStore(STORE_LOGS);
+  let index = await objStore.index(INDEX_LOGS_TIME);
+  let cursor = await index.openCursor(null, 'prev');
+  // await tx.done;
+  out = cursor;
+  return out;
+}
+
+export async function getLogs({ offset, numRows, newestFirst }) {
+  let out = [];
+  const db = await dbPromise;
+  let tx = await db.transaction(STORE_LOGS);
+  let objStore = await tx.objectStore(STORE_LOGS);
+  let index = await objStore.index(INDEX_LOGS_TIME);
+  let direction = 'next';
+  if (newestFirst) {
+    direction = 'prev';
+  }
+  let cursor = await index.openCursor(null, direction);
+  if (offset > 0) {
+    await cursor.advance(offset);
+  }
+  let hasMoreItems = true;
+  for (let i = 0; i < numRows; i++) {
+    if (!hasMoreItems) {
+      break;
+    }
+    console.log('adding ', cursor.value);
+    if (cursor.value === out[out.length - 1]) {
+      break;
+    }
+    out.push(cursor.value);
+    try {
+      await cursor.continue();
+    } catch (err) {
+      console.log('no more items, stopping');
+      hasMoreItems = false;
+    }
+  }
+  await tx.done;
+  return out;
+}
+
+export async function getNumLogs() {
   let db = await dbPromise;
-  let out = await db.getAll(STORE_LOGS);
+  let out = await db.count(STORE_LOGS);
   return out;
 }
 

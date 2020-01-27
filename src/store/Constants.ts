@@ -25,6 +25,7 @@ export const INDEX_SOURCES_CONSUMERID = STORE_SOURCES_CONSUMERID;
 
 export const STORE_LOGS = 'logs';
 export const INDEX_LOGS_PROFILEID = 'profile';
+export const INDEX_LOGS_TIME = 'time';
 
 export const STORE_SCRAPERS = 'scrapers';
 
@@ -104,6 +105,7 @@ export const dbPromise = openDB(DB_NAME, DB_VERSION, {
         autoIncrement: true,
       });
       logsStore.createIndex(INDEX_LOGS_PROFILEID, ['objectType', 'objectKeys']);
+      logsStore.createIndex(INDEX_LOGS_TIME, INDEX_LOGS_TIME, { unique: false });
 
       await reset();
     }

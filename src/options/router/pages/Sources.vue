@@ -45,6 +45,11 @@ export default {
   mounted() {
     this.fetchData();
   },
+  data() {
+    return {
+      profile: null,
+    };
+  },
   methods: {
     deleteSources(selection) {
       for (let i in selection) {
@@ -54,9 +59,9 @@ export default {
         });
       }
     },
-    fetchData() {
+    async fetchData() {
       idb.loadSources({ profileId: this.profileId });
-      idb.loadProfile({ profileId: this.profileId });
+      this.profile = await idb.getProfile({ profileId: this.profileId });
     },
     addSourcePrompt() {
       this.$bvModal.show('addSourceModal');

@@ -141,7 +141,9 @@ function saveSourcesOfUrl(url, cb, action) {
 }
 
 // Selects a random source, with prob. of selecting source i proportional to source i's points.
-function showNextPage(profileId) {
+async function showNextPage(profileId) {
+  await idb.dispatchToStores('gettingSuggestion', profileId);
+  await idb.dispatchToStores('status', 'Getting suggestion');
   // If next suggestion already exists, use it and find a new one.
   console.log('show next link');
   if (store.state.nextSuggestion != null) {
@@ -166,12 +168,15 @@ function showNextPage(profileId) {
 }
 
 async function loadNextSuggestion(profileId) {
+  await idb.dispatchToStores('status', 'Getting suggestion');
   try {
     console.log('Loading next link');
     let nextLink = await idb.getSuggestion(profileId);
     if (nextLink != null) {
       changeActiveTabToUrl(nextLink.url);
       return;
+    } else {
+      await idb.dispatchToStores('status', 'Waiting for suggestion');
     }
   } catch (err) {
     console.log(err);

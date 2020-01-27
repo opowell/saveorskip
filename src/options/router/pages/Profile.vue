@@ -53,7 +53,6 @@
 import ObjectsTable from '../components/ObjectsTable.vue';
 import * as idb from '../../../store/idb.js';
 import { convertId } from '../../../Utils.js';
-import Vue from 'vue';
 
 export default {
   name: 'Profile',

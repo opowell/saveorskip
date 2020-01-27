@@ -7,6 +7,11 @@
       <span style="flex: 1 1 auto; margin-right: 10px;">Current page: </span>
       <span style="text-overflow: ellipsis; white-space: nowrap; overflow: hidden;">{{ curPageUrl }}</span>
     </div>
+    <div class="menu-item" :title="curPageUrl">
+      <span style="flex: 1 1 auto; margin-right: 10px;">Status: </span>
+      <span style="text-overflow: ellipsis; white-space: nowrap; overflow: hidden;">{{ status }}</span>
+    </div>
+    <div class="menu-divider" />
     <div class="menu-item" title="The status of the current link on the current profile as a link.">
       <span style="flex: 1 1 auto;">Link:&nbsp;</span>
       <span class="button-group">
@@ -97,6 +102,9 @@ export default {
     await idb.setCurUrlSourceStatus();
   },
   computed: {
+    status() {
+      return this.$store.state.status;
+    },
     defaultLinkAction() {
       if (this.$store.state.targetId == null) {
         return 'nothing';

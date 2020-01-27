@@ -64,6 +64,8 @@ const initState = {
 
   testPageUrl: '',
   testPage: null,
+
+  status: 'Waiting',
 };
 
 const store = new Vuex.Store({

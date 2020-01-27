@@ -24,7 +24,6 @@
 import ObjectsTable from '../components/ObjectsTable.vue';
 import * as idb from '../../../store/idb.js';
 import { STORE_SOURCES } from '../../../store/Constants.ts';
-import Vue from 'vue';
 import { convertId } from '../../../Utils.js';
 
 export default {
@@ -39,6 +38,11 @@ export default {
   },
   mounted() {
     this.fetchData();
+  },
+  data() {
+    return {
+      profile: null,
+    };
   },
   methods: {
     askDeleteObject() {
@@ -60,11 +64,11 @@ export default {
       idb.saveObject(STORE_SOURCES, this.source);
       this.fetchData();
     },
-    fetchData() {
+    async fetchData() {
       let profileId = this.profileId;
       let sourceId = this.$route.params.sourceId;
       idb.loadSource([profileId, sourceId]);
-      idb.loadProfile({ profileId });
+      this.profile = await idb.getProfile({ profileId: this.profileId });
       this.$refs.table.changesPending = false;
     },
   },

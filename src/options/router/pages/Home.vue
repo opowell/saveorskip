@@ -91,7 +91,6 @@ export default {
       this.$bvModal.show('deleteAllModal');
     },
     async resetDB() {
-      // await dbPromise.close();
       // let delDBRequest = window.indexedDB.deleteDatabase(DB_NAME);
       // delDBRequest.onsuccess = function(event) {
       //   debugger;
@@ -102,10 +101,11 @@ export default {
       // }
       await deleteDB(DB_NAME, {
         blocked() {
-          debugger;
+          console.log('call was blocked!');
+          // debugger;
         },
       });
-      await idb.fetchProfiles();
+      // await idb.fetchProfiles();
     },
   },
 };

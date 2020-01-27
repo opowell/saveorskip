@@ -37,12 +37,17 @@ export default {
     ObjectsTable,
   },
   watch: {
-    '$route.params.id': function() {
-      this.fetchData();
+    '$route.params.id': async function() {
+      await this.fetchData();
     },
   },
-  mounted() {
-    this.fetchData();
+  data() {
+    return {
+      profile: null,
+    };
+  },
+  async mounted() {
+    await this.fetchData();
   },
   methods: {
     deleteLinks(selection) {
@@ -53,13 +58,14 @@ export default {
         });
       }
     },
-    fetchData() {
+    async fetchData() {
       // this.links.splice(0, this.links.length);
       // let fetchedLinks = idb.getLinks({ profileId: this.profileId });
       // this.links.push(...fetchedLinks);
 
       idb.loadLinks({ profileId: this.profileId });
-      idb.loadProfile({ profileId: this.profileId });
+      // idb.loadProfile({ profileId: this.profileId });
+      this.profile = await idb.getProfile({ profileId: this.profileId });
     },
     addLinkPrompt() {
       this.$bvModal.show('addLinkModal');
@@ -73,7 +79,7 @@ export default {
         link: { url, title },
       };
       await idb.saveOrSkipLink(link);
-      this.fetchData();
+      await this.fetchData();
     },
     openLink({ item, index, event }) {
       this.$router.push({
@@ -94,9 +100,6 @@ export default {
     },
     profileId() {
       return convertId(this.$route.params.id);
-    },
-    profile() {
-      return this.$store.state.profile;
     },
     profileName() {
       if (this.profile == null) {

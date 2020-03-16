@@ -31,7 +31,6 @@ const initState = {
   profile: null,
   profileStats: null,
   profiles: [],
-  links: [],
   scrapers: [],
   source: null,
   profileSourceStats: null,

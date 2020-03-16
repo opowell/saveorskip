@@ -38,6 +38,7 @@
       @deleteObject="askDeleteObject"
       :links="fieldLinks"
       :givenRows="['id', 'name', 'Links', 'Sources', 'Logs']"
+      :addItemText="'Add Field...'"
     >
       <template v-slot:header>
         <button @click="openSuggestionModal" title="Draw suggestion from this profile.">Get suggestion...</button>
@@ -70,9 +71,6 @@ export default {
       getSuggestionResult: '',
       profile: null,
     };
-  },
-  mounted() {
-    this.fetchData();
   },
   methods: {
     openSuggestion() {

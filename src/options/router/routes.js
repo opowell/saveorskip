@@ -1,4 +1,5 @@
 import Home from './pages/Home';
+import Indices from './pages/Indices';
 import Link from './pages/Link';
 import Links from './pages/Links';
 import Logs from './pages/Logs';
@@ -60,6 +61,11 @@ export default [
     path: '/logs',
     component: Logs,
     name: 'logs',
+  },
+  {
+    path: '/indices',
+    component: Indices,
+    name: 'indices',
   },
   {
     path: '/scrapers/:id',

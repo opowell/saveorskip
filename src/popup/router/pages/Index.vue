@@ -92,7 +92,7 @@ import { convertId } from '../../../Utils.js';
 
 export default {
   async mounted() {
-    await idb.fetchProfiles();
+    this.profiles = await idb.fetchProfiles();
     if (!this.hasValidTarget && this.profiles != null && this.profiles.length > 0) {
       this.setTarget(this.personalProfiles[0].id);
     } else {
@@ -100,6 +100,11 @@ export default {
     }
     await idb.setCurUrlLinkStatus();
     await idb.setCurUrlSourceStatus();
+  },
+  data() {
+    return {
+      profiles: [],
+    };
   },
   computed: {
     status() {
@@ -184,9 +189,6 @@ export default {
     },
     sourceNeither() {
       return this.sourceStatus === 'neither';
-    },
-    profiles() {
-      return this.$store.state.profiles;
     },
     targetId() {
       return this.$store.state.targetId;

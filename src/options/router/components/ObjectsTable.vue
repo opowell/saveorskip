@@ -45,8 +45,8 @@
         </span>
         <span v-show="!hasSelection" style="display: flex">
           <slot name="header"></slot>
-          <button v-if="showAddComputed" @click="addItemPrompt">Add...</button>
-          <button @click="openFilter">Filter...</button>
+          <button v-if="showAddComputed" @click="addItemPrompt">{{ addItemText }}</button>
+          <button @click="openFilter">Add Filter...</button>
           <button v-if="!isObjArray" @click="duplicate">Duplicate</button>
           <button v-if="!isObjArray" @click="deleteObject" title="Delete this object.">Delete...</button>
           <button v-if="!isObjArray" title="Save the changes to this object." :disabled="!changesPending" :class="{ 'btn-primary': changesPending }" @click="saveObject">
@@ -84,9 +84,16 @@
       no-border-collapse
       sticky-header
       :tbody-tr-class="isObjArray ? 'click-row' : ''"
-      style="margin-left: 1em; margin-right: 0em; margin-top: 0rem !important; max-height: unset; flex: 1 1 auto; align-items: flex-start; align-self: flex-start; width: calc(100% - 1em); margin-bottom: 0px;"
+      :busy="tableBusy"
+      style="margin-left: 1em; margin-right: 0em; margin-top: 0rem !important; max-height: unset; flex: 1 1 auto; align-items: flex-start; align-self: flex-start; margin-bottom: 0px;"
     >
       <slot></slot>
+
+      <template v-slot:table-busy>
+        <div class="my-2">
+          <b-spinner></b-spinner>
+        </div>
+      </template>
 
       <template v-slot:head(__checkbox)="data">
         <input id="checkBoxHeader" type="checkbox" v-model="selectAll" @change="selectAllChange($event)" />
@@ -178,51 +185,58 @@ export default {
   components: {
     ObjectsTableCell,
   },
-  // eslint-disable-next-line prettier/prettier
-  props: [
-    'sortBy',
-    'sortDesc',
-    'object',
-    'ineditableRowNames',
-    'ineditableColNames',
-    'store',
-    'fetchData',
-    'links',
-    'rowNamesToSkip',
-    'colNamesToSkip',
-    'colLabels',
-    'rowLabels',
-    'rowDescriptions',
-    'showAdd',
-    'selectable',
-    'thClass',
-    'crumbs',
-    'givenCols',
-    'givenRows',
-    'hoverProp',
-    'totalRows',
-  ],
-  mounted() {
+  props: {
+    sortBy: String,
+    sortDesc: Boolean,
+    object: [Object, Array],
+    ineditableRowNames: Array,
+    ineditableColNames: Array,
+    fetchData: Function,
+    links: Object,
+    rowNamesToSkip: Array,
+    colNamesToSkip: Array,
+    colLabels: Object,
+    rowLabels: Object,
+    rowDescriptions: Object,
+    showAdd: {
+      default: true,
+      type: Boolean,
+    },
+    selectable: Boolean,
+    thClass: String,
+    crumbs: Array,
+    givenCols: Array,
+    givenRows: Array,
+    hoverProp: Boolean,
+    totalRows: Number,
+    addItemText: String,
+  },
+  async mounted() {
     let str = this.$route.query.filters;
+    let skipFilters = false;
     if (str == null) {
-      return;
+      skipFilters = true;
     }
-    let filtersStrs = [str];
-    if (str.includes(']]')) {
-      filtersStrs = str.split(']]');
-    }
-    for (let i in filtersStrs) {
-      let values = filtersStrs[i].split(',');
-      if (values.length !== 3) {
-        continue;
+    if (!skipFilters) {
+      let filtersStrs = [str];
+      if (str.includes(']]')) {
+        filtersStrs = str.split(']]');
       }
-      let filterObj = {
-        field: values[0],
-        operator: values[1],
-        value: values[2],
-      };
-      this.filters.push(filterObj);
+      for (let i in filtersStrs) {
+        let values = filtersStrs[i].split(',');
+        if (values.length !== 3) {
+          continue;
+        }
+        let filterObj = {
+          field: values[0],
+          operator: values[1],
+          value: values[2],
+        };
+        this.filters.push(filterObj);
+      }
     }
+
+    this.callFetchData();
   },
   data() {
     return {
@@ -236,9 +250,20 @@ export default {
       filters: [],
       perPage: 50,
       currentPage: 1,
+      status: 'Ready',
+      tableBusy: false,
     };
   },
   methods: {
+    async callFetchData() {
+      if (typeof this.fetchData === 'function') {
+        this.status = 'Loading...';
+        this.tableBusy = true;
+        await this.fetchData();
+        this.tableBusy = false;
+        this.status = 'Finished loading';
+      }
+    },
     clearSelection() {
       this.$refs.table.clearSelected();
       document.getElementById('checkBoxHeader').checked = false;
@@ -518,7 +543,7 @@ export default {
       this.changesPending = false;
     },
     reset() {
-      this.fetchData();
+      this.callFetchData();
       this.changesPending = false;
     },
     addItem() {

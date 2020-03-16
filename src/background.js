@@ -184,7 +184,7 @@ async function loadNextSuggestion(profileId) {
 }
 
 chrome.tabs.onActivated.addListener(function(activeInfo) {
-  console.log('tab activated: ' + JSON.stringify(activeInfo));
+  console.log('tab activated', activeInfo);
   store.commit(types.SET_ACTIVE_TAB_ID, {
     tabId: activeInfo.tabId,
   });
@@ -192,6 +192,7 @@ chrome.tabs.onActivated.addListener(function(activeInfo) {
 });
 
 chrome.tabs.onUpdated.addListener(async function(tabId, changeInfo, tab) {
+  console.log('tab updated', tabId, changeInfo, tab);
   if (tabId === store.state.activeTabId) {
     chrome.tabs.sendMessage(tab.id, { action: 'getPage' });
   }

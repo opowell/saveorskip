@@ -42,6 +42,7 @@
       @save="saveObject"
       :fetchData="fetchData"
       @deleteObject="askDeleteObject"
+      :addItemText="'Add Field...'"
     >
       <template v-slot:header>
         <button @click="scrapePagePrompt" title="Open and scrape a page.">Test...</button>
@@ -53,7 +54,6 @@
 <script>
 import ObjectsTable from '../components/ObjectsTable.vue';
 import * as idb from '../../../store/idb.js';
-import { STORE_SCRAPERS } from '../../../store/Constants.ts';
 import { convertId } from '../../../Utils.js';
 
 export default {
@@ -72,9 +72,6 @@ export default {
         this.message = '';
       }
     },
-  },
-  mounted() {
-    this.fetchData();
   },
   data() {
     return {

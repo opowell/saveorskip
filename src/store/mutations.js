@@ -58,13 +58,6 @@ export default {
     state.profileSourceStats = payload;
   },
 
-  [types.LOAD_LINKS](state, payload) {
-    state.links.splice(0, state.links.length);
-    for (let i = 0; i < payload.length; i++) {
-      state.links.push(payload[i]);
-    }
-  },
-
   [types.LOAD_LINK](state, payload) {
     state.link = payload;
   },

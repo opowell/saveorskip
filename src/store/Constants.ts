@@ -29,7 +29,17 @@ export const INDEX_LOGS_TIME = 'time';
 
 export const STORE_SCRAPERS = 'scrapers';
 
-const DB_VERSION = 5;
+export let DB_VERSION = 5;
+
+export const INDEX_STORES = [STORE_PROFILES, STORE_SOURCES, STORE_LINKS];
+
+export const getDBVersion = function() {
+  return DB_VERSION;
+};
+
+export const setDBVersion = function(a) {
+  DB_VERSION = a;
+};
 
 if (!('indexedDB' in window)) {
   console.log("This browser doesn't support IndexedDB");
@@ -69,7 +79,7 @@ export const reset = async function() {
   resetState();
 };
 
-// When anything below changes, increment DB_VERSION. This forces the database schema to be updated.
+// When anything below changes, increment DB_VERSION or delete existing database. This forces the database schema to be updated.
 export const dbPromise = openDB(DB_NAME, DB_VERSION, {
   async upgrade(db, oldVersion, newVersion, transaction) {
     if (oldVersion === 0) {

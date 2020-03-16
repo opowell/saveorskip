@@ -22,6 +22,8 @@
       :givenCols="['points', 'saved', 'providerId', 'timeAdded']"
       sortBy="points"
       :sortDesc="true"
+      :fetchData="fetchData"
+      addItemText="Add Source..."
     />
   </div>
 </template>
@@ -42,9 +44,6 @@ export default {
       this.fetchData();
     },
   },
-  mounted() {
-    this.fetchData();
-  },
   data() {
     return {
       profile: null,
@@ -61,7 +60,7 @@ export default {
     },
     async fetchData() {
       idb.loadSources({ profileId: this.profileId });
-      this.profile = await idb.getProfile({ profileId: this.profileId });
+      this.profile = await idb.getProfile(this.profileId);
     },
     addSourcePrompt() {
       this.$bvModal.show('addSourceModal');
@@ -86,14 +85,11 @@ export default {
     sources() {
       return this.$store.state.sources;
     },
-    numSources: function() {
+    numSources() {
       return Object.keys(this.sources).length;
     },
     profileId() {
       return convertId(this.$route.params.id);
-    },
-    profile() {
-      return this.$store.state.profile;
     },
     profileName() {
       if (this.profile == null) {
@@ -107,7 +103,7 @@ export default {
       }
       return this.profile.name;
     },
-    crumbs: function() {
+    crumbs() {
       return [
         {
           text: 'Home',

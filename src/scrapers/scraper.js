@@ -77,7 +77,7 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
     console.log('got page: ' + JSON.stringify(page));
     chrome.runtime.sendMessage({ action: 'getPage', page });
   } else {
-    console.log('sos unknown message: ' + request.action);
+    console.log('sos unknown message: ' + request.action, request);
     sendResponse({}); // Send nothing..
   }
 });

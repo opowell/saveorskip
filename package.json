@@ -1,6 +1,6 @@
 {
   "name": "saveorskip",
-  "version": "1.0.12",
+  "version": "1.0.13",
   "description": "Save pages you visit. Get recommendations based on your previous saves.",
   "author": "opowell <opowell@gmail.com>",
   "scripts": {
@@ -15,6 +15,7 @@
     "watch:dev": "cross-env HMR=true npm run build:dev -- --watch"
   },
   "dependencies": {
+    "@vue/devtools": "^5.3.3",
     "bootstrap-vue": "^2.1.0",
     "core-js": "^2.6.11",
     "idb": "^4.0.5",

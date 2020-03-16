@@ -100,10 +100,6 @@ export const fetchProfiles = ({ commit }, payload) => {
   commit(types.FETCH_PROFILES, payload);
 };
 
-export const loadLinks = ({ commit }, payload) => {
-  commit(types.LOAD_LINKS, payload);
-};
-
 export const loadProfile = ({ commit }, payload) => {
   commit(types.LOAD_PROFILE, payload);
 };

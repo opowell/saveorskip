@@ -12,6 +12,7 @@
       :hoverProp="false"
       :totalRows="numLogs"
       @pageChanged="checkIfNeedData"
+      :fetchData="fetchData"
     >
     </objects-table>
   </div>
@@ -26,14 +27,11 @@ export default {
   components: {
     ObjectsTable,
   },
-  mounted() {
-    this.fetchData();
-  },
   data() {
     return {
       logs: [],
       cursor: null,
-      numLogs: '-',
+      numLogs: 0,
     };
   },
   computed: {

@@ -51,6 +51,10 @@ export default {
           name: 'Logs',
           description: 'Log of actions.',
         },
+        {
+          name: 'Indices',
+          description: 'Stored indices. These speed up searches, but slow down writes.',
+        },
       ],
     };
   },
@@ -84,6 +88,9 @@ export default {
           break;
         case 'Logs':
           this.$router.push('logs');
+          break;
+        case 'Indices':
+          this.$router.push('indices');
           break;
       }
     },

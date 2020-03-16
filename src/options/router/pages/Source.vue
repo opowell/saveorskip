@@ -15,6 +15,7 @@
       :rowNamesToSkip="['consumerId']"
       @deleteObject="askDeleteObject"
       :rowLabels="{ providerId: 'Profile' }"
+      addItemText="Add Field..."
     >
     </objects-table>
   </div>
@@ -35,9 +36,6 @@ export default {
     '$route.params.id': function(id) {
       this.fetchData();
     },
-  },
-  mounted() {
-    this.fetchData();
   },
   data() {
     return {
@@ -68,7 +66,7 @@ export default {
       let profileId = this.profileId;
       let sourceId = this.$route.params.sourceId;
       idb.loadSource([profileId, sourceId]);
-      this.profile = await idb.getProfile({ profileId: this.profileId });
+      this.profile = await idb.getProfile(this.profileId);
       this.$refs.table.changesPending = false;
     },
   },
@@ -89,9 +87,6 @@ export default {
     },
     profileId() {
       return convertId(this.$route.params.profileId);
-    },
-    profile() {
-      return this.$store.state.profile;
     },
     profileName() {
       if (this.profile == null) {

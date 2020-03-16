@@ -15,6 +15,8 @@
       :crumbs="crumbs"
       @deleteSelectedRows="deleteScrapers"
       :givenCols="['id', 'priority', 'name', 'domain']"
+      :fetchData="fetchData"
+      :addItemText="'Add Scraper...'"
     />
   </div>
 </template>
@@ -27,9 +29,6 @@ export default {
   name: 'Scrapers',
   components: {
     ObjectsTable,
-  },
-  mounted() {
-    this.fetchData();
   },
   data() {
     return {

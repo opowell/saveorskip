@@ -9,14 +9,13 @@
 
 3. Install standalone Vue devtools.
 
-- `npm install --save-dev @vue/devtools`
 - `npm install --save-dev "@vue/devtools"`
 
 ## Running
 
 1. Run Vue devtools
 
-- `vue-devtools.cmd`
+- `./node_modules/.bin/vue-devtools`
 
 2. Serve extension
 

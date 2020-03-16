@@ -22,6 +22,8 @@
       sortBy="timeAdded"
       :sortDesc="true"
       :givenCols="['saved', 'url', 'title', 'timeAdded']"
+      :fetchData="fetchData"
+      :addItemText="'Add Link...'"
     />
   </div>
 </template>
@@ -44,10 +46,8 @@ export default {
   data() {
     return {
       profile: null,
+      links: [],
     };
-  },
-  async mounted() {
-    await this.fetchData();
   },
   methods: {
     deleteLinks(selection) {
@@ -59,13 +59,10 @@ export default {
       }
     },
     async fetchData() {
-      // this.links.splice(0, this.links.length);
-      // let fetchedLinks = idb.getLinks({ profileId: this.profileId });
-      // this.links.push(...fetchedLinks);
-
-      idb.loadLinks({ profileId: this.profileId });
-      // idb.loadProfile({ profileId: this.profileId });
-      this.profile = await idb.getProfile({ profileId: this.profileId });
+      this.links.splice(0, this.links.length);
+      let fetchedLinks = await idb.getLinks(this.profileId);
+      this.links.push(...fetchedLinks);
+      this.profile = await idb.getProfile(this.profileId);
     },
     addLinkPrompt() {
       this.$bvModal.show('addLinkModal');
@@ -92,10 +89,7 @@ export default {
     },
   },
   computed: {
-    links() {
-      return this.$store.state.links;
-    },
-    numLinks: function() {
+    numLinks() {
       return Object.keys(this.links).length;
     },
     profileId() {
@@ -113,7 +107,7 @@ export default {
       }
       return this.profile.name;
     },
-    crumbs: function() {
+    crumbs() {
       return [
         {
           text: 'Home',

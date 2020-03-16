@@ -12,7 +12,8 @@
       @save="saveLink"
       :fetchData="fetchData"
       @deleteObject="askDeleteObject"
-      rowNamesToSkip="['profileId']"
+      :rowNamesToSkip="['profileId']"
+      :addItemText="'Add Field...'"
     >
       <template v-slot:header>
         <button @click="openLink(true)" title="Open this link in a new window.">Open</button>
@@ -43,6 +44,11 @@ export default {
   },
   mounted() {
     this.fetchData();
+  },
+  data() {
+    return {
+      profile: null,
+    };
   },
   methods: {
     async scrapeLink() {
@@ -86,15 +92,13 @@ export default {
       });
       this.$router.push({ name: 'profileLinks', params: { id: this.profileId } });
     },
-    fetchData() {
+    async fetchData() {
       idb.loadLink({
         profileId: this.profileId,
         linkId: this.linkId,
       });
-      idb.loadProfile({
-        profileId: this.profileId,
-      });
       this.changesPending = false;
+      this.profile = await idb.getProfile(this.profileId);
     },
     reset() {
       this.filter = '';
@@ -144,9 +148,6 @@ export default {
     },
     profileId() {
       return convertId(this.$route.params.profileId);
-    },
-    profile() {
-      return this.$store.state.profile;
     },
     profileName() {
       if (this.profile == null) {

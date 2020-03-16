@@ -15,6 +15,8 @@
       :crumbs="crumbs"
       @deleteSelectedRows="deleteProfiles"
       :givenCols="['timeAdded', 'links', 'sources', 'id', 'name']"
+      :fetchData="fetchData"
+      :addItemText="'Add Profile...'"
     >
     </objects-table>
   </div>
@@ -23,18 +25,17 @@
 <script>
 import ObjectsTable from '../components/ObjectsTable.vue';
 import * as idb from '../../../store/idb.js';
-
+import { STORE_PROFILES } from '../../../store/Constants.ts';
 export default {
   name: 'Profiles',
   components: {
     ObjectsTable,
   },
-  mounted() {
-    this.fetchData();
-  },
   data() {
     return {
       profiles: [],
+      cursor: null,
+      numResults: 0,
     };
   },
   computed: {
@@ -60,7 +61,25 @@ export default {
       }
     },
     async fetchData() {
-      this.profiles = await idb.fetchProfiles();
+      this.profiles.splice(0, this.profiles.length);
+      this.numResults = await idb.getNumProfiles();
+      this.fetchMoreData();
+    },
+    checkIfNeedData(event) {
+      if (this.logs.length < this.numLogs && this.logs.length < this.$refs.table.perPage * (event - 1) + 1) {
+        this.fetchMoreData();
+      }
+    },
+    async fetchMoreData() {
+      let items = await idb.getStoreResults({ storeName: STORE_PROFILES, filters: this.$refs.table.filters, offset: this.profiles.length, numRows: 100 });
+      this.profiles.push(...items);
+      this.$nextTick(async function() {
+        if (this.$refs.table.items.length < this.$refs.table.perPage) {
+          if (this.profiles.length < this.numResults) {
+            await this.fetchMoreData();
+          }
+        }
+      });
     },
     addProfilePrompt() {
       this.$bvModal.show('addProfileModal');

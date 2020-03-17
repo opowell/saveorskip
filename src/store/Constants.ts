@@ -32,6 +32,7 @@ export const STORE_SCRAPERS = 'scrapers';
 export let DB_VERSION = 5;
 
 export const INDEX_STORES = [STORE_PROFILES, STORE_SOURCES, STORE_LINKS];
+export const KEYPATH_SEPARATOR = '_';
 
 export const getDBVersion = function() {
   return DB_VERSION;
@@ -39,6 +40,7 @@ export const getDBVersion = function() {
 
 export const setDBVersion = function(a) {
   DB_VERSION = a;
+  return a;
 };
 
 if (!('indexedDB' in window)) {
@@ -79,8 +81,16 @@ export const reset = async function() {
   resetState();
 };
 
+export const setDBPromise = function(dbp) {
+  dbPromise = dbp;
+};
+
+export const getDBPromise = function() {
+  return dbPromise;
+};
+
 // When anything below changes, increment DB_VERSION or delete existing database. This forces the database schema to be updated.
-export const dbPromise = openDB(DB_NAME, DB_VERSION, {
+let dbPromise = openDB(DB_NAME, DB_VERSION, {
   async upgrade(db, oldVersion, newVersion, transaction) {
     if (oldVersion === 0) {
       console.log('Creating stores');
@@ -119,5 +129,8 @@ export const dbPromise = openDB(DB_NAME, DB_VERSION, {
 
       await reset();
     }
+  },
+  async blocking() {
+    (await dbPromise).close();
   },
 });

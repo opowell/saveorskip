@@ -4,14 +4,18 @@
       <div>
         <span>Object:</span>
         <select id="addIndexObjectInput">
-          <option v-for="(value, index) in INDEX_STORES" :key="index" :value="value">{{ value }}</option>
-          <option value="sources">sources</option>
-          <option value="link">links</option>
+          <option v-for="(value, index) in indexStores" :key="index" :value="value">{{ value }}</option>
         </select>
       </div>
       <div>
-        <span>Index:</span>
-        <input id="addProfileNameInput" type="text" v-on:keyup.enter="addProfile" />
+        <div class="my-3">
+          Keypath:
+          <span @click="removeKeyPath(index)" class="filter" v-for="(path, index) in curKeyPath" :key="index">{{ path }}</span>
+        </div>
+        <div class="my-3">
+          <input id="addIndexKeypathInput" type="text" v-on:keyup.enter="addKeyToPath" />
+          <b-button @click="addKeyToPath">Add Key to Path</b-button>
+        </div>
       </div>
     </b-modal>
     <objects-table
@@ -33,6 +37,7 @@
 <script>
 import ObjectsTable from '../components/ObjectsTable.vue';
 import * as idb from '../../../store/idb.js';
+import { INDEX_STORES } from '../../../store/Constants.ts';
 
 export default {
   name: 'Indices',
@@ -44,6 +49,8 @@ export default {
       indices: [],
       cursor: null,
       numIndices: 0,
+      indexStores: INDEX_STORES,
+      curKeyPath: [],
     };
   },
   computed: {
@@ -61,6 +68,28 @@ export default {
     },
   },
   methods: {
+    removeKeyPath(index) {
+      this.curKeyPath.splice(index, 1);
+    },
+    addKeyToPath() {
+      let keyPathInput = document.getElementById('addIndexKeypathInput').value;
+      if (keyPathInput.length < 1) {
+        return;
+      }
+      this.curKeyPath.push(keyPathInput);
+    },
+    async addIndex() {
+      this.$bvModal.hide('addIndexModal');
+      let storeNameInput = document.getElementById('addIndexObjectInput').value;
+      if (storeNameInput.length < 1) {
+        return;
+      }
+      if (this.curKeyPath.length < 1) {
+        return;
+      }
+      await idb.createIndex(storeNameInput, this.curKeyPath);
+      this.fetchData();
+    },
     addIndexPrompt() {
       this.$bvModal.show('addIndexModal');
     },

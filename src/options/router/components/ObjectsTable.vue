@@ -822,6 +822,9 @@ export default {
 .input-group-append {
   align-items: baseline;
 }
+</style>
+
+<style>
 .filter {
   background-color: #f7f7f7;
   border-radius: 3px;
@@ -835,9 +838,6 @@ export default {
   cursor: pointer;
   background-color: #ddd;
 }
-</style>
-
-<style>
 .table-cell {
   vertical-align: baseline !important;
   max-width: 40rem;

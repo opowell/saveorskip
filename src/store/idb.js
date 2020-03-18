@@ -18,7 +18,6 @@ import {
   STORE_SCRAPERS,
   DB_NAME,
   getDBVersion,
-  setDBVersion,
   INDEX_STORES,
   KEYPATH_SEPARATOR,
   setDBPromise,
@@ -983,11 +982,13 @@ export async function getCursor(storeName, query) {
 }
 
 export async function createIndex(storeName, keyPath) {
-  let version = setDBVersion(getDBVersion() + 1);
+  let version = (await getDBVersion()) + 1;
   let keyPathName = keyPath.join(KEYPATH_SEPARATOR);
+
   let newDBPromise = await openDB(DB_NAME, version, {
     async upgrade(db, oldVersion, newVersion, transaction) {
-      const store = transaction(storeName).objectStore(storeName);
+      console.log(db, oldVersion, newVersion, transaction);
+      const store = transaction.objectStore(storeName);
       store.createIndex(keyPathName, keyPath);
     },
     blocked() {
@@ -1143,8 +1144,8 @@ export async function deleteLog(id) {
 }
 
 export async function deleteIndex(storeName, indexName) {
-  setDBVersion(getDBVersion() + 1);
-  await openDB(DB_NAME, getDBVersion(), {
+  let version = getDBVersion() + 1;
+  await openDB(DB_NAME, version, {
     async upgrade(db, oldVersion, newVersion, transaction) {
       const store = db.transaction(storeName).objectStore(storeName);
       store.deleteIndex(indexName);

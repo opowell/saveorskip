@@ -96,10 +96,6 @@ export const setNextSuggestion = ({ commit }, payload) => {
   commit(types.SET_NEXT_SUGGESTION, payload);
 };
 
-export const fetchProfiles = ({ commit }, payload) => {
-  commit(types.FETCH_PROFILES, payload);
-};
-
 export const loadProfile = ({ commit }, payload) => {
   commit(types.LOAD_PROFILE, payload);
 };

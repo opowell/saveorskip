@@ -28,6 +28,11 @@ export default {
   components: {
     ObjectsTable,
   },
+  watch: {
+    $route() {
+      this.fetchData();
+    },
+  },
   data() {
     return {
       logs: [],
@@ -66,7 +71,6 @@ export default {
       }
     },
     async fetchMoreData() {
-      // let items = await idb.getLogs({ offset: this.logs.length, numRows: 100, newestFirst: true });
       let items = await idb.getStoreResults({ storeName: STORE_LOGS, filters: this.$refs.table.filters, offset: this.logs.length, numRows: 100 });
       this.logs.push(...items);
       this.$nextTick(async function() {

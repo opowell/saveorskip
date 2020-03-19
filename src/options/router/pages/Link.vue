@@ -177,7 +177,7 @@ export default {
         },
         {
           text: 'Links',
-          href: '#/profile/' + encodeURIComponent(this.profileId) + '/links?filters=saved,eq,true',
+          href: '#/profile/' + encodeURIComponent(this.profileId) + '/links?filters=saved,eq,1',
         },
         {
           text: this.linkId,

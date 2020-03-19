@@ -61,7 +61,7 @@ export default {
     ObjectsTable,
   },
   watch: {
-    '$route.params.id': function(id) {
+    $route() {
       this.fetchData();
     },
   },
@@ -195,7 +195,7 @@ export default {
     },
     fieldLinks() {
       return {
-        Links: '#/profile/' + encodeURIComponent(this.$route.params.id) + '/links?filters=saved,eq,true',
+        Links: '#/profile/' + encodeURIComponent(this.$route.params.id) + '/links?filters=saved,eq,1',
         Sources: '#/profile/' + encodeURIComponent(this.$route.params.id) + '/sources',
         Logs: '#/logs?filters=objectType,eq,Profile]]objectKeys,eq,' + encodeURIComponent(this.$route.params.id) + ']]',
       };

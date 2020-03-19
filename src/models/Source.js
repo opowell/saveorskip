@@ -4,6 +4,6 @@ export function Source(url, profileId) {
   out.providerId = url;
   out.timeAdded = new Date();
   out.points = 0;
-  out.saved = false;
+  out.saved = 0;
   return out;
 }

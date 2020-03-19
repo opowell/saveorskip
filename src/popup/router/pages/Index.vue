@@ -32,7 +32,7 @@
     <div class="menu-item" title="The current profile to save links and sources to.">
       <span style="flex: 1 1 auto;">Profile:&nbsp;</span>
       <select v-if="profiles.length > 0" id="target-select" @change="setTargetEv">
-        <option v-for="profile in personalProfiles" :key="profile.id" :value="profile.id" :selected="profile.id == targetId">
+        <option v-for="profile in profiles" :key="profile.id" :value="profile.id" :selected="profile.id == targetId">
           {{ profile.name }}
         </option>
       </select>
@@ -92,9 +92,11 @@ import { convertId } from '../../../Utils.js';
 
 export default {
   async mounted() {
-    this.profiles = await idb.fetchProfiles();
-    if (!this.hasValidTarget && this.profiles != null && this.profiles.length > 0) {
-      this.setTarget(this.personalProfiles[0].id);
+    let loadedProfiles = await idb.fetchProfiles([{ field: 'generatedBy', operator: 'eq', value: 'user' }]);
+    console.log('found ' + loadedProfiles);
+    this.profiles.push(...loadedProfiles);
+    if (!this.hasValidTarget && this.profiles.length > 0) {
+      this.setTarget(this.profiles[0].id);
     } else {
       this.setTarget(this.targetId);
     }
@@ -140,17 +142,8 @@ export default {
       }
       return 'nothing';
     },
-    personalProfiles() {
-      let out = [];
-      for (let i in this.profiles) {
-        if (this.profiles[i].generatedBy === 'user') {
-          out.push(this.profiles[i]);
-        }
-      }
-      return out;
-    },
     hasTarget() {
-      return this.targetId != null && this.targetId != '';
+      return this.targetId != null && this.targetId !== '';
     },
     hasValidTarget() {
       for (let i in this.profiles) {

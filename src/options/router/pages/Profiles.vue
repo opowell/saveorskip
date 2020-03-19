@@ -14,7 +14,7 @@
       :ineditable-row-names="[]"
       :crumbs="crumbs"
       @deleteSelectedRows="deleteProfiles"
-      :givenCols="['timeAdded', 'links', 'sources', 'id', 'name']"
+      :givenCols="['timeAdded', 'Links', 'Sources', 'id', 'name']"
       :fetchData="fetchData"
       :addItemText="'Add Profile...'"
     >
@@ -34,9 +34,13 @@ export default {
   data() {
     return {
       profiles: [],
-      cursor: null,
       numResults: 0,
     };
+  },
+  watch: {
+    $route() {
+      this.fetchData();
+    },
   },
   computed: {
     crumbs() {
@@ -66,12 +70,15 @@ export default {
       this.fetchMoreData();
     },
     checkIfNeedData(event) {
-      if (this.logs.length < this.numLogs && this.logs.length < this.$refs.table.perPage * (event - 1) + 1) {
+      if (this.profiles.length < this.numProfiles && this.profiles.length < this.$refs.table.perPage * (event - 1) + 1) {
         this.fetchMoreData();
       }
     },
     async fetchMoreData() {
       let items = await idb.getStoreResults({ storeName: STORE_PROFILES, filters: this.$refs.table.filters, offset: this.profiles.length, numRows: 100 });
+      for (let i in items) {
+        await idb.addProfileChildrenCounts(items[i]);
+      }
       this.profiles.push(...items);
       this.$nextTick(async function() {
         if (this.$refs.table.items.length < this.$refs.table.perPage) {

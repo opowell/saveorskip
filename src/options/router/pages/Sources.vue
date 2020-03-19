@@ -33,6 +33,7 @@ import ObjectsTable from '../components/ObjectsTable.vue';
 import * as idb from '../../../store/idb.js';
 import { Source } from '../../../models/Source.js';
 import { convertId } from '../../../Utils.js';
+import { STORE_SOURCES } from '../../../store/Constants.ts';
 
 export default {
   name: 'ProfilePage',
@@ -40,13 +41,14 @@ export default {
     ObjectsTable,
   },
   watch: {
-    '$route.params.id': function() {
+    $route() {
       this.fetchData();
     },
   },
   data() {
     return {
       profile: null,
+      numResults: 0,
     };
   },
   methods: {
@@ -58,10 +60,41 @@ export default {
         });
       }
     },
+
     async fetchData() {
-      idb.loadSources({ profileId: this.profileId });
       this.profile = await idb.getProfile(this.profileId);
+      this.sources.splice(0, this.sources.length);
+      this.numResults = await idb.getNumResults({
+        storeName: STORE_SOURCES,
+        filters: [{ field: 'consumerId', operator: 'eq', value: this.profile.id }, ...this.$refs.table.filters],
+      });
+      this.fetchMoreData();
     },
+    checkIfNeedData(event) {
+      if (this.sources.length < this.numResults && this.sources.length < this.$refs.table.perPage * (event - 1) + 1) {
+        this.fetchMoreData();
+      }
+    },
+    async fetchMoreData() {
+      let items = await idb.getStoreResults({
+        storeName: STORE_SOURCES,
+        filters: [{ field: 'consumerId', operator: 'eq', value: this.profile.id }, ...this.$refs.table.filters],
+        offset: this.sources.length,
+        numRows: 100,
+      });
+      // for (let i in items) {
+      //   await idb.addProfileChildrenCounts(items[i]);
+      // }
+      this.sources.push(...items);
+      this.$nextTick(async function() {
+        if (this.$refs.table.items.length < this.$refs.table.perPage) {
+          if (this.sources.length < this.numResults) {
+            await this.fetchMoreData();
+          }
+        }
+      });
+    },
+
     addSourcePrompt() {
       this.$bvModal.show('addSourceModal');
     },

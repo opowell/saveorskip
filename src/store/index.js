@@ -30,7 +30,6 @@ const initState = {
   // Set of profiles.
   profile: null,
   profileStats: null,
-  profiles: [],
   scrapers: [],
   source: null,
   profileSourceStats: null,

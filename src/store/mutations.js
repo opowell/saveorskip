@@ -7,11 +7,6 @@ import { trimmedUrl } from '../Utils.js';
  * Mutations are synchronous.
  */
 export default {
-  [types.FETCH_PROFILES](state, payload) {
-    state.profiles.splice(0, state.profiles.length);
-    state.profiles.push(...payload);
-  },
-
   [types.LOAD_SCRAPERS](state, payload) {
     state.scrapers.splice(0, state.scrapers.length);
     state.scrapers.push(...payload);

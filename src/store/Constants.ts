@@ -55,12 +55,12 @@ export const reset = async function() {
   for (let i in sources) {
     let srcObj = {
       source: {
-        saved: false,
+        saved: 0,
       },
       providerId: sources[i],
       consumerId: 1,
       pointsChange: 5,
-      overwrite: false,
+      overwrite: 0,
     };
     await storeSource(srcObj);
   }

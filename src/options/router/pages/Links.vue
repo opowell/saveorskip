@@ -32,6 +32,7 @@
 import ObjectsTable from '../components/ObjectsTable.vue';
 import * as idb from '../../../store/idb.js';
 import { convertId } from '../../../Utils.js';
+import { STORE_LINKS } from '../../../store/Constants.ts';
 
 export default {
   name: 'ProfileLinks',
@@ -39,7 +40,7 @@ export default {
     ObjectsTable,
   },
   watch: {
-    '$route.params.id': async function() {
+    $route: async function() {
       await this.fetchData();
     },
   },
@@ -47,6 +48,7 @@ export default {
     return {
       profile: null,
       links: [],
+      numResults: 0,
     };
   },
   methods: {
@@ -58,12 +60,33 @@ export default {
         });
       }
     },
+
     async fetchData() {
       this.links.splice(0, this.links.length);
-      let fetchedLinks = await idb.getLinks(this.profileId);
-      this.links.push(...fetchedLinks);
+      let resultsFilters = [{ field: 'profileId', operator: 'eq', value: this.profileId }, ...this.$refs.table.filters];
+      this.numResults = await idb.getNumResults({ storeName: STORE_LINKS, filters: resultsFilters });
+      this.fetchMoreData();
       this.profile = await idb.getProfile(this.profileId);
     },
+    checkIfNeedData(event) {
+      if (this.links.length < this.numLinks && this.links.length < this.$refs.table.perPage * (event - 1) + 1) {
+        this.fetchMoreData();
+      }
+    },
+    async fetchMoreData() {
+      let resultsFilters = [{ field: 'profileId', operator: 'eq', value: this.profileId }, ...this.$refs.table.filters];
+
+      let items = await idb.getStoreResults({ storeName: STORE_LINKS, filters: resultsFilters, offset: this.links.length, numRows: 100 });
+      this.links.push(...items);
+      this.$nextTick(async function() {
+        if (this.$refs.table.items.length < this.$refs.table.perPage) {
+          if (this.links.length < this.numResults) {
+            await this.fetchMoreData();
+          }
+        }
+      });
+    },
+
     addLinkPrompt() {
       this.$bvModal.show('addLinkModal');
     },
@@ -123,7 +146,7 @@ export default {
         },
         {
           text: 'Links',
-          href: '#/profile/' + encodeURIComponent(this.profileId) + '/links?filters=saved,eq,true',
+          href: '#/profile/' + encodeURIComponent(this.profileId) + '/links?filters=saved,eq,1',
         },
       ];
     },

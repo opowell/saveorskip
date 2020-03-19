@@ -13,7 +13,7 @@ global.browser = require('webextension-polyfill');
 async function saveOrSkip(gotoNext, action) {
   console.log('background: saveOrSkip ' + JSON.stringify(action));
   store.state.curPage.profileId = store.state.targetId;
-  store.state.curPage.saved = action === 'save';
+  store.state.curPage.saved = action === 'save' ? 1 : 0;
   // await idb.saveLink(store.state.curPage);
   // let cb = null;
   if (gotoNext === true) {
@@ -366,7 +366,7 @@ async function getLinksCB(links) {
     let link = links[i];
     link.url = trimmedUrl(link.url);
     link.timeAdded = new Date();
-    link.saved = true;
+    link.saved = 1;
     link.profileId = store.state.sourceToScrape;
     idb.addLink(link);
   }

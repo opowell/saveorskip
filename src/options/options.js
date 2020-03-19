@@ -17,9 +17,9 @@ window.vue = new Vue({
   store,
   router,
   render: h => h(App),
-  mounted() {
-    idb.fetchProfiles();
-  },
+  // mounted() {
+  //   // idb.fetchProfiles();
+  // },
 });
 
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {

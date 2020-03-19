@@ -29,6 +29,7 @@
       @pageChanged="checkIfNeedData"
       :fetchData="fetchData"
       :addItemText="'Add Index...'"
+      :selectable="true"
     >
     </objects-table>
   </div>
@@ -37,7 +38,7 @@
 <script>
 import ObjectsTable from '../components/ObjectsTable.vue';
 import * as idb from '../../../store/idb.js';
-import { INDEX_STORES } from '../../../store/Constants.ts';
+import { INDEX_STORES, KEYPATH_SEPARATOR } from '../../../store/Constants.ts';
 
 export default {
   name: 'Indices',
@@ -93,10 +94,11 @@ export default {
     addIndexPrompt() {
       this.$bvModal.show('addIndexModal');
     },
-    deleteIndices(selection) {
+    async deleteIndices(selection) {
       for (let i in selection) {
-        idb.deleteIndex(selection[i].id);
+        await idb.deleteIndex(selection[i].object, selection[i].keyPath);
       }
+      this.fetchData();
     },
     async fetchData() {
       this.indices.splice(0, this.indices.length);

@@ -21,6 +21,7 @@
 <script>
 import ObjectsTable from '../components/ObjectsTable.vue';
 import * as idb from '../../../store/idb.js';
+import { STORE_LOGS } from '../../../store/Constants.ts';
 
 export default {
   name: 'Logs',
@@ -65,7 +66,8 @@ export default {
       }
     },
     async fetchMoreData() {
-      let items = await idb.getLogs({ offset: this.logs.length, numRows: 100, newestFirst: true });
+      // let items = await idb.getLogs({ offset: this.logs.length, numRows: 100, newestFirst: true });
+      let items = await idb.getStoreResults({ storeName: STORE_LOGS, filters: this.$refs.table.filters, offset: this.logs.length, numRows: 100 });
       this.logs.push(...items);
       this.$nextTick(async function() {
         if (this.$refs.table.items.length < this.$refs.table.perPage) {

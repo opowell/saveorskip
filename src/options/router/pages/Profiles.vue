@@ -51,7 +51,7 @@ export default {
         },
         {
           text: 'Profiles',
-          href: '#/profiles?filters=generatedBy,eq,user',
+          href: '#/profiles?filters=user,generatedBy,user',
         },
       ];
     },

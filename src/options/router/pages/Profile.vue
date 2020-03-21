@@ -195,9 +195,9 @@ export default {
     },
     fieldLinks() {
       return {
-        Links: '#/profile/' + encodeURIComponent(this.$route.params.id) + '/links?filters=saved,eq,1',
+        Links: '#/profile/' + encodeURIComponent(this.$route.params.id) + '/links?filters=1,saved,1',
         Sources: '#/profile/' + encodeURIComponent(this.$route.params.id) + '/sources',
-        Logs: '#/logs?filters=objectType,eq,Profile]]objectKeys,eq,' + encodeURIComponent(this.$route.params.id) + ']]',
+        Logs: '#/logs?filters=Profile,objectType,Profile]]' + encodeURIComponent(this.$route.params.id) + ',objectKeys,' + encodeURIComponent(this.$route.params.id) + ']]',
       };
     },
     canAddProperty() {
@@ -272,7 +272,7 @@ export default {
         },
         {
           text: 'Profiles',
-          href: '#/profiles?filters=generatedBy,eq,user',
+          href: '#/profiles?filters=user,generatedBy,user',
         },
         {
           text: this.profileName,

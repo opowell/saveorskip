@@ -63,7 +63,7 @@ export default {
 
     async fetchData() {
       this.links.splice(0, this.links.length);
-      let resultsFilters = [{ field: 'profileId', operator: 'eq', value: this.profileId }, ...this.$refs.table.filters];
+      let resultsFilters = [{ field: 'profileId', lowerValue: this.profileId, upperValue: this.profileId }, ...this.$refs.table.filters];
       this.numResults = await idb.getNumResults({ storeName: STORE_LINKS, filters: resultsFilters });
       this.fetchMoreData();
       this.profile = await idb.getProfile(this.profileId);
@@ -138,7 +138,7 @@ export default {
         },
         {
           text: 'Profiles',
-          href: '#/profiles?filters=generatedBy,eq,user',
+          href: '#/profiles?filters=user,generatedBy,user',
         },
         {
           text: this.profileName,
@@ -146,7 +146,7 @@ export default {
         },
         {
           text: 'Links',
-          href: '#/profile/' + encodeURIComponent(this.profileId) + '/links?filters=saved,eq,1',
+          href: '#/profile/' + encodeURIComponent(this.profileId) + '/links?filters=1,saved,1',
         },
       ];
     },

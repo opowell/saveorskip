@@ -1,40 +1,38 @@
 <template>
-  <div style="display: flex; flex-direction: column; height: 100%">
-    <b-modal id="addFilterModal" title="Add Filter" @ok="addFilter" no-fade>
-      <div style="margin-bottom: 1rem;">
-        <span style="width: 100px;">Field:</span>
+  <div style="display: flex; flex-direction: column; height: 100%; background-color: #f8f8f8;">
+    <b-modal id="addFilterModal" title="Add/Edit Filter" @ok="addFilter" no-fade size="lg">
+      <div>
+        <input ontabindex="1" id="addFilterLowerValue" type="text" v-on:keyup.enter="addFilter" />
+        <span>&le;</span>
         <select id="addFilterField">
           <option v-for="(fieldName, index) in fieldNames" :key="index" :value="fieldName.key" :selected="addFilterField === fieldName.key">
             {{ fieldName.label }}
           </option>
         </select>
-      </div>
-      <div style="margin-bottom: 1rem;">
-        <span style="width: 100px;">Operator:</span>
-        <select id="addFilterOperator">
-          <option value="contains" selected>contains</option>
-          <option value="eq">=</option>
-          <option value="gt">&gt;</option>
-          <option value="ge">&ge;</option>
-          <option value="lt">&lt;</option>
-          <option value="le">&le;</option>
-          <option value="notc">does NOT contain</option>
-          <option value="ne">&ne;</option>
-        </select>
-      </div>
-      <div style="margin-bottom: 1rem;">
-        <span style="width: 100px;">Value:</span>
-        <input ontabindex="1" id="addFilterValue" type="text" v-on:keyup.enter="addFilter" />
+        <span>&le;</span>
+        <input ontabindex="2" id="addFilterUpperValue" type="text" v-on:keyup.enter="addFilter" />
       </div>
     </b-modal>
     <!-- User Interface controls -->
     <div style="display: flex; align-items: baseline; flex: 0 0 auto; padding: 1em; background-color: rgb(226, 226, 226);">
       <b-breadcrumb :items="crumbs" />
       <div style="display: flex;">
-        <span class="filter" v-for="(filter, index) in filters" :key="index" @click="removeFilter(index)">
+        <span
+          class="filter"
+          v-for="(filter, index) in filters"
+          :key="index + ',' + filterToString(filter)"
+          @click="editFilter(index)"
+          draggable="true"
+          @dragstart="handleDragStart($event, index)"
+          @dragenter="handleDragEnter($event, index)"
+          @drop="handleDrop($event)"
+          @dragover="handleDragOver($event)"
+        >
+          <span v-if="filter.lowerValue" style="color: red">{{ filter.lowerValue }}</span>
+          <span v-if="filter.lowerValue" style="color: grey">&le;</span>
           <span style="color: green">{{ filterLabel(filter.field) }}</span>
-          <span style="color: grey" v-html="filterSymbol(filter.operator)" />
-          <span style="color: red">{{ filter.value }}</span>
+          <span v-if="filter.upperValue" style="color: grey">&le;</span>
+          <span v-if="filter.upperValue" style="color: red">{{ filter.upperValue }}</span>
         </span>
       </div>
       <div style="flex: 1 1 auto">&nbsp;</div>
@@ -71,8 +69,6 @@
       show-empty
       :items="items"
       :fields="fieldNames"
-      :filter="filters"
-      :filter-function="filterFunction"
       @row-clicked="clickItem"
       class="mt-3"
       selectable
@@ -85,7 +81,7 @@
       sticky-header
       :tbody-tr-class="isObjArray ? 'click-row' : ''"
       :busy="tableBusy"
-      style="margin-left: 1em; margin-right: 0em; margin-top: 0rem !important; max-height: unset; flex: 1 1 auto; align-items: flex-start; align-self: flex-start; margin-bottom: 0px;"
+      style="background-color: #fff; margin-left: 1em; margin-right: 0em; margin-top: 0rem !important; max-height: unset; flex: 1 1 auto; align-items: flex-start; align-self: flex-start; margin-bottom: 0px;"
     >
       <slot></slot>
 
@@ -223,15 +219,7 @@ export default {
         filtersStrs = str.split(']]');
       }
       for (let i in filtersStrs) {
-        let values = filtersStrs[i].split(',');
-        if (values.length !== 3) {
-          continue;
-        }
-        let filterObj = {
-          field: values[0],
-          operator: values[1],
-          value: values[2],
-        };
+        let filterObj = this.stringToFilter(filtersStrs[i]);
         this.filters.push(filterObj);
       }
     }
@@ -252,9 +240,66 @@ export default {
       currentPage: 1,
       status: 'Ready',
       tableBusy: false,
+      curDragFilterIndex: -1,
+      redrawAfterDrop: false,
     };
   },
   methods: {
+    stringToFilter(string) {
+      let tokens = string.split(',');
+      if (tokens.length !== 3) {
+        return null;
+      }
+      let lowerValue = tokens[0];
+      if (!isNaN(+lowerValue)) {
+        lowerValue = +lowerValue;
+      }
+      let upperValue = tokens[2];
+      if (!isNaN(+upperValue)) {
+        upperValue = +upperValue;
+      }
+      let filterObj = {
+        lowerValue,
+        field: tokens[1],
+        upperValue,
+      };
+      return filterObj;
+    },
+    filterToString(filter) {
+      let out = '';
+      out += filter.lowerValue + ',';
+      out += filter.field;
+      out += ',' + filter.upperValue;
+      return out;
+    },
+    handleDragEnter(e, index) {
+      if (e.target.getAttribute('draggable') !== 'true') {
+        return;
+      }
+      if (e.preventDefault) {
+        e.preventDefault(); // Necessary. Allows us to drop.
+      }
+      e.dataTransfer.dropEffect = 'move'; // See the section on the DataTransfer object.
+      if (this.curDragFilterIndex !== index) {
+        let filter = this.filters.splice(this.curDragFilterIndex, 1)[0];
+        this.filters.splice(index, 0, filter);
+        this.redrawAfterDrop = true;
+        this.curDragFilterIndex = index;
+      }
+      return false;
+    },
+    handleDragStart(ev, filterIndex) {
+      this.curDragFilterIndex = filterIndex;
+    },
+    handleDrop(e) {
+      if (this.redrawAfterDrop) {
+        this.redrawAfterDrop = false;
+        this.updateFilterQuery();
+      }
+    },
+    handleDragOver(e) {
+      e.preventDefault();
+    },
     async callFetchData() {
       if (typeof this.fetchData === 'function') {
         this.status = 'Loading...';
@@ -288,18 +333,6 @@ export default {
     },
     filterSymbol(operator) {
       switch (operator) {
-        case 'contains':
-          return 'contains';
-        case 'notC':
-          return 'does NOT contain';
-        case 'eq':
-          return '=';
-        case 'ne':
-          return '&ne;';
-        case 'gt':
-          return '&gt;';
-        case 'ge':
-          return '&ge;';
         case 'lt':
           return '&lt;';
         case 'le':
@@ -318,38 +351,8 @@ export default {
         if (rowData[filter.field] == null) {
           return false;
         }
-        let x = rowData[filter.field] + '';
+        let x = rowData[filter.field];
         switch (filter.operator) {
-          case 'contains':
-            if (!x.includes(filter.value)) {
-              return false;
-            }
-            break;
-          case 'notC':
-            if (x.includes(filter.value)) {
-              return false;
-            }
-            break;
-          case 'eq':
-            if (x !== filter.value) {
-              return false;
-            }
-            break;
-          case 'ne':
-            if (x === filter.value) {
-              return false;
-            }
-            break;
-          case 'gt':
-            if (x <= filter.value) {
-              return false;
-            }
-            break;
-          case 'ge':
-            if (x < filter.value) {
-              return false;
-            }
-            break;
           case 'lt':
             if (x >= filter.value) {
               return false;
@@ -387,20 +390,47 @@ export default {
       if (this.filters.length > 0) {
         filtersStr = '?filters=';
         for (let i in this.filters) {
-          filtersStr += this.filters[i].field + ',' + this.filters[i].operator + ',' + this.filters[i].value + ']]';
+          filtersStr += this.filterToString(this.filters[i]) + ']]';
         }
       }
       try {
         this.$router.push(path + filtersStr);
       } catch (err) {}
     },
+    editFilter(index) {
+      let filter = this.filters[index];
+      this.addFilterField = filter.field;
+      this.$bvModal.show('addFilterModal');
+      Vue.nextTick(function() {
+        document.getElementById('addFilterValue').focus();
+      });
+    },
     addFilter() {
       this.$bvModal.hide('addFilterModal');
       let filter = {
         field: document.getElementById('addFilterField').value,
-        operator: document.getElementById('addFilterOperator').value,
-        value: document.getElementById('addFilterValue').value,
       };
+      let lowerValue = document.getElementById('addFilterLowerValue').value;
+      if (lowerValue !== '') {
+        if (!isNaN(lowerValue)) {
+          lowerValue = +lowerValue;
+        }
+        filter.lowerValue = lowerValue;
+        filter.lowerOperator = document.getElementById('addFilterLowerOperator').value;
+      }
+      let upperValue = document.getElementById('addFilterUpperValue').value;
+      if (upperValue !== '') {
+        if (!isNaN(upperValue)) {
+          upperValue = +upperValue;
+        }
+        filter.upperValue = upperValue;
+        filter.upperOperator = document.getElementById('addFilterUpperOperator').value;
+      }
+
+      if (filter.upperValue == null && filter.lowerValue == null) {
+        return;
+      }
+
       this.filters.push(filter);
       this.updateFilterQuery();
     },
@@ -834,9 +864,9 @@ export default {
   border: 1px solid #ddd;
 }
 .filter:hover {
-  text-decoration-line: line-through;
   cursor: pointer;
-  background-color: #ddd;
+  background-color: #fff;
+  border-color: #888;
 }
 .table-cell {
   vertical-align: baseline !important;
@@ -892,5 +922,9 @@ button {
 
 .click-row:hover {
   background-color: rgba(121, 200, 239, 0.34) !important;
+}
+
+.over {
+  border-left: 2px solid blue;
 }
 </style>

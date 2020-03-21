@@ -78,7 +78,7 @@ export default {
     clickRow({ item, index, event }) {
       switch (item.name) {
         case 'Profiles':
-          this.$router.push('profiles?filters=generatedBy,eq,user');
+          this.$router.push('profiles?filters=user,generatedBy,user');
           break;
         case 'Scrapers':
           this.$router.push('scrapers');

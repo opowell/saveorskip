@@ -169,7 +169,7 @@ export default {
         },
         {
           text: 'Profiles',
-          href: '#/profiles?filters=generatedBy,eq,user',
+          href: '#/profiles?filters=user,generatedBy,user',
         },
         {
           text: this.profileName,
@@ -177,7 +177,7 @@ export default {
         },
         {
           text: 'Links',
-          href: '#/profile/' + encodeURIComponent(this.profileId) + '/links?filters=saved,eq,1',
+          href: '#/profile/' + encodeURIComponent(this.profileId) + '/links?filters=1,saved,1',
         },
         {
           text: this.linkId,

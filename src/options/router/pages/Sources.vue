@@ -66,7 +66,7 @@ export default {
       this.sources.splice(0, this.sources.length);
       this.numResults = await idb.getNumResults({
         storeName: STORE_SOURCES,
-        filters: [{ field: 'consumerId', operator: 'eq', value: this.profile.id }, ...this.$refs.table.filters],
+        filters: [{ field: 'consumerId', lowerValue: this.profile.id, upperValue: this.profile.id }, ...this.$refs.table.filters],
       });
       this.fetchMoreData();
     },
@@ -144,7 +144,7 @@ export default {
         },
         {
           text: 'Profiles',
-          href: '#/profiles?filters=generatedBy,eq,user',
+          href: '#/profiles?filters=user,generatedBy,user',
         },
         {
           text: this.profileName,

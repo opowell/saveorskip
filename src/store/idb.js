@@ -114,8 +114,8 @@ export async function addProfileChildrenCounts(profile) {
     filters: [
       {
         field: STORE_LINKS_PROFILEID,
-        operator: 'eq',
-        value: profile.id,
+        lowerValue: profile.id,
+        upperValue: profile.id,
       },
     ],
   });
@@ -124,16 +124,24 @@ export async function addProfileChildrenCounts(profile) {
     filters: [
       {
         field: STORE_SOURCES_CONSUMERID,
-        operator: 'eq',
-        value: profile.id,
+        lowerValue: profile.id,
+        upperValue: profile.id,
       },
     ],
   });
   profile['Logs'] = await getNumResults({
     storeName: STORE_LOGS,
     filters: [
-      { field: 'objectType', operator: 'eq', value: 'Profile' },
-      { field: 'objectKeys', operator: 'eq', value: profile.id },
+      {
+        field: 'objectType',
+        lowerValue: 'Profile',
+        upperValue: 'Profile',
+      },
+      {
+        field: 'objectKeys',
+        lowerValue: profile.id,
+        upperValue: profile.id,
+      },
     ],
   });
 }
@@ -1044,11 +1052,9 @@ export async function getStoreResults({ storeName, filters, offset, numRows, new
   if (filters != null) {
     for (let i = 0; i < filters.length; i++) {
       let filter = filters[i];
-      if (filter.operator === 'eq') {
-        query.keyPath.push(filter.field);
-        query.lowerBounds.push(filter.value);
-        query.upperBounds.push(filter.value);
-      }
+      query.keyPath.push(filter.field);
+      query.lowerBounds.push(filter.lowerValue);
+      query.upperBounds.push(filter.upperValue);
     }
   }
 
@@ -1092,11 +1098,9 @@ export async function getNumResults({ storeName, filters }) {
   if (filters != null) {
     for (let i = 0; i < filters.length; i++) {
       let filter = filters[i];
-      if (filter.operator === 'eq') {
-        query.keyPath.push(filter.field);
-        query.lowerBounds.push(filter.value);
-        query.upperBounds.push(filter.value);
-      }
+      query.keyPath.push(filter.field);
+      query.lowerBounds.push(filter.lowerValue);
+      query.upperBounds.push(filter.upperValue);
     }
   }
 

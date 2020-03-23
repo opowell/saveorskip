@@ -24,6 +24,11 @@
       :sortDesc="true"
       :fetchData="fetchData"
       addItemText="Add Source..."
+      :numResults="numResults"
+      :fetchDataFn="fetchDataFn"
+      :storeNames="['sources']"
+      :displayIndexFn="displayIndexFn"
+      :selectable="true"
     />
   </div>
 </template>
@@ -112,6 +117,13 @@ export default {
     },
     openSource({ item, index, event }) {
       this.$router.push({ name: 'profileSource', params: { profileId: this.profileId, sourceId: item.providerId } });
+    },
+    displayIndexFn(index) {
+      let tokens = index.keyPath.split('_');
+      tokens.splice(0, 1);
+      let out = tokens.join(',');
+      index.tokens = tokens;
+      return out;
     },
   },
   computed: {

@@ -12,23 +12,21 @@
     </b-modal>
     <objects-table
       ref="table"
-      :object="links"
       @create="addLinkPrompt"
       @click="openLink"
+      @deleteSelectedRows="deleteLinks"
+      :addItemText="'Add Link...'"
       :colNamesToSkip="['profileId']"
       :colLabels="{ timeAdded: 'Time added' }"
       :crumbs="crumbs"
-      @deleteSelectedRows="deleteLinks"
-      sortBy="timeAdded"
-      :sortDesc="true"
-      :givenCols="['saved', 'url', 'title', 'timeAdded']"
-      :fetchData="fetchData"
-      :addItemText="'Add Link...'"
-      :numResults="numResults"
-      :fetchDataFn="fetchDataFn"
-      :storeNames="['links']"
       :displayIndexFn="displayIndexFn"
+      :fetchInitialData="fetchInitialData"
+      :fetchRows="fetchRows"
+      :givenCols="['saved', 'url', 'title', 'timeAdded']"
+      :numResults="numResults"
+      :object="links"
       :selectable="true"
+      :storeNames="['links']"
     />
   </div>
 </template>
@@ -43,11 +41,6 @@ export default {
   name: 'ProfileLinks',
   components: {
     ObjectsTable,
-  },
-  watch: {
-    $route: async function() {
-      await this.fetchData();
-    },
   },
   data() {
     return {
@@ -72,33 +65,17 @@ export default {
       index.tokens = tokens;
       return out;
     },
-    async fetchData() {
+    async fetchInitialData() {
       this.profile = await idb.getProfile(this.profileId);
       this.links.splice(0, this.links.length);
       let resultsFilters = [{ field: 'profileId', lowerValue: this.profileId, upperValue: this.profileId }, ...this.$refs.table.filters];
       this.numResults = await idb.getNumResults({ storeName: STORE_LINKS, filters: resultsFilters });
-      this.fetchMoreData();
     },
-    checkIfNeedData(event) {
-      if (this.links.length < this.numResults && this.links.length < this.$refs.table.perPage * (event - 1) + 1) {
-        this.fetchMoreData();
-      }
-    },
-    async fetchDataFn() {
+    async fetchRows() {
       let resultsFilters = [{ field: 'profileId', lowerValue: this.profileId, upperValue: this.profileId }, ...this.$refs.table.filters];
       let items = await idb.getStoreResults({ storeName: STORE_LINKS, filters: resultsFilters, offset: this.links.length, numRows: 100 });
       return items;
     },
-    async fetchMoreData() {
-      let resultsFilters = [{ field: 'profileId', lowerValue: this.profileId, upperValue: this.profileId }, ...this.$refs.table.filters];
-
-      let items = await idb.getStoreResults({ storeName: STORE_LINKS, filters: resultsFilters, offset: this.links.length, numRows: 100, sortOrder: this.$refs.table.sortOrder });
-      this.links.push(...items);
-      this.$nextTick(async function() {
-        this.checkIfNeedData();
-      });
-    },
-
     addLinkPrompt() {
       this.$bvModal.show('addLinkModal');
     },
@@ -111,7 +88,7 @@ export default {
         link: { url, title },
       };
       await idb.saveOrSkipLink(link);
-      await this.fetchData();
+      await this.fetchInitialData();
     },
     openLink({ item, index, event }) {
       this.$router.push({

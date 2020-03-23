@@ -19,10 +19,17 @@
     </b-modal>
     <objects-table
       ref="table"
+      @deleteObject="askDeleteObject"
+      @save="saveObject"
+      :addItemText="'Add Field...'"
       :crumbs="crumbs"
-      :object="profile"
-      :ineditable-row-names="['id', 'name', 'generatedBy', 'nextScrape', 'timeAdded']"
+      :fetchInitialData="fetchInitialData"
+      :givenRows="['id', 'name', 'Links', 'Sources', 'Logs']"
       :ineditable-col-names="['id', 'Links', 'Sources', 'Logs']"
+      :ineditable-row-names="['id', 'name', 'generatedBy', 'nextScrape', 'timeAdded']"
+      :links="fieldLinks"
+      :numResults="numResults"
+      :object="profile"
       :rowDescriptions="{
         name: 'Display name',
         generatedBy: 'How this profile was generated.',
@@ -33,12 +40,6 @@
         defaultLinkAction: `*save* to save pages as links when they are opened, *skip* to skip them. Any other value does nothing.`,
         defaultSourceAction: `*save* to save pages as sources when they are opened, *skip* to skip them opened. Any other value does nothing.`,
       }"
-      @save="saveObject"
-      :fetchData="fetchData"
-      @deleteObject="askDeleteObject"
-      :links="fieldLinks"
-      :givenRows="['id', 'name', 'Links', 'Sources', 'Logs']"
-      :addItemText="'Add Field...'"
     >
       <template v-slot:header>
         <button @click="openSuggestionModal" title="Draw suggestion from this profile.">Get suggestion...</button>
@@ -59,11 +60,6 @@ export default {
   name: 'Profile',
   components: {
     ObjectsTable,
-  },
-  watch: {
-    $route() {
-      this.fetchData();
-    },
   },
   data() {
     return {
@@ -173,7 +169,7 @@ export default {
     },
     async saveObject() {
       await idb.storeProfile(this.profile, { overwriteProps: true, keepExistingProps: false });
-      this.fetchData();
+      this.$refs.table.callFetchData();
     },
     deleteObject() {
       idb.deleteProfile({
@@ -181,9 +177,10 @@ export default {
       });
       this.$router.push({ name: 'profiles' });
     },
-    async fetchData() {
+    async fetchInitialData() {
       this.profile = await idb.loadProfile({ profileId: this.profileId });
       this.$refs.table.changesPending = false;
+      this.numResults = Object.keys(this.profile).length;
     },
   },
   computed: {
@@ -264,7 +261,7 @@ export default {
       }
       return out;
     },
-    crumbs: function() {
+    crumbs() {
       return [
         {
           text: 'Home',

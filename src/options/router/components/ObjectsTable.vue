@@ -233,34 +233,39 @@ export default {
     ObjectsTableCell,
   },
   props: {
-    sortBy: String,
-    sortDesc: Boolean,
-    object: [Object, Array],
-    ineditableRowNames: Array,
-    ineditableColNames: Array,
-    fetchData: Function,
-    links: Object,
-    rowNamesToSkip: Array,
-    colNamesToSkip: Array,
+    addItemText: String,
     colLabels: Object,
-    rowLabels: Object,
+    colNamesToSkip: Array,
+    displayIndexFn: Function,
+    crumbs: Array,
+    fetchRows: Function,
+    fetchInitialData: Function,
+    givenCols: Array,
+    givenRows: Array,
+    hoverProp: Boolean,
+    ineditableRowNames: {
+      default: () => {
+        return [];
+      },
+      type: Array,
+    },
+    ineditableColNames: Array,
+    links: Object,
+    numResults: Number,
+    object: [Object, Array],
     rowDescriptions: Object,
+    rowLabels: Object,
+    rowNamesToSkip: Array,
+    selectable: Boolean,
     showAdd: {
       default: true,
       type: Boolean,
     },
-    selectable: Boolean,
-    thClass: String,
-    crumbs: Array,
-    givenCols: Array,
-    givenRows: Array,
-    hoverProp: Boolean,
-    totalRows: Number,
-    addItemText: String,
-    numResults: Number,
-    fetchDataFn: Function,
+    sortBy: String,
+    sortDesc: Boolean,
     storeNames: Array,
-    displayIndexFn: Function,
+    thClass: String,
+    totalRows: Number,
   },
   watch: {
     currentPage: async function() {
@@ -268,6 +273,9 @@ export default {
     },
     sortOrder: async function() {
       this.updateFilterQuery();
+    },
+    $route() {
+      this.callFetchData();
     },
   },
   async mounted() {
@@ -415,13 +423,14 @@ export default {
       return false;
     },
     async callFetchData() {
-      if (typeof this.fetchData === 'function') {
-        this.status = 'Loading...';
+      this.status = 'Loading...';
+      if (this.fetchInitialData) {
         this.tableBusy = true;
-        await this.fetchData();
+        await this.fetchInitialData();
         this.tableBusy = false;
-        this.status = 'Finished loading';
       }
+      await this.checkIfNeedData();
+      this.status = 'Finished loading';
     },
     clearSelection() {
       this.$refs.table.clearSelected();
@@ -429,12 +438,17 @@ export default {
     },
     async checkIfNeedData() {
       if (this.items.length < this.numResults && this.items.length < this.perPage * (this.currentPage - 1) + 1) {
-        let newItems = await this.fetchDataFn();
+        if (!this.fetchRows) {
+          return;
+        }
+        let newItems = await this.fetchRows();
         this.items.push(...newItems);
         this.$refs.table.refresh();
-        this.$nextTick(async function() {
-          this.checkIfNeedData();
-        });
+        if (newItems.length > 0) {
+          this.$nextTick(async function() {
+            this.checkIfNeedData();
+          });
+        }
       }
     },
     tryDecodeURIComponent(text) {

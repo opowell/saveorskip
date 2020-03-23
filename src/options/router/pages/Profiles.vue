@@ -8,15 +8,18 @@
     </b-modal>
     <objects-table
       ref="table"
-      :object="profiles"
-      @create="addProfilePrompt"
       @click="openProfile"
-      :ineditable-row-names="[]"
-      :crumbs="crumbs"
+      @create="addProfilePrompt"
       @deleteSelectedRows="deleteProfiles"
-      :givenCols="['timeAdded', 'Links', 'Sources', 'id', 'name']"
-      :fetchData="fetchData"
       :addItemText="'Add Profile...'"
+      :crumbs="crumbs"
+      :fetchInitialData="fetchInitialData"
+      :fetchRows="fetchRows"
+      :givenCols="['timeAdded', 'Links', 'Sources', 'id', 'name']"
+      :numResults="numResults"
+      :object="profiles"
+      :selectable="true"
+      :storeNames="['profiles']"
     >
     </objects-table>
   </div>
@@ -36,11 +39,6 @@ export default {
       profiles: [],
       numResults: 0,
     };
-  },
-  watch: {
-    $route() {
-      this.fetchData();
-    },
   },
   computed: {
     crumbs() {
@@ -64,29 +62,16 @@ export default {
         });
       }
     },
-    async fetchData() {
+    async fetchInitialData() {
       this.profiles.splice(0, this.profiles.length);
       this.numResults = await idb.getNumResults({ storeName: STORE_PROFILES, filters: this.$refs.table.filters });
-      this.fetchMoreData();
     },
-    checkIfNeedData(event) {
-      if (this.profiles.length < this.numProfiles && this.profiles.length < this.$refs.table.perPage * (event - 1) + 1) {
-        this.fetchMoreData();
-      }
-    },
-    async fetchMoreData() {
+    async fetchRows() {
       let items = await idb.getStoreResults({ storeName: STORE_PROFILES, filters: this.$refs.table.filters, offset: this.profiles.length, numRows: 100 });
       for (let i in items) {
         await idb.addProfileChildrenCounts(items[i]);
       }
-      this.profiles.push(...items);
-      this.$nextTick(async function() {
-        if (this.$refs.table.items.length < this.$refs.table.perPage) {
-          if (this.profiles.length < this.numResults) {
-            await this.fetchMoreData();
-          }
-        }
-      });
+      return items;
     },
     addProfilePrompt() {
       this.$bvModal.show('addProfileModal');
@@ -102,7 +87,7 @@ export default {
         generatedBy: 'user',
       };
       await idb.storeProfile(profile, {});
-      this.fetchData();
+      this.fetchInitialData();
     },
     openProfile({ item, index, event }) {
       this.$router.push({ name: 'profile', params: { id: item.id } });

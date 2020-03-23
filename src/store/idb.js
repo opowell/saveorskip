@@ -971,6 +971,7 @@ async function getCursor(query) {
     return out;
   } catch (e) {
     console.log('error getting cursor', e, query);
+    debugger;
   }
 }
 
@@ -1040,9 +1041,7 @@ export async function deleteIndex(storeName, keyPathName) {
   setDBPromise(newDBPromise);
 }
 
-export async function getStoreResults({ storeName, filters, offset, numRows, newestFirst }) {
-  let out = [];
-
+function getQueryFromFilters(filters, storeName) {
   let query = {
     keyPath: [],
     lowerBounds: [],
@@ -1052,12 +1051,34 @@ export async function getStoreResults({ storeName, filters, offset, numRows, new
   if (filters != null) {
     for (let i = 0; i < filters.length; i++) {
       let filter = filters[i];
+      if (filter == null) {
+        continue;
+      }
       query.keyPath.push(filter.field);
-      query.lowerBounds.push(filter.lowerValue);
-      query.upperBounds.push(filter.upperValue);
+      let lv = filter.lowerValue;
+      if (lv == 'undefined' || lv === '' || lv == null) {
+        lv = -Infinity;
+      }
+      let uv = filter.upperValue;
+      if (uv == 'undefined' || uv === '' || uv == null) {
+        uv = [Infinity, Infinity, Infinity];
+      }
+      if (!isNaN(+lv)) {
+        lv = +lv;
+      }
+      if (!isNaN(+uv)) {
+        uv = +uv;
+      }
+      query.lowerBounds.push(lv);
+      query.upperBounds.push(uv);
     }
   }
+  return query;
+}
 
+export async function getStoreResults({ storeName, filters, offset, numRows, newestFirst }) {
+  let out = [];
+  let query = getQueryFromFilters(filters, storeName);
   let cursor = await getCursor(query);
   if (cursor == null) {
     console.log('error getting cursor for ', query);
@@ -1089,21 +1110,7 @@ export async function getStoreResults({ storeName, filters, offset, numRows, new
 }
 
 export async function getNumResults({ storeName, filters }) {
-  let query = {
-    keyPath: [],
-    lowerBounds: [],
-    upperBounds: [],
-    storeName,
-  };
-  if (filters != null) {
-    for (let i = 0; i < filters.length; i++) {
-      let filter = filters[i];
-      query.keyPath.push(filter.field);
-      query.lowerBounds.push(filter.lowerValue);
-      query.upperBounds.push(filter.upperValue);
-    }
-  }
-
+  let query = getQueryFromFilters(filters, storeName);
   let index = await getIndex(query);
   if (index == null) {
     console.log('error getting index for ', query);
@@ -1111,16 +1118,21 @@ export async function getNumResults({ storeName, filters }) {
     return -1;
   }
 
-  let keyRng = IDBKeyRange.bound(query.lowerBounds, query.upperBounds);
-  let out = index.count(keyRng);
+  try {
+    let keyRng = IDBKeyRange.bound(query.lowerBounds, query.upperBounds);
+    let out = index.count(keyRng);
+    return out;
+  } catch (e) {
+    console.log('error getting numResults', e, storeName, filters);
+    debugger;
+  }
 
-  return out;
+  return -1;
 }
 
-export async function getIndices({ offset, numRows }) {
+export async function getIndices({ offset, numRows, storeNames }) {
   let out = [];
   const db = await getDBPromise();
-  const storeNames = [STORE_PROFILES, STORE_SOURCES, STORE_LINKS];
   let indices = [];
   for (let s in storeNames) {
     let storeName = storeNames[s];

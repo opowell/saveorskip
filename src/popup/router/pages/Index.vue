@@ -92,7 +92,7 @@ import { convertId } from '../../../Utils.js';
 
 export default {
   async mounted() {
-    let loadedProfiles = await idb.fetchProfiles([{ field: 'generatedBy', operator: 'eq', value: 'user' }]);
+    let loadedProfiles = await idb.fetchProfiles([{ field: 'generatedBy', lowerValue: 'user', upperValue: 'user' }]);
     console.log('found ' + loadedProfiles);
     this.profiles.push(...loadedProfiles);
     if (!this.hasValidTarget && this.profiles.length > 0) {

@@ -1,16 +1,45 @@
 <template>
   <div style="display: flex; flex-direction: column; height: 100%; background-color: #f8f8f8;">
-    <b-modal id="addFilterModal" title="Add/Edit Filter" @ok="addFilter" no-fade size="lg">
-      <div>
-        <input ontabindex="1" id="addFilterLowerValue" type="text" v-on:keyup.enter="addFilter" />
-        <span>&le;</span>
+    <!-- Edit Filters/Sort modal -->
+    <b-modal id="editFiltersModal" title="Edit Filters / Sort" @ok="saveFilters" no-fade size="lg">
+      <div style="margin-bottom: 1rem;">
+        Results are sorted and filtered by the following fields, in the order that they appear in this list. Bounds are inclusive. Drag and drop to re-arrange order. See
+        <a href="https://w3c.github.io/IndexedDB/#key-construct" target="_blank">W3C docs</a>.
+      </div>
+      <div
+        v-for="(filter, index) in tempFilters"
+        :key="index + filter.field"
+        class="filterRow"
+        draggable="true"
+        @dragstart="handleDragStart($event, index)"
+        @dragenter="modalHandleDragEnter($event, index)"
+        @dragover="handleDragOver($event)"
+      >
+        <span>{{ filter.field }}: </span>
+        <span>
+          <input @dragstart.stop.prevent draggable="true" ontabindex="1" id="addFilterLowerValue" type="text" v-on:keyup.enter="saveFilters" v-model="filter.lowerValue" />
+          -
+          <input @dragstart.stop.prevent draggable="true" ontabindex="2" id="addFilterUpperValue" type="text" v-on:keyup.enter="saveFilters" v-model="filter.upperValue" />
+        </span>
+        <button @click="deleteFilter(index)" title="Delete this filter.">X</button>
+      </div>
+      <hr />
+      <div class="mt-3" style="display: flex; align-items: baseline;">
         <select id="addFilterField">
-          <option v-for="(fieldName, index) in fieldNames" :key="index" :value="fieldName.key" :selected="addFilterField === fieldName.key">
+          <option v-for="(fieldName, index) in nonFilteredFieldNames" :key="index" :value="fieldName.key">
             {{ fieldName.label }}
           </option>
         </select>
-        <span>&le;</span>
-        <input ontabindex="2" id="addFilterUpperValue" type="text" v-on:keyup.enter="addFilter" />
+        <button @click="addFilter" :disabled="nonFilteredFieldNames.length === 0">Add Filter</button>
+      </div>
+      <div>
+        Load preset:
+        <select v-model="selectedIndex">
+          <option v-for="(preset, index) in indices" :key="displayIndex(preset)" :value="preset">
+            {{ displayIndex(preset) }}
+          </option>
+        </select>
+        <button @click="loadIndex" :disabled="indices.length === 0">Load</button>
       </div>
     </b-modal>
     <!-- User Interface controls -->
@@ -21,18 +50,31 @@
           class="filter"
           v-for="(filter, index) in filters"
           :key="index + ',' + filterToString(filter)"
-          @click="editFilter(index)"
+          @click="editFilters"
           draggable="true"
           @dragstart="handleDragStart($event, index)"
           @dragenter="handleDragEnter($event, index)"
           @drop="handleDrop($event)"
           @dragover="handleDragOver($event)"
         >
-          <span v-if="filter.lowerValue" style="color: red">{{ filter.lowerValue }}</span>
-          <span v-if="filter.lowerValue" style="color: grey">&le;</span>
           <span style="color: green">{{ filterLabel(filter.field) }}</span>
-          <span v-if="filter.upperValue" style="color: grey">&le;</span>
-          <span v-if="filter.upperValue" style="color: red">{{ filter.upperValue }}</span>
+          <span v-if="filter.lowerValue === '' && filter.upperValue === ''" />
+          <span v-else-if="filter.lowerValue == null && filter.upperValue == null" />
+          <span v-else-if="filter.lowerValue === 'undefined' && filter.upperValue === 'undefined'" />
+          <span v-else-if="filter.lowerValue === filter.upperValue"
+            ><span style="color: grey">=</span><span style="color: red"> {{ filter.upperValue }}</span>
+          </span>
+          <span v-else-if="filter.lowerValue == ''"
+            ><span style="color: grey">&le;</span><span style="color: red"> {{ filter.upperValue }}</span>
+          </span>
+          <span v-else-if="filter.upperValue == ''"
+            ><span style="color: grey">&ge;</span><span style="color: red"> {{ filter.lowerValue }}</span>
+          </span>
+          <span v-else>
+            <span style="color: red">{{ filter.lowerValue }}</span>
+            <span style="color: grey"> - </span>
+            <span style="color: red">{{ filter.upperValue }}</span>
+          </span>
         </span>
       </div>
       <div style="flex: 1 1 auto">&nbsp;</div>
@@ -44,7 +86,7 @@
         <span v-show="!hasSelection" style="display: flex">
           <slot name="header"></slot>
           <button v-if="showAddComputed" @click="addItemPrompt">{{ addItemText }}</button>
-          <button @click="openFilter">Add Filter...</button>
+          <button @click="editFilters">Edit Filters...</button>
           <button v-if="!isObjArray" @click="duplicate">Duplicate</button>
           <button v-if="!isObjArray" @click="deleteObject" title="Delete this object.">Delete...</button>
           <button v-if="!isObjArray" title="Save the changes to this object." :disabled="!changesPending" :class="{ 'btn-primary': changesPending }" @click="saveObject">
@@ -62,8 +104,6 @@
     >
     </div> -->
     <b-table
-      :sort-by="sortBy"
-      :sort-desc="sortDesc"
       ref="table"
       :hover="hoverRows"
       show-empty
@@ -96,7 +136,7 @@
       </template>
 
       <template v-slot:head()="data">
-        <span class="table-header" @click.prevent.stop="openFilter(data)">{{ data.label }}</span>
+        <span class="table-header" @click.prevent.stop="editFilters(data)">{{ data.label }}</span>
       </template>
 
       <template v-slot:cell(__checkbox)="data">
@@ -157,10 +197,8 @@
       </template>
     </b-table>
     <div style="display: flex; padding: 1rem; background-color: rgb(226, 226, 226); width: 100%; align-items: baseline;">
-      <b-pagination v-model="currentPage" :total-rows="totalRowsAdj" :per-page="perPage" aria-controls="my-table" style="margin: 0px;" @change="pageChanged" />
-      <span style="flex: 1 1 auto; margin-left: 1em;">
-        {{ 1 + (currentPage - 1) * perPage }} - {{ Math.min(currentPage * perPage, numRows) }} / {{ numRows }} ({{ totalRowsAdj }})
-      </span>
+      <b-pagination v-model="currentPage" :total-rows="numRows" :per-page="perPage" aria-controls="my-table" style="margin: 0px;" @change="pageChanged" />
+      <span style="flex: 1 1 auto; margin-left: 1em;"> {{ 1 + (currentPage - 1) * perPage }} - {{ Math.min(currentPage * perPage, numRows) }} / {{ numRows }} </span>
       <span>
         <select v-model="perPage">
           <option value="50">50</option>
@@ -176,6 +214,7 @@
 <script>
 import Vue from 'vue';
 import ObjectsTableCell from './ObjectsTableCell.vue';
+import * as idb from '../../../store/idb.js';
 
 export default {
   components: {
@@ -206,6 +245,15 @@ export default {
     hoverProp: Boolean,
     totalRows: Number,
     addItemText: String,
+    numResults: Number,
+    fetchDataFn: Function,
+    storeNames: Array,
+    displayIndexFn: Function,
+  },
+  watch: {
+    currentPage: async function() {
+      await this.checkIfNeedData();
+    },
   },
   async mounted() {
     let str = this.$route.query.filters;
@@ -220,11 +268,15 @@ export default {
       }
       for (let i in filtersStrs) {
         let filterObj = this.stringToFilter(filtersStrs[i]);
+        if (filterObj === null) {
+          continue;
+        }
         this.filters.push(filterObj);
       }
     }
 
-    this.callFetchData();
+    await this.callFetchData();
+    await this.fetchIndices();
   },
   data() {
     return {
@@ -234,7 +286,6 @@ export default {
       selection: [],
       selectableProp: '',
       showColFilters: false,
-      addFilterField: '',
       filters: [],
       perPage: 50,
       currentPage: 1,
@@ -242,20 +293,43 @@ export default {
       tableBusy: false,
       curDragFilterIndex: -1,
       redrawAfterDrop: false,
+      tempFilters: [],
+      indices: [],
+      selectedIndex: null,
     };
   },
   methods: {
+    loadIndex() {
+      this.tempFilters.splice(0, this.tempFilters.length);
+      for (let i in this.selectedIndex.tokens) {
+        this.tempFilters.push({
+          field: this.selectedIndex.tokens[i],
+        });
+      }
+    },
+    displayIndex(index) {
+      if (this.displayIndexFn != null) {
+        return this.displayIndexFn(index);
+      }
+      return index.keyPath;
+    },
+    async fetchIndices() {
+      if (this.storeNames != null) {
+        this.indices.splice(0, this.indices.length);
+        this.indices = await idb.getIndices({ offset: 0, numRows: 100, storeNames: this.storeNames });
+      }
+    },
     stringToFilter(string) {
       let tokens = string.split(',');
       if (tokens.length !== 3) {
         return null;
       }
       let lowerValue = tokens[0];
-      if (!isNaN(+lowerValue)) {
+      if (lowerValue !== '' && !isNaN(+lowerValue)) {
         lowerValue = +lowerValue;
       }
       let upperValue = tokens[2];
-      if (!isNaN(+upperValue)) {
+      if (upperValue !== '' && !isNaN(+upperValue)) {
         upperValue = +upperValue;
       }
       let filterObj = {
@@ -267,9 +341,9 @@ export default {
     },
     filterToString(filter) {
       let out = '';
-      out += filter.lowerValue + ',';
+      out += (filter.lowerValue == null ? '' : filter.lowerValue) + ',';
       out += filter.field;
-      out += ',' + filter.upperValue;
+      out += ',' + (filter.upperValue == null ? '' : filter.upperValue);
       return out;
     },
     handleDragEnter(e, index) {
@@ -300,6 +374,22 @@ export default {
     handleDragOver(e) {
       e.preventDefault();
     },
+    modalHandleDragEnter(e, index) {
+      if (e.target.getAttribute('draggable') !== 'true') {
+        return;
+      }
+      if (e.preventDefault) {
+        e.preventDefault(); // Necessary. Allows us to drop.
+      }
+      e.dataTransfer.dropEffect = 'move'; // See the section on the DataTransfer object.
+      if (this.curDragFilterIndex !== index) {
+        let filter = this.tempFilters.splice(this.curDragFilterIndex, 1)[0];
+        this.tempFilters.splice(index, 0, filter);
+        this.redrawAfterDrop = true;
+        this.curDragFilterIndex = index;
+      }
+      return false;
+    },
     async callFetchData() {
       if (typeof this.fetchData === 'function') {
         this.status = 'Loading...';
@@ -312,6 +402,15 @@ export default {
     clearSelection() {
       this.$refs.table.clearSelected();
       document.getElementById('checkBoxHeader').checked = false;
+    },
+    async checkIfNeedData() {
+      if (this.items.length < this.numResults && this.items.length < this.perPage * (this.currentPage - 1) + 1) {
+        let newItems = await this.fetchDataFn();
+        this.items.push(...newItems);
+        this.$nextTick(async function() {
+          this.checkIfNeedData();
+        });
+      }
     },
     tryDecodeURIComponent(text) {
       try {
@@ -331,48 +430,32 @@ export default {
       }
       return key;
     },
-    filterSymbol(operator) {
-      switch (operator) {
-        case 'lt':
-          return '&lt;';
-        case 'le':
-          return '&le;';
-      }
-    },
-    filterFunction(rowData, filters) {
-      for (let i in filters) {
-        let filter = filters[i];
-        if (filter.field == null) {
-          continue;
-        }
-        if (filter.value == null) {
-          continue;
-        }
-        if (rowData[filter.field] == null) {
-          return false;
-        }
-        let x = rowData[filter.field];
-        switch (filter.operator) {
-          case 'lt':
-            if (x >= filter.value) {
-              return false;
-            }
-            break;
-          case 'le':
-            if (x > filter.value) {
-              return false;
-            }
-            break;
+    editFilters(data) {
+      this.tempFilters.splice(0, this.tempFilters.length);
+      let addFilter = data != null && data.column != null;
+      for (let i in this.filters) {
+        let filterCopy = {};
+        filterCopy.field = this.filters[i].field;
+        filterCopy.lowerValue = this.filters[i].lowerValue;
+        filterCopy.upperValue = this.filters[i].upperValue;
+        this.tempFilters.push(filterCopy);
+        if (addFilter && filterCopy.field === data.column) {
+          addFilter = false;
         }
       }
-      return true;
+      if (addFilter) {
+        let newFilter = {
+          field: data.column,
+        };
+        this.tempFilters.push(newFilter);
+      }
+      this.$bvModal.show('editFiltersModal');
     },
-    openFilter(data) {
-      this.addFilterField = data.column;
-      this.$bvModal.show('addFilterModal');
-      Vue.nextTick(function() {
-        document.getElementById('addFilterValue').focus();
-      });
+    addBlankFilter() {
+      let newFilter = {
+        field: this.nonFilteredFieldNames[0].key,
+      };
+      this.tempFilters.push(newFilter);
     },
     updateFilterQuery() {
       let path = window.location.hash;
@@ -397,42 +480,43 @@ export default {
         this.$router.push(path + filtersStr);
       } catch (err) {}
     },
-    editFilter(index) {
-      let filter = this.filters[index];
-      this.addFilterField = filter.field;
-      this.$bvModal.show('addFilterModal');
-      Vue.nextTick(function() {
-        document.getElementById('addFilterValue').focus();
-      });
+    saveFilters() {
+      this.$bvModal.hide('editFiltersModal');
+      this.filters.splice(0, this.filters.length);
+      this.filters.push(...this.tempFilters);
+      this.updateFilterQuery();
+    },
+    deleteFilter(index) {
+      this.tempFilters.splice(index, 1);
     },
     addFilter() {
-      this.$bvModal.hide('addFilterModal');
+      // this.$bvModal.hide('editFiltersModal');
       let filter = {
         field: document.getElementById('addFilterField').value,
       };
-      let lowerValue = document.getElementById('addFilterLowerValue').value;
-      if (lowerValue !== '') {
-        if (!isNaN(lowerValue)) {
-          lowerValue = +lowerValue;
-        }
-        filter.lowerValue = lowerValue;
-        filter.lowerOperator = document.getElementById('addFilterLowerOperator').value;
-      }
-      let upperValue = document.getElementById('addFilterUpperValue').value;
-      if (upperValue !== '') {
-        if (!isNaN(upperValue)) {
-          upperValue = +upperValue;
-        }
-        filter.upperValue = upperValue;
-        filter.upperOperator = document.getElementById('addFilterUpperOperator').value;
-      }
+      // let lowerValue = document.getElementById('addFilterLowerValue').value;
+      // if (lowerValue !== '') {
+      //   if (!isNaN(lowerValue)) {
+      //     lowerValue = +lowerValue;
+      //   }
+      //   filter.lowerValue = lowerValue;
+      //   filter.lowerOperator = document.getElementById('addFilterLowerOperator').value;
+      // }
+      // let upperValue = document.getElementById('addFilterUpperValue').value;
+      // if (upperValue !== '') {
+      //   if (!isNaN(upperValue)) {
+      //     upperValue = +upperValue;
+      //   }
+      //   filter.upperValue = upperValue;
+      //   filter.upperOperator = document.getElementById('addFilterUpperOperator').value;
+      // }
 
-      if (filter.upperValue == null && filter.lowerValue == null) {
-        return;
-      }
+      // if (filter.upperValue == null && filter.lowerValue == null) {
+      //   return;
+      // }
 
-      this.filters.push(filter);
-      this.updateFilterQuery();
+      this.tempFilters.push(filter);
+      // this.updateFilterQuery();
     },
     pageChanged(event) {
       this.$emit('pageChanged', event);
@@ -643,12 +727,18 @@ export default {
         key,
         label,
         class: 'table-cell',
-        sortable: true,
+        sortable: false,
       };
       return field;
     },
   },
   computed: {
+    numRows() {
+      if (this.numResults == null) {
+        return this.items.length;
+      }
+      return this.numResults;
+    },
     hoverRows() {
       if (this.hoverProp == null) {
         return this.isObjArray;
@@ -670,9 +760,6 @@ export default {
     },
     hasSelection() {
       return this.selection.length > 0;
-    },
-    numRows() {
-      return this.items.length;
     },
     selectedRows() {
       let out = [];
@@ -709,12 +796,6 @@ export default {
         }
       }
       return out;
-    },
-    totalRowsAdj() {
-      if (this.totalRows == null) {
-        return this.items.length;
-      }
-      return this.totalRows;
     },
     sortOptions() {
       // Create an options list from our fields
@@ -761,20 +842,36 @@ export default {
           key: 'name',
           label: 'Name',
           class: ['table-cell', 'narrow'],
-          sortable: true,
+          sortable: false,
         });
         out.push({
           key: 'value',
           label: 'Value',
           class: 'table-cell',
-          sortable: true,
+          sortable: false,
         });
         out.push({
           key: 'description',
           label: 'Description',
           class: 'table-cell',
-          sortable: true,
+          sortable: false,
         });
+      }
+      return out;
+    },
+    nonFilteredFieldNames() {
+      let out = [];
+      for (let i in this.fieldNames) {
+        let alreadyFiltered = false;
+        for (let j in this.tempFilters) {
+          if (this.tempFilters[j].field === this.fieldNames[i].key) {
+            alreadyFiltered = true;
+            break;
+          }
+        }
+        if (!alreadyFiltered) {
+          out.push(this.fieldNames[i]);
+        }
       }
       return out;
     },
@@ -855,6 +952,14 @@ export default {
 </style>
 
 <style>
+.filterRow {
+  padding: 5px 2px;
+}
+
+.filterRow:hover {
+  background-color: #ddd;
+}
+
 .filter {
   background-color: #f7f7f7;
   border-radius: 3px;
@@ -897,6 +1002,7 @@ th {
 }
 .table-header:hover {
   background-color: rgba(118, 200, 255, 0.308);
+  cursor: pointer;
 }
 
 button {

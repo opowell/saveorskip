@@ -38,7 +38,7 @@
 <script>
 import ObjectsTable from '../components/ObjectsTable.vue';
 import * as idb from '../../../store/idb.js';
-import { INDEX_STORES, KEYPATH_SEPARATOR } from '../../../store/Constants.ts';
+import { INDEX_STORES, STORE_LINKS, STORE_PROFILES, STORE_SOURCES } from '../../../store/Constants.ts';
 
 export default {
   name: 'Indices',
@@ -111,7 +111,8 @@ export default {
       }
     },
     async fetchMoreData() {
-      let items = await idb.getIndices({ offset: this.indices.length, numRows: 100 });
+      const storeNames = [STORE_PROFILES, STORE_SOURCES, STORE_LINKS];
+      let items = await idb.getIndices({ offset: this.indices.length, numRows: 100, storeNames });
       this.indices.push(...items);
       this.$nextTick(async function() {
         if (this.$refs.table.items.length < this.$refs.table.perPage) {

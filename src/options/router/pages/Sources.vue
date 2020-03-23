@@ -78,7 +78,7 @@ export default {
     async fetchMoreData() {
       let items = await idb.getStoreResults({
         storeName: STORE_SOURCES,
-        filters: [{ field: 'consumerId', operator: 'eq', value: this.profile.id }, ...this.$refs.table.filters],
+        filters: [{ field: 'consumerId', lowerValue: this.profile.id, upperValue: this.profile.id }, ...this.$refs.table.filters],
         offset: this.sources.length,
         numRows: 100,
       });

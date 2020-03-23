@@ -24,6 +24,11 @@
       :givenCols="['saved', 'url', 'title', 'timeAdded']"
       :fetchData="fetchData"
       :addItemText="'Add Link...'"
+      :numResults="numResults"
+      :fetchDataFn="fetchDataFn"
+      :storeNames="['links']"
+      :displayIndexFn="displayIndexFn"
+      :selectable="true"
     />
   </div>
 </template>
@@ -60,30 +65,37 @@ export default {
         });
       }
     },
-
+    displayIndexFn(index) {
+      let tokens = index.keyPath.split('_');
+      tokens.splice(0, 1);
+      let out = tokens.join(',');
+      index.tokens = tokens;
+      return out;
+    },
     async fetchData() {
+      this.profile = await idb.getProfile(this.profileId);
       this.links.splice(0, this.links.length);
       let resultsFilters = [{ field: 'profileId', lowerValue: this.profileId, upperValue: this.profileId }, ...this.$refs.table.filters];
       this.numResults = await idb.getNumResults({ storeName: STORE_LINKS, filters: resultsFilters });
       this.fetchMoreData();
-      this.profile = await idb.getProfile(this.profileId);
     },
     checkIfNeedData(event) {
-      if (this.links.length < this.numLinks && this.links.length < this.$refs.table.perPage * (event - 1) + 1) {
+      if (this.links.length < this.numResults && this.links.length < this.$refs.table.perPage * (event - 1) + 1) {
         this.fetchMoreData();
       }
     },
+    async fetchDataFn() {
+      let resultsFilters = [{ field: 'profileId', lowerValue: this.profileId, upperValue: this.profileId }, ...this.$refs.table.filters];
+      let items = await idb.getStoreResults({ storeName: STORE_LINKS, filters: resultsFilters, offset: this.links.length, numRows: 100 });
+      return items;
+    },
     async fetchMoreData() {
-      let resultsFilters = [{ field: 'profileId', operator: 'eq', value: this.profileId }, ...this.$refs.table.filters];
+      let resultsFilters = [{ field: 'profileId', lowerValue: this.profileId, upperValue: this.profileId }, ...this.$refs.table.filters];
 
       let items = await idb.getStoreResults({ storeName: STORE_LINKS, filters: resultsFilters, offset: this.links.length, numRows: 100 });
       this.links.push(...items);
       this.$nextTick(async function() {
-        if (this.$refs.table.items.length < this.$refs.table.perPage) {
-          if (this.links.length < this.numResults) {
-            await this.fetchMoreData();
-          }
-        }
+        this.checkIfNeedData();
       });
     },
 
@@ -112,9 +124,6 @@ export default {
     },
   },
   computed: {
-    numLinks() {
-      return Object.keys(this.links).length;
-    },
     profileId() {
       return convertId(this.$route.params.id);
     },

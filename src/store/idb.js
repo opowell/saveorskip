@@ -963,7 +963,7 @@ async function getCursor(query) {
     let cursor;
     if (query.lowerBounds.length > 0) {
       let keyRng = IDBKeyRange.bound(query.lowerBounds, query.upperBounds);
-      cursor = await index.openCursor(keyRng);
+      cursor = await index.openCursor(keyRng, query.direction);
     } else {
       cursor = await index.openCursor();
     }
@@ -1041,13 +1041,19 @@ export async function deleteIndex(storeName, keyPathName) {
   setDBPromise(newDBPromise);
 }
 
-function getQueryFromFilters(filters, storeName) {
+function getQueryFromFilters(filters, storeName, sortOrder) {
   let query = {
     keyPath: [],
     lowerBounds: [],
     upperBounds: [],
     storeName,
+    direction: 'next',
   };
+
+  if (sortOrder === 'decreasing') {
+    query.direction = 'prev';
+  }
+
   if (filters != null) {
     for (let i = 0; i < filters.length; i++) {
       let filter = filters[i];
@@ -1076,9 +1082,9 @@ function getQueryFromFilters(filters, storeName) {
   return query;
 }
 
-export async function getStoreResults({ storeName, filters, offset, numRows, newestFirst }) {
+export async function getStoreResults({ storeName, filters, offset, numRows, newestFirst, sortOrder }) {
   let out = [];
-  let query = getQueryFromFilters(filters, storeName);
+  let query = getQueryFromFilters(filters, storeName, sortOrder);
   let cursor = await getCursor(query);
   if (cursor == null) {
     console.log('error getting cursor for ', query);

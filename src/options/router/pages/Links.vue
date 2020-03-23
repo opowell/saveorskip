@@ -92,7 +92,7 @@ export default {
     async fetchMoreData() {
       let resultsFilters = [{ field: 'profileId', lowerValue: this.profileId, upperValue: this.profileId }, ...this.$refs.table.filters];
 
-      let items = await idb.getStoreResults({ storeName: STORE_LINKS, filters: resultsFilters, offset: this.links.length, numRows: 100 });
+      let items = await idb.getStoreResults({ storeName: STORE_LINKS, filters: resultsFilters, offset: this.links.length, numRows: 100, sortOrder: this.$refs.table.sortOrder });
       this.links.push(...items);
       this.$nextTick(async function() {
         this.checkIfNeedData();

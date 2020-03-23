@@ -10,7 +10,7 @@
         v-for="(filter, index) in tempFilters"
         :key="index + filter.field"
         class="filterRow"
-        draggable="true"
+        :draggable="tempFilters.length > 1"
         @dragstart="handleDragStart($event, index)"
         @dragenter="modalHandleDragEnter($event, index)"
         @dragover="handleDragOver($event)"
@@ -22,6 +22,23 @@
           <input @dragstart.stop.prevent draggable="true" ontabindex="2" id="addFilterUpperValue" type="text" v-on:keyup.enter="saveFilters" v-model="filter.upperValue" />
         </span>
         <button @click="deleteFilter(index)" title="Delete this filter.">X</button>
+      </div>
+      <div class="mt-3" style="display: flex;">
+        <span class="mr-2">Sort order:</span>
+        <span>
+          <div>
+            <label for="increasing" style="display: flex; align-items: baseline">
+              <input type="radio" id="increasing" value="increasing" class="mr-1" v-model="tempSortOrder" />
+              Increasing
+            </label>
+          </div>
+          <div>
+            <label for="decreasing" style="display: flex; align-items: baseline">
+              <input type="radio" id="decreasing" value="decreasing" class="mr-1" v-model="tempSortOrder" />
+              Decreasing
+            </label>
+          </div>
+        </span>
       </div>
       <hr />
       <div class="mt-3" style="display: flex; align-items: baseline;">
@@ -45,12 +62,12 @@
     <!-- User Interface controls -->
     <div style="display: flex; align-items: baseline; flex: 0 0 auto; padding: 1em; background-color: rgb(226, 226, 226);">
       <b-breadcrumb :items="crumbs" />
-      <div style="display: flex;">
+      <div class="query" style="display: flex; align-items: baseline;" @click="editFilters">
         <span
           class="filter"
+          :class="{ filterMovable: tempFilters.length > 1 }"
           v-for="(filter, index) in filters"
           :key="index + ',' + filterToString(filter)"
-          @click="editFilters"
           draggable="true"
           @dragstart="handleDragStart($event, index)"
           @dragenter="handleDragEnter($event, index)"
@@ -76,6 +93,7 @@
             <span style="color: red">{{ filter.upperValue }}</span>
           </span>
         </span>
+        <span v-show="filters.length > 0" style="margin-left: 0.4rem; margin-right: 0.4rem; color: grey;" v-html="sortOrder === 'decreasing' ? '&#9660;' : '&#9650;'" />
       </div>
       <div style="flex: 1 1 auto">&nbsp;</div>
       <div>
@@ -97,12 +115,6 @@
       </div>
     </div>
     <!-- Main table element -->
-    <!-- responsive='true' -->
-    <!-- <div style="flex: 1 1 auto; align-items: flex-start;"> -->
-    <!-- <div
-      style="display: flex; flex-direction: column; margin-right: 0em; margin-top: 0rem !important; max-height: unset; flex: 1 1 auto; align-items: flex-start; align-self: flex-start; margin-bottom: 0px; width: 100%;"
-    >
-    </div> -->
     <b-table
       ref="table"
       :hover="hoverRows"
@@ -254,6 +266,9 @@ export default {
     currentPage: async function() {
       await this.checkIfNeedData();
     },
+    sortOrder: async function() {
+      this.updateFilterQuery();
+    },
   },
   async mounted() {
     let str = this.$route.query.filters;
@@ -274,7 +289,14 @@ export default {
         this.filters.push(filterObj);
       }
     }
+    let sortStr = this.$route.query.sort;
+    if (sortStr === 'decr') {
+      this.sortOrder = 'decreasing';
+    } else {
+      this.sortOrder = 'increasing';
+    }
 
+    this.currentPage = 1;
     await this.callFetchData();
     await this.fetchIndices();
   },
@@ -296,6 +318,8 @@ export default {
       tempFilters: [],
       indices: [],
       selectedIndex: null,
+      sortOrder: 'increasing',
+      tempSortOrder: 'increasing',
     };
   },
   methods: {
@@ -407,6 +431,7 @@ export default {
       if (this.items.length < this.numResults && this.items.length < this.perPage * (this.currentPage - 1) + 1) {
         let newItems = await this.fetchDataFn();
         this.items.push(...newItems);
+        this.$refs.table.refresh();
         this.$nextTick(async function() {
           this.checkIfNeedData();
         });
@@ -449,6 +474,9 @@ export default {
         };
         this.tempFilters.push(newFilter);
       }
+
+      this.tempSortOrder = this.sortOrder;
+
       this.$bvModal.show('editFiltersModal');
     },
     addBlankFilter() {
@@ -472,51 +500,36 @@ export default {
       let filtersStr = '';
       if (this.filters.length > 0) {
         filtersStr = '?filters=';
+        let filterStrs = [];
         for (let i in this.filters) {
-          filtersStr += this.filterToString(this.filters[i]) + ']]';
+          filterStrs.push(this.filterToString(this.filters[i]));
         }
+        filtersStr += filterStrs.join(']]');
+      }
+      let sortStr = '';
+      if (filtersStr.length > 0 && this.sortOrder === 'decreasing') {
+        sortStr = '&sort=decr';
       }
       try {
-        this.$router.push(path + filtersStr);
+        this.$router.push(path + filtersStr + sortStr);
+        this.currentPage = 1;
       } catch (err) {}
     },
     saveFilters() {
       this.$bvModal.hide('editFiltersModal');
       this.filters.splice(0, this.filters.length);
       this.filters.push(...this.tempFilters);
+      this.sortOrder = this.tempSortOrder;
       this.updateFilterQuery();
     },
     deleteFilter(index) {
       this.tempFilters.splice(index, 1);
     },
     addFilter() {
-      // this.$bvModal.hide('editFiltersModal');
       let filter = {
         field: document.getElementById('addFilterField').value,
       };
-      // let lowerValue = document.getElementById('addFilterLowerValue').value;
-      // if (lowerValue !== '') {
-      //   if (!isNaN(lowerValue)) {
-      //     lowerValue = +lowerValue;
-      //   }
-      //   filter.lowerValue = lowerValue;
-      //   filter.lowerOperator = document.getElementById('addFilterLowerOperator').value;
-      // }
-      // let upperValue = document.getElementById('addFilterUpperValue').value;
-      // if (upperValue !== '') {
-      //   if (!isNaN(upperValue)) {
-      //     upperValue = +upperValue;
-      //   }
-      //   filter.upperValue = upperValue;
-      //   filter.upperOperator = document.getElementById('addFilterUpperOperator').value;
-      // }
-
-      // if (filter.upperValue == null && filter.lowerValue == null) {
-      //   return;
-      // }
-
       this.tempFilters.push(filter);
-      // this.updateFilterQuery();
     },
     pageChanged(event) {
       this.$emit('pageChanged', event);
@@ -960,18 +973,25 @@ export default {
   background-color: #ddd;
 }
 
-.filter {
+.query {
+  margin-left: 0.4rem;
+  border-radius: 2px;
   background-color: #f7f7f7;
-  border-radius: 3px;
-  padding: 2px 6px;
-  margin-left: 5px;
-  color: #444;
-  border: 1px solid #ddd;
 }
-.filter:hover {
-  cursor: pointer;
+
+.query:hover {
   background-color: #fff;
   border-color: #888;
+  cursor: pointer;
+}
+
+.filter {
+  padding: 2px 6px;
+  color: #444;
+}
+.filterMovable:hover {
+  cursor: move;
+  text-decoration: underline;
 }
 .table-cell {
   vertical-align: baseline !important;

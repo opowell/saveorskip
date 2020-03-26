@@ -12,7 +12,6 @@
     </b-modal>
     <objects-table
       ref="table"
-      :object="sources"
       @create="addSourcePrompt"
       @click="openSource"
       :colNamesToSkip="['consumerId']"
@@ -20,15 +19,13 @@
       :crumbs="crumbs"
       @deleteSelectedRows="deleteSources"
       :givenCols="['points', 'saved', 'providerId', 'timeAdded']"
-      sortBy="points"
-      :sortDesc="true"
-      :fetchData="fetchData"
       addItemText="Add Source..."
       :numResults="numResults"
-      :fetchDataFn="fetchDataFn"
       :storeNames="['sources']"
       :displayIndexFn="displayIndexFn"
       :selectable="true"
+      :fetchInitialData="fetchInitialData"
+      :fetchRows="fetchRows"
     />
   </div>
 </template>
@@ -65,39 +62,25 @@ export default {
         });
       }
     },
-
-    async fetchData() {
+    async fetchInitialData() {
       this.profile = await idb.getProfile(this.profileId);
-      this.sources.splice(0, this.sources.length);
       this.numResults = await idb.getNumResults({
         storeName: STORE_SOURCES,
         filters: [{ field: 'consumerId', lowerValue: this.profile.id, upperValue: this.profile.id }, ...this.$refs.table.filters],
       });
-      this.fetchMoreData();
     },
-    checkIfNeedData(event) {
-      if (this.sources.length < this.numResults && this.sources.length < this.$refs.table.perPage * (event - 1) + 1) {
-        this.fetchMoreData();
-      }
-    },
-    async fetchMoreData() {
+    async fetchRows() {
       let items = await idb.getStoreResults({
         storeName: STORE_SOURCES,
         filters: [{ field: 'consumerId', lowerValue: this.profile.id, upperValue: this.profile.id }, ...this.$refs.table.filters],
-        offset: this.sources.length,
+        offset: this.$refs.table.items.length,
         numRows: 100,
+        sortOrder: this.$refs.table.sortOrder,
       });
       // for (let i in items) {
       //   await idb.addProfileChildrenCounts(items[i]);
       // }
-      this.sources.push(...items);
-      this.$nextTick(async function() {
-        if (this.$refs.table.items.length < this.$refs.table.perPage) {
-          if (this.sources.length < this.numResults) {
-            await this.fetchMoreData();
-          }
-        }
-      });
+      return items;
     },
 
     addSourcePrompt() {
@@ -127,12 +110,6 @@ export default {
     },
   },
   computed: {
-    sources() {
-      return this.$store.state.sources;
-    },
-    numSources() {
-      return Object.keys(this.sources).length;
-    },
     profileId() {
       return convertId(this.$route.params.id);
     },

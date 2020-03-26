@@ -24,7 +24,6 @@
       :fetchRows="fetchRows"
       :givenCols="['saved', 'url', 'title', 'timeAdded']"
       :numResults="numResults"
-      :object="links"
       :selectable="true"
       :storeNames="['links']"
     />
@@ -45,7 +44,6 @@ export default {
   data() {
     return {
       profile: null,
-      links: [],
       numResults: 0,
     };
   },
@@ -67,13 +65,18 @@ export default {
     },
     async fetchInitialData() {
       this.profile = await idb.getProfile(this.profileId);
-      this.links.splice(0, this.links.length);
       let resultsFilters = [{ field: 'profileId', lowerValue: this.profileId, upperValue: this.profileId }, ...this.$refs.table.filters];
       this.numResults = await idb.getNumResults({ storeName: STORE_LINKS, filters: resultsFilters });
     },
     async fetchRows() {
       let resultsFilters = [{ field: 'profileId', lowerValue: this.profileId, upperValue: this.profileId }, ...this.$refs.table.filters];
-      let items = await idb.getStoreResults({ storeName: STORE_LINKS, filters: resultsFilters, offset: this.links.length, numRows: 100 });
+      let items = await idb.getStoreResults({
+        storeName: STORE_LINKS,
+        filters: resultsFilters,
+        offset: this.$refs.table.items.length,
+        numRows: 100,
+        sortOrder: this.$refs.table.sortOrder,
+      });
       return items;
     },
     addLinkPrompt() {

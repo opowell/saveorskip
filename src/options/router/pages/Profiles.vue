@@ -17,7 +17,6 @@
       :fetchRows="fetchRows"
       :givenCols="['timeAdded', 'Links', 'Sources', 'id', 'name']"
       :numResults="numResults"
-      :object="profiles"
       :selectable="true"
       :storeNames="['profiles']"
     >
@@ -36,7 +35,6 @@ export default {
   },
   data() {
     return {
-      profiles: [],
       numResults: 0,
     };
   },
@@ -63,11 +61,16 @@ export default {
       }
     },
     async fetchInitialData() {
-      this.profiles.splice(0, this.profiles.length);
       this.numResults = await idb.getNumResults({ storeName: STORE_PROFILES, filters: this.$refs.table.filters });
     },
     async fetchRows() {
-      let items = await idb.getStoreResults({ storeName: STORE_PROFILES, filters: this.$refs.table.filters, offset: this.profiles.length, numRows: 100 });
+      let items = await idb.getStoreResults({
+        storeName: STORE_PROFILES,
+        filters: this.$refs.table.filters,
+        offset: this.$refs.table.items.length,
+        numRows: 100,
+        sortOrder: this.$refs.table.sortOrder,
+      });
       for (let i in items) {
         await idb.addProfileChildrenCounts(items[i]);
       }

@@ -81,10 +81,10 @@
           <span v-else-if="filter.lowerValue === filter.upperValue"
             ><span style="color: grey">=</span><span style="color: red"> {{ filter.upperValue }}</span>
           </span>
-          <span v-else-if="filter.lowerValue == ''"
+          <span v-else-if="filter.lowerValue == '' || filter.lowerValue === undefined"
             ><span style="color: grey">&le;</span><span style="color: red"> {{ filter.upperValue }}</span>
           </span>
-          <span v-else-if="filter.upperValue == ''"
+          <span v-else-if="filter.upperValue == '' || filter.upperValue === undefined"
             ><span style="color: grey">&ge;</span><span style="color: red"> {{ filter.lowerValue }}</span>
           </span>
           <span v-else>
@@ -252,7 +252,12 @@ export default {
     ineditableColNames: Array,
     links: Object,
     numResults: Number,
-    object: [Object, Array],
+    object: {
+      default: () => {
+        return [];
+      },
+      type: [Object, Array],
+    },
     rowDescriptions: Object,
     rowLabels: Object,
     rowNamesToSkip: Array,
@@ -261,8 +266,6 @@ export default {
       default: true,
       type: Boolean,
     },
-    sortBy: String,
-    sortDesc: Boolean,
     storeNames: Array,
     thClass: String,
     totalRows: Number,
@@ -423,6 +426,7 @@ export default {
       return false;
     },
     async callFetchData() {
+      this.items.splice(0, this.items.length);
       this.status = 'Loading...';
       if (this.fetchInitialData) {
         this.tableBusy = true;
@@ -824,14 +828,6 @@ export default {
       }
       return out;
     },
-    sortOptions() {
-      // Create an options list from our fields
-      return this.fields
-        .filter(f => f.sortable)
-        .map(f => {
-          return { text: f.label, value: f.key };
-        });
-    },
     fieldNames() {
       let checkBoxField = {
         key: '__checkbox',
@@ -902,20 +898,6 @@ export default {
       }
       return out;
     },
-    // removableItems() {
-    //   let out = [];
-    //   for (let i in this.items) {
-    //     let keyField = this.items[i][this.itemKeyField];
-    //     if (this.ineditableRowNames.includes(keyField)) {
-    //       continue;
-    //     }
-    //     out.push({
-    //       key: keyField,
-    //       name: this.items[i][this.itemNameField],
-    //     });
-    //   }
-    //   return out;
-    // },
     items() {
       let out = [];
 

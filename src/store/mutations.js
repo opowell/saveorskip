@@ -1,7 +1,7 @@
 import * as types from './mutation-types';
 import Profile from '../models/Profile';
 import { Source } from '../models/Source';
-import { trimmedUrl } from '../Utils.js';
+import { trimmedUrl } from '../Utils.ts';
 
 /**
  * Mutations are synchronous.
@@ -10,14 +10,6 @@ export default {
   [types.LOAD_SCRAPERS](state, payload) {
     state.scrapers.splice(0, state.scrapers.length);
     state.scrapers.push(...payload);
-  },
-
-  [types.SET_CUR_URL_LINK_STATUS](state, payload) {
-    state.curUrlAsLink = payload;
-  },
-
-  [types.SET_CUR_URL_SOURCE_STATUS](state, payload) {
-    state.curUrlAsSource = payload;
   },
 
   [types.ADD_PROFILE_TO_SCRAPE](state, payload) {

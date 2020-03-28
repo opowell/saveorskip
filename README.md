@@ -4,7 +4,7 @@ Go "Forward" in your browser (get a new page recommendation). Turn any page into
 
 ## Installation
 
-1. Download extension: <a href='https://github.com/opowell/saveorskip/raw/master/dist-zip/saveorskip-v1.0.12.zip'>1.0.12</a>, released 2020.01.25.
+1. Download extension: <a href='https://github.com/opowell/saveorskip/raw/master/dist-zip/saveorskip-v1.0.14.zip'>1.0.14</a>, released 2020.03.28.
 2. Extract zip file contents.
 3. In Chrome, turn on Developer mode.
 4. Open Extensions page.

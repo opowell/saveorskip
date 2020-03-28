@@ -27,7 +27,7 @@
 <script>
 import ObjectsTable from '../components/ObjectsTable.vue';
 import * as idb from '../../../store/idb.js';
-import { STORE_PROFILES } from '../../../store/Constants.ts';
+import { STORE_PROFILES } from '../../../store/Constants.js';
 export default {
   name: 'Profiles',
   components: {

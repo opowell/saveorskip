@@ -12,10 +12,11 @@
 </template>
 
 <script>
-import { DB_NAME } from '../../../store/Constants.ts';
+import { DB_NAME } from '../../../store/Constants.js';
 import * as idb from '../../../store/idb.js';
 import { deleteDB } from 'idb';
 import ObjectsTable from '../components/ObjectsTable.vue';
+import { LINKS } from '../../Constants.ts';
 
 export default {
   name: 'Home',
@@ -68,7 +69,7 @@ export default {
     clickRow({ item, index, event }) {
       switch (item.name) {
         case 'Profiles':
-          this.$router.push('profiles?filters=user,generatedBy,user');
+          this.$router.push(LINKS.PROFILES);
           break;
         case 'Scrapers':
           this.$router.push('scrapers');

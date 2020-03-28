@@ -16,18 +16,6 @@ export const setCurPage = ({ commit }, payload) => {
   commit(types.SET_CUR_PAGE, payload);
 };
 
-export const setPopupProfile = ({ commit }, payload) => {
-  commit(types.SET_POPUP_PROFILE, payload);
-};
-
-export const setCurUrlLinkStatus = ({ commit }, payload) => {
-  commit(types.SET_CUR_URL_LINK_STATUS, payload);
-};
-
-export const setCurUrlSourceStatus = ({ commit }, payload) => {
-  commit(types.SET_CUR_URL_SOURCE_STATUS, payload);
-};
-
 export const setUrlToScrape = ({ commit }, payload) => {
   commit(types.SET_URL_TO_SCRAPE, payload);
 };

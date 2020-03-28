@@ -20,16 +20,15 @@
     </b-modal>
     <objects-table
       ref="table"
-      :object="indices"
       @create="addIndexPrompt"
-      :crumbs="crumbs"
       @deleteSelectedRows="deleteIndices"
-      :givenCols="['object', 'keyPath']"
-      :totalRows="numIndices"
-      @pageChanged="checkIfNeedData"
-      :fetchData="fetchData"
       :addItemText="'Add Index...'"
+      :crumbs="crumbs"
+      :fetchInitialData="fetchInitialData"
+      :fetchRows="fetchRows"
+      :givenCols="['object', 'keyPath']"
       :selectable="true"
+      :numResults="numResults"
     >
     </objects-table>
   </div>
@@ -38,7 +37,7 @@
 <script>
 import ObjectsTable from '../components/ObjectsTable.vue';
 import * as idb from '../../../store/idb.js';
-import { INDEX_STORES, STORE_LINKS, STORE_PROFILES, STORE_SOURCES } from '../../../store/Constants.ts';
+import { INDEX_STORES, STORE_LINKS, STORE_PROFILES, STORE_SOURCES } from '../../../store/Constants.js';
 
 export default {
   name: 'Indices',
@@ -47,9 +46,7 @@ export default {
   },
   data() {
     return {
-      indices: [],
-      cursor: null,
-      numIndices: 0,
+      numResults: 0,
       indexStores: INDEX_STORES,
       curKeyPath: [],
     };
@@ -100,27 +97,19 @@ export default {
       }
       this.fetchData();
     },
-    async fetchData() {
-      this.indices.splice(0, this.indices.length);
-      this.numLogs = await idb.getNumIndices();
-      this.fetchMoreData();
+    async fetchInitialData() {
+      this.numResults = await idb.getNumIndices({ filters: this.$refs.table.filters });
     },
-    checkIfNeedData(event) {
-      if (this.logs.length < this.numLogs && this.logs.length < this.$refs.table.perPage * (event - 1) + 1) {
-        this.fetchMoreData();
-      }
-    },
-    async fetchMoreData() {
+    async fetchRows() {
       const storeNames = [STORE_PROFILES, STORE_SOURCES, STORE_LINKS];
-      let items = await idb.getIndices({ offset: this.indices.length, numRows: 100, storeNames });
-      this.indices.push(...items);
-      this.$nextTick(async function() {
-        if (this.$refs.table.items.length < this.$refs.table.perPage) {
-          if (this.indices.length < this.numIndices) {
-            await this.fetchMoreData();
-          }
-        }
+      let items = await idb.getIndices({
+        filters: this.$refs.table.filters,
+        offset: this.$refs.table.items.length,
+        numRows: 100,
+        storeNames,
+        sortOrder: this.$refs.table.sortOrder,
       });
+      return items;
     },
   },
 };

@@ -1,5 +1,5 @@
 import { openDB } from 'idb';
-import { resetState } from '../store/index.js';
+import { resetState } from './index.js';
 import { storeProfile, addScraper, storeSource, addLog } from './idb.js';
 import RedditScraper from '../scrapers/reddit.js';
 import HackerNewsScraper from '../scrapers/hackernews.js';

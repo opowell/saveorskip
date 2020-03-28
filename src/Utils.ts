@@ -1,18 +1,18 @@
-export function convertId(id) {
+export function convertId(id: any) {
   if (isNaN(id)) {
     return id;
   }
   return Number.parseInt(id);
 }
 
-export function setIfNotNull(obj, field) {
-  if (obj[field] != null) {
-    eval(`obj[field] = ${obj[field]}`);
-  }
-}
+// export function setIfNotNull(obj: Object, field: string) {
+//   if (obj[field] != null) {
+//     eval(`obj[field] = ${obj[field]}`);
+//   }
+// }
 
 // eslint-disable-next-line no-unused-vars
-export function scoreFnHot(src) {
+export function scoreFnHot(src: any) {
   if (src.points < 1) {
     return 0;
   }
@@ -22,10 +22,10 @@ export function scoreFnHot(src) {
     return 0;
   }
 
-  return src.points / Math.pow((new Date() - new Date(src.lastSaved)) / (1000 * 60 * 60) + 2, 2);
+  return src.points / Math.pow((new Date().getTime() - new Date(src.lastSaved).getTime()) / (1000 * 60 * 60) + 2, 2);
 }
 
-export function scoreFnJustPoints(src) {
+export function scoreFnJustPoints(src: { points: number }) {
   let p = src.points - 0;
   if (p < 1) {
     return 0;
@@ -41,7 +41,7 @@ export function scoreFnJustPoints(src) {
   return p;
 }
 
-export function drawRandomElFromObject(object, scoreFn) {
+export function drawRandomElFromObject(object: Array<any> | Object, scoreFn: Function) {
   let sum = 0;
   console.log('DRAWING RANDOM ELEMENT');
   let keys = Object.keys(object);
@@ -94,7 +94,7 @@ export function drawRandomElFromObject(object, scoreFn) {
   return [selected, selectedInd];
 }
 
-export function trimmedUrl(url) {
+export function trimmedUrl(url: any) {
   if (url == null) {
     return null;
   }
@@ -113,7 +113,7 @@ export function trimmedUrl(url) {
   return url;
 }
 
-export function joinArray(array) {
+export function joinArray(array: Array<any>) {
   let out = '';
   for (let i = 0; i < array.length; i++) {
     out += JSON.stringify(array[i]) + '\n';

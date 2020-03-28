@@ -54,7 +54,8 @@
 <script>
 import ObjectsTable from '../components/ObjectsTable.vue';
 import * as idb from '../../../store/idb.js';
-import { convertId } from '../../../Utils.js';
+import { convertId } from '../../../Utils.ts';
+import { LINKS, Hrefs } from '../../Constants.ts';
 
 export default {
   name: 'Profile',
@@ -66,6 +67,7 @@ export default {
       getSuggestionStatus: '',
       getSuggestionResult: '',
       profile: null,
+      numResults: 0,
     };
   },
   methods: {
@@ -192,7 +194,7 @@ export default {
     },
     fieldLinks() {
       return {
-        Links: '#/profile/' + encodeURIComponent(this.$route.params.id) + '/links?filters=1,saved,1',
+        Links: '#/profile/' + encodeURIComponent(this.$route.params.id) + '/links?filters=,timeAdded,&sort=decr',
         Sources: '#/profile/' + encodeURIComponent(this.$route.params.id) + '/sources',
         Logs: '#/logs?filters=Profile,objectType,Profile]]' + encodeURIComponent(this.$route.params.id) + ',objectKeys,' + encodeURIComponent(this.$route.params.id) + ']]',
       };
@@ -269,11 +271,11 @@ export default {
         },
         {
           text: 'Profiles',
-          href: '#/profiles?filters=user,generatedBy,user',
+          href: Hrefs.profiles(),
         },
         {
           text: this.profileName,
-          href: '#/profile/' + encodeURIComponent(this.profileId),
+          href: Hrefs.profile(this.profileId),
         },
       ];
     },

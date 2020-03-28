@@ -1,7 +1,7 @@
 {
   "name": "Save or skip",
   "description": "Save or skip pages you visit, and get new recommendations based on your history.",
-  "version": "1.0.12",
+  "version": "1.0.14",
   "author": "opowell@gmail.com",
 
   "manifest_version": 2,

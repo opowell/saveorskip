@@ -28,8 +28,8 @@
 1. Increase version number in `package.json` and `src/manifest.json`.
 2. Compile the extension: `npm run build`
 3. Zip it up: `npm run build-zip`
-4. Commit to Github.
-5. Update README.md download link.
+4. Update README.md download link.
+5. Commit to Github.
 
 ## Initial setup
 

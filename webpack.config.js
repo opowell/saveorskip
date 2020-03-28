@@ -17,15 +17,21 @@ const config = {
     'options/options': './options/options.js',
     'scrapers/scraper': './scrapers/scraper.js',
   },
+  devtool: 'inline-source-map',
   output: {
     path: __dirname + '/dist',
     filename: '[name].js',
   },
   resolve: {
-    extensions: ['.js', '.vue'],
+    extensions: ['.js', '.vue', '.ts', '.tsx'],
   },
   module: {
     rules: [
+      {
+        test: /\.tsx?$/,
+        use: 'ts-loader',
+        exclude: /node_modules/,
+      },
       {
         test: /\.vue$/,
         loaders: 'vue-loader',

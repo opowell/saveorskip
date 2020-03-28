@@ -3,7 +3,7 @@
 import store from './store';
 import * as idb from './store/idb.js';
 import * as types from './store/mutation-types.js';
-import { trimmedUrl, scoreFnJustPoints } from './Utils.js';
+import { trimmedUrl, scoreFnJustPoints } from './Utils.ts';
 
 global.browser = require('webextension-polyfill');
 

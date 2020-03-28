@@ -27,7 +27,7 @@
 import * as idb from '../../../store/idb.js';
 import Vue from 'vue';
 import ObjectsTable from '../components/ObjectsTable.vue';
-import { convertId } from '../../../Utils.js';
+import { convertId } from '../../../Utils.ts';
 
 export default {
   name: 'ProfileLink',

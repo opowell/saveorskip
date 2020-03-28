@@ -88,24 +88,24 @@
 <script>
 import * as idb from '../../../store/idb.js';
 import { Source } from '../../../models/Source.js';
-import { convertId } from '../../../Utils.js';
+import { convertId } from '../../../Utils.ts';
 
 export default {
   async mounted() {
     let loadedProfiles = await idb.fetchProfiles([{ field: 'generatedBy', lowerValue: 'user', upperValue: 'user' }]);
-    console.log('found ' + loadedProfiles);
     this.profiles.push(...loadedProfiles);
     if (!this.hasValidTarget && this.profiles.length > 0) {
-      this.setTarget(this.profiles[0].id);
+      await this.setTarget(this.profiles[0].id);
     } else {
-      this.setTarget(this.targetId);
+      await this.setTarget(this.targetId);
     }
-    await idb.setCurUrlLinkStatus();
-    await idb.setCurUrlSourceStatus();
+    this.linkStatus = await idb.getCurUrlLinkStatus();
+    this.sourceStatus = await idb.getCurUrlSourceStatus();
   },
   data() {
     return {
       profiles: [],
+      linkStatus: '',
     };
   },
   computed: {
@@ -152,9 +152,6 @@ export default {
         }
       }
       return false;
-    },
-    linkStatus() {
-      return this.$store.state.curUrlAsLink;
     },
     links() {
       return this.curPage == null ? [] : this.curPage.links;

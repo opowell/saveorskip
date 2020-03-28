@@ -23,7 +23,7 @@
 
 <script>
 import ObjectsTable from '../components/ObjectsTable.vue';
-import * as idb from '../../../store/idb.js';
+import * as idb from '../../../store/idb.ts';
 
 export default {
   name: 'Scrapers',

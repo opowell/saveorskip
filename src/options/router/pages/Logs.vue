@@ -20,7 +20,7 @@
 
 <script>
 import ObjectsTable from '../components/ObjectsTable.vue';
-import * as idb from '../../../store/idb.js';
+import * as idb from '../../../store/idb.ts';
 import { STORE_LOGS } from '../../../store/Constants.js';
 
 export default {

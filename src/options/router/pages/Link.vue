@@ -24,7 +24,7 @@
 </template>
 
 <script>
-import * as idb from '../../../store/idb.js';
+import * as idb from '../../../store/idb.ts';
 import Vue from 'vue';
 import ObjectsTable from '../components/ObjectsTable.vue';
 import { convertId } from '../../../Utils.ts';

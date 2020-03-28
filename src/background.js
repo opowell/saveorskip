@@ -1,7 +1,7 @@
 // CAREFUL ABOUT EXPORTING FUNCTIONS FROM HERE. DO NOT IMPORT GENERAL CODE RUNNING OUTSIDE OF THE BACKGROUND PAGE.
 
 import store from './store';
-import * as idb from './store/idb.js';
+import * as idb from './store/idb.ts';
 import * as types from './store/mutation-types.js';
 import { trimmedUrl, scoreFnJustPoints } from './Utils.ts';
 

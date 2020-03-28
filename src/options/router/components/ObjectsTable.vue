@@ -226,7 +226,7 @@
 <script>
 import Vue from 'vue';
 import ObjectsTableCell from './ObjectsTableCell.vue';
-import * as idb from '../../../store/idb.js';
+import * as idb from '../../../store/idb.ts';
 
 export default {
   components: {

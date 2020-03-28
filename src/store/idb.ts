@@ -20,12 +20,12 @@ import {
 import * as AutoGenProfile from '../models/AutoGenProfile.js';
 import * as types from './mutation-types.js';
 // eslint-disable-next-line prettier/prettier
-import { trimmedUrl, drawRandomElFromObject, scoreFnJustPoints } from '../Utils.ts';
+import { trimmedUrl, drawRandomElFromObject, scoreFnJustPoints } from '../Utils';
 
 /**
  * Should not call Vuex store directly. Instead, broadcast messages to all tabs with the corresponding store modification. Tabs then update their own stores (and Vue instances).
  */
-export async function dispatchToStores(functionName, payload) {
+export async function dispatchToStores(functionName: string, payload: any) {
   // Call for this page.
   await store.dispatch(functionName, payload);
 
@@ -37,7 +37,7 @@ export async function dispatchToStores(functionName, payload) {
   });
 }
 
-export async function setCurPage(payload) {
+export async function setCurPage(payload: any) {
   if (payload == null) {
     return;
   }
@@ -52,7 +52,7 @@ export async function setCurPage(payload) {
   // await setCurUrlSourceStatus();
 }
 
-export async function storePage(page, profileId, linkAction, sourceAction) {
+export async function storePage(page: any, profileId: number | string, linkAction: any, sourceAction: any) {
   if (page == null) {
     return;
   }
@@ -108,7 +108,7 @@ export async function storePage(page, profileId, linkAction, sourceAction) {
   }
 }
 
-export async function addProfileChildrenCounts(profile) {
+export async function addProfileChildrenCounts(profile: Object) {
   profile['Links'] = await getNumResults({
     storeName: STORE_LINKS,
     filters: [
@@ -146,7 +146,7 @@ export async function addProfileChildrenCounts(profile) {
   });
 }
 
-export async function loadProfile(payload) {
+export async function loadProfile(payload: any) {
   let profileId = payload.profileId;
   const db = await getDBPromise();
   let profile = await db.get(STORE_PROFILES, profileId);
@@ -161,12 +161,12 @@ export async function loadPopupProfile() {
   await dispatchToStores('setPopupProfile', profile);
 }
 
-export async function loadSources(payload) {
+export async function loadSources(payload: any) {
   let out = await getProfileSources(payload.profileId);
   await dispatchToStores('loadSources', out);
 }
 
-export async function setSkippedLinkIfNew(profileId, link) {
+export async function setSkippedLinkIfNew(profileId: string | number, link: any) {
   if (link == null || link.url == null) {
     return;
   }
@@ -183,9 +183,9 @@ export async function setSkippedLinkIfNew(profileId, link) {
   });
 }
 
-export async function setTestPage(page) {}
+export async function setTestPage(page: any) {}
 
-export async function setSkippedSourceIfNew(profileId, source) {
+export async function setSkippedSourceIfNew(profileId: number | string, source: any) {
   if (source == null || source.url == null) {
     console.log('no url given');
     return;
@@ -238,7 +238,7 @@ export async function setSkippedSourceIfNew(profileId, source) {
   source.title = prevTitle;
 }
 
-export async function setDefaultLinkAction(profileId, action) {
+export async function setDefaultLinkAction(profileId: number | string, action: string) {
   let profile = await getProfile(profileId);
   if (profile == null) {
     return;
@@ -248,7 +248,7 @@ export async function setDefaultLinkAction(profileId, action) {
   await db.put(STORE_PROFILES, profile);
 }
 
-export async function setDefaultSourceAction(profileId, action) {
+export async function setDefaultSourceAction(profileId: number | string, action: string) {
   let profile = await getProfile(profileId);
   if (profile == null) {
     return;
@@ -258,7 +258,7 @@ export async function setDefaultSourceAction(profileId, action) {
   await db.put(STORE_PROFILES, profile);
 }
 
-export async function getLink({ profileId, linkId, createIfNecessary }) {
+export async function getLink({ profileId, linkId, createIfNecessary }: { profileId: string | number; linkId: string; createIfNecessary: boolean }) {
   let db = await getDBPromise();
   let out = await db.get(STORE_LINKS, [profileId, linkId]);
   if (out == null && createIfNecessary) {
@@ -271,15 +271,15 @@ export async function getLink({ profileId, linkId, createIfNecessary }) {
   return out;
 }
 
-export async function loadLink({ profileId, linkId }) {
-  let out = await getLink({ profileId, linkId });
+export async function loadLink({ profileId, linkId }: { profileId: string | number; linkId: string }) {
+  let out = await getLink({ profileId, linkId, createIfNecessary: false });
   if (out == null) {
     return;
   }
   store.commit(types.LOAD_LINK, out);
 }
 
-export async function loadSource(key) {
+export async function loadSource(key: any) {
   const db = await getDBPromise();
   let out = await db.get(STORE_SOURCES, key);
   if (out == null) {
@@ -289,14 +289,14 @@ export async function loadSource(key) {
   store.commit(types.LOAD_SOURCE, out);
 }
 
-export async function deleteLink({ profileId, linkId }) {
+export async function deleteLink({ profileId, linkId }: { profileId: string | number; linkId: string }) {
   let db = await getDBPromise();
   await db.delete(STORE_LINKS, [profileId, linkId]);
   store.commit(types.LOAD_LINK, undefined);
   store.commit(types.DELETE_LINK, { profileId, url: linkId });
 }
 
-export async function deleteObject(store, key) {
+export async function deleteObject(store: string, key: any) {
   let db = await getDBPromise();
   try {
     await db.delete(store, key);
@@ -306,7 +306,7 @@ export async function deleteObject(store, key) {
   }
 }
 
-export async function saveLink(link) {
+export async function saveLink(link: Object) {
   let db = await getDBPromise();
   try {
     await db.put(STORE_LINKS, link);
@@ -316,7 +316,7 @@ export async function saveLink(link) {
   }
 }
 
-export async function saveObject(storeName, object) {
+export async function saveObject(storeName: string, object: Object) {
   let db = await getDBPromise();
   try {
     let objKey = await db.put(storeName, object);
@@ -327,7 +327,7 @@ export async function saveObject(storeName, object) {
   }
 }
 
-export async function getProfile(id) {
+export async function getProfile(id: string | number) {
   if (id == null) {
     return null;
   }
@@ -341,7 +341,15 @@ export async function getProfile(id) {
   }
 }
 
-export async function storeProfile(profile, { overwriteProps, updateScrapeSettings, numNewLinksFound, keepExistingProps }) {
+export async function storeProfile(
+  profile: any,
+  {
+    overwriteProps,
+    updateScrapeSettings,
+    numNewLinksFound,
+    keepExistingProps,
+  }: { overwriteProps: boolean; updateScrapeSettings: boolean; numNewLinksFound: number; keepExistingProps: boolean }
+) {
   if (keepExistingProps == null) {
     keepExistingProps = true;
   }
@@ -414,7 +422,7 @@ export async function storeProfile(profile, { overwriteProps, updateScrapeSettin
   }
 }
 
-export async function fetchProfiles(filters) {
+export async function fetchProfiles(filters: Array<any>) {
   const values = await getStoreResults({ storeName: 'profiles', filters, offset: 0, numRows: 100 });
   for (let i = 0; i < values.length; i++) {
     addProfileChildrenCounts(values[i]);
@@ -441,7 +449,7 @@ export async function scrapeIfNecessary(source) {
   }
 }
 
-export async function scrapeProfile(url) {
+export async function scrapeProfile(url: string) {
   if (url == null || url.length < 1) {
     return;
   }
@@ -450,7 +458,7 @@ export async function scrapeProfile(url) {
   chrome.tabs.create({ url: 'http://' + url, active: false });
 }
 
-export async function getSuggestion(profileId) {
+export async function getSuggestion(profileId: string | number) {
   try {
     let sources = await getProfileSources(profileId);
     if (sources == null) {
@@ -483,6 +491,7 @@ export async function getSuggestion(profileId) {
           let storeLink = await getLink({
             profileId,
             linkId: linksCursor.value.url,
+            createIfNecessary: false,
           });
           let alreadyExists = storeLink != null;
           if (!alreadyExists) {
@@ -505,32 +514,19 @@ export async function getSuggestion(profileId) {
   }
 }
 
-export async function getProfileSources(profileId) {
+export async function getProfileSources(profileId: string | number) {
   let db = await getDBPromise();
   let out = await db.getAllFromIndex(STORE_SOURCES, STORE_SOURCES_CONSUMERID, profileId);
   return out;
 }
 
-export async function getLinks(profileId) {
+export async function getLinks(profileId: string | number) {
   let db = await getDBPromise();
   let out = await db.getAllFromIndex(STORE_LINKS, STORE_LINKS_PROFILEID, profileId);
   return out;
 }
 
-// export async function getLinksByTimeAdded(profileId) {
-//   let out = null;
-//   const db = await getDBPromise();
-//   let tx = await db.transaction(STORE_LINKS);
-//   let objStore = await tx.objectStore(STORE_LINKS);
-//   let index = await objStore.index(INDEX_LINKS_PROFILEID_TIMEADDED, profileId);
-//   let keyRng = IDBKeyRange.bound([profileId, new Date(2019, 1)], [profileId, new Date()]);
-//   let cursor = await index.openCursor(keyRng, 'prev');
-//   out = cursor;
-//   await tx.done;
-//   return out;
-// }
-
-export async function deleteProfile(payload) {
+export async function deleteProfile(payload: any) {
   let db = await getDBPromise();
   await db.delete(STORE_PROFILES, payload.profileId);
   store.dispatch('deleteProfile', payload);
@@ -542,18 +538,18 @@ export async function loadScrapers() {
   console.log('scrapers: ' + JSON.stringify(store.state.scrapers));
 }
 
-export async function deleteScraper({ scraperId }) {
+export async function deleteScraper({ scraperId }: { scraperId: number }) {
   let db = await getDBPromise();
   await db.delete(STORE_SCRAPERS, scraperId);
 }
 
-export async function deleteProfileSource({ profileId, sourceId }) {
+export async function deleteProfileSource({ profileId, sourceId }: { profileId: string | number; sourceId: string | number }) {
   let db = await getDBPromise();
   await db.delete(STORE_SOURCES, [profileId, sourceId]);
   store.commit(types.DELETE_PROFILE_SOURCE, { profileId, sourceId });
 }
 
-export async function addLink(payload) {
+export async function addLink(payload: any) {
   let numNewLinks = 0;
 
   if (payload.profileId === payload.url) {
@@ -614,7 +610,7 @@ export async function addLink(payload) {
   return numNewLinks;
 }
 
-export async function addSources({ sources }) {
+export async function addSources({ sources }: { sources: Array<any> }) {
   if (!Array.isArray(sources)) {
     return;
   }
@@ -629,10 +625,10 @@ export async function addSources({ sources }) {
   // await setCurUrlSourceStatus();
 }
 
-export async function setSourceSaved(payload) {
+export async function setSourceSaved(payload: any) {
   let db = await getDBPromise();
   let storeName = STORE_SOURCES;
-  let link = {
+  let link: { [k: string]: any; [k: number]: any } = {
     url: trimmedUrl(payload.link.url),
     title: payload.link.title,
     saved: payload.action === 'save' ? 1 : 0,
@@ -652,7 +648,7 @@ export async function setSourceSaved(payload) {
   // chrome.runtime.sendMessage('save');
 }
 
-export async function saveOrSkipLink(payload) {
+export async function saveOrSkipLink(payload: any) {
   let link = payload.link;
 
   let linksProp = link.links;
@@ -714,7 +710,19 @@ export async function saveOrSkipLink(payload) {
   // await setCurUrlLinkStatus();
 }
 
-export async function storeSource({ source, providerId, consumerId, pointsChange, overwrite }) {
+export async function storeSource({
+  source,
+  providerId,
+  consumerId,
+  pointsChange,
+  overwrite,
+}: {
+  source: Object;
+  providerId: string | number;
+  consumerId: string | number;
+  pointsChange: number;
+  overwrite: boolean;
+}) {
   const db = await getDBPromise();
 
   let profile = await db.get(STORE_PROFILES, consumerId);
@@ -761,7 +769,7 @@ export async function storeSource({ source, providerId, consumerId, pointsChange
   // await setCurUrlSourceStatus();
 }
 
-export async function saveOrSkipSource({ source, targetId, action }) {
+export async function saveOrSkipSource({ source, targetId, action }: { source: Object; targetId: string | number; action: string }) {
   const consumerId = targetId;
   const db = await getDBPromise();
 
@@ -785,7 +793,7 @@ export async function saveOrSkipSource({ source, targetId, action }) {
     source.points = action === 'save' ? 1 : -1;
   }
 
-  let sourceConnection = {};
+  let sourceConnection: { [k: string]: any; points?: number; saved?: number; timeAdded?: Date } = {};
   sourceConnection.points = source.points;
   sourceConnection[STORE_SOURCES_PROVIDERID] = trimmedUrl(providerId);
   sourceConnection[STORE_SOURCES_CONSUMERID] = consumerId;
@@ -808,7 +816,7 @@ export async function saveOrSkipSource({ source, targetId, action }) {
   // await setCurUrlSourceStatus();
 }
 
-export async function addLinks({ links, profileId }) {
+export async function addLinks({ links, profileId }: { links: Array<any>; profileId: string | number }) {
   if (links == null) {
     return;
   }
@@ -823,7 +831,7 @@ export async function addLinks({ links, profileId }) {
   }
 }
 
-export async function updateProfileScrapeDate({ sourceUrl }) {
+export async function updateProfileScrapeDate({ sourceUrl }: { sourceUrl: string }) {
   let db = await getDBPromise();
   let source = await db.get(STORE_PROFILES, sourceUrl);
   if (source != null) {
@@ -832,7 +840,7 @@ export async function updateProfileScrapeDate({ sourceUrl }) {
   }
 }
 
-export async function changeSourcePoints(payload) {
+export async function changeSourcePoints(payload: any) {
   let source = payload.source;
   let db = await getDBPromise();
   source.url = trimmedUrl(source.url);
@@ -844,7 +852,7 @@ export async function changeSourcePoints(payload) {
   await db.put(STORE_SOURCES, source);
 }
 
-export async function removeLink(payload) {
+export async function removeLink(payload: any) {
   let db = await getDBPromise();
   let storeObj = await db.get(STORE_LINKS, [payload.targetId, payload.url]);
   if (storeObj != null && storeObj.sources != null) {
@@ -861,20 +869,20 @@ export async function removeLink(payload) {
   // await setCurUrlLinkStatus();
 }
 
-export async function removeSource(payload) {
+export async function removeSource(payload: any) {
   let db = await getDBPromise();
   await db.delete(STORE_SOURCES, [payload.targetId, payload.url]);
   // await setCurUrlSourceStatus();
 }
 
-export async function getScraper({ scraperId }) {
+export async function getScraper({ scraperId }: { scraperId: number }) {
   let db = await getDBPromise();
   let out = db.get(STORE_SCRAPERS, scraperId);
   return out;
 }
 
 // export async function addScraper({ domain, getLinks, getSources, getSourcesOfLink, getPageAttributes, onScriptLoad }) {
-export async function addScraper(scraper) {
+export async function addScraper(scraper: Object) {
   let db = await getDBPromise();
   for (let i in scraper) {
     if (typeof scraper[i] === 'function') {
@@ -885,12 +893,12 @@ export async function addScraper(scraper) {
   await loadScrapers();
 }
 
-export async function saveScraper(scraper) {
+export async function saveScraper(scraper: Object) {
   await saveObject(STORE_SCRAPERS, scraper);
   await loadScrapers();
 }
 
-export async function storeLinkSources(sources, profileId) {
+export async function storeLinkSources(sources: Array<any>, profileId: string | number) {
   for (let i in sources) {
     let source = sources[i];
     source.profileId = profileId;
@@ -898,7 +906,7 @@ export async function storeLinkSources(sources, profileId) {
   }
 }
 
-export async function storeLinkSource(source) {
+export async function storeLinkSource(source: any) {
   let link = await getLink({ profileId: source.profileId, linkId: source.linkId });
   if (link == null) {
     return;
@@ -933,18 +941,6 @@ export async function storeLinkSource(source) {
     overwrite: true,
   });
 }
-
-// export async function getLogsCursor() {
-//   let out = null;
-//   const db = await getDBPromise();
-//   let tx = await db.transaction(STORE_LOGS);
-//   let objStore = await tx.objectStore(STORE_LOGS);
-//   let index = await objStore.index(INDEX_LOGS_TIME);
-//   let cursor = await index.openCursor(null, 'prev');
-//   // await tx.done;
-//   out = cursor;
-//   return out;
-// }
 
 function getIndexFromKeyPath(keyPath) {
   return keyPath.join(KEYPATH_SEPARATOR);

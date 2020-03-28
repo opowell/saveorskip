@@ -1,6 +1,6 @@
 import Vue from 'vue';
 import App from './App';
-import * as idb from '../store/idb.js';
+import * as idb from '../store/idb.ts';
 import store from '../store';
 import router from './router';
 

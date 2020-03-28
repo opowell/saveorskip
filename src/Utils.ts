@@ -41,14 +41,12 @@ export function scoreFnJustPoints(src: { points: number }) {
   return p;
 }
 
-export function drawRandomElFromObject(object: Array<any> | Object, scoreFn: Function) {
+export function drawRandomElFromObject(object: Array<any>, scoreFn: Function) {
   let sum = 0;
   console.log('DRAWING RANDOM ELEMENT');
-  let keys = Object.keys(object);
   let scores = [];
-  for (let i = 0; i < keys.length; i++) {
-    let key = keys[i];
-    let score = scoreFn(object[key]);
+  for (let i = 0; i < object.length; i++) {
+    let score = scoreFn(object[i]);
     scores.push(score);
     if (score > 0) {
       sum = sum + score;
@@ -65,29 +63,29 @@ export function drawRandomElFromObject(object: Array<any> | Object, scoreFn: Fun
 
   let draw = Math.random() * sum; // random number between 0 (incl.) and sum (excl.)
   let curSum = 0;
-  for (let j = 0; j < keys.length; j++) {
+  for (let j = 0; j < object.length; j++) {
     let score = scores[j];
     if (score > 0) {
       curSum = curSum + score;
       if (curSum > draw && selectedInd === -1) {
-        selected = object[[keys[j]]];
+        selected = object[j];
         selectedInd = j;
         break;
       }
     }
   }
 
-  for (let k = 0; k < keys.length; k++) {
+  for (let k = 0; k < object.length; k++) {
     let score = scores[k];
     let selText = '  ';
     if (k === selectedInd) {
       selText = '>>';
     }
-    let obj = object[keys[k]];
+    let obj = object[k];
     try {
       console.log(selText + ' ' + score + ' - ' + obj.saved + ' - ' + obj.points + ' - ' + obj.providerId);
     } catch (err) {
-      console.error('ERROR');
+      console.error('ERROR2');
     }
   }
 

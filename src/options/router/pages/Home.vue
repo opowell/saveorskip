@@ -13,7 +13,7 @@
 
 <script>
 import { DB_NAME } from '../../../store/Constants.js';
-import * as idb from '../../../store/idb.js';
+import * as idb from '../../../store/idb.ts';
 import { deleteDB } from 'idb';
 import ObjectsTable from '../components/ObjectsTable.vue';
 import { LINKS } from '../../Constants.ts';

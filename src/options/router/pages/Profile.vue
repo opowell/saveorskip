@@ -53,7 +53,7 @@
 
 <script>
 import ObjectsTable from '../components/ObjectsTable.vue';
-import * as idb from '../../../store/idb.js';
+import * as idb from '../../../store/idb.ts';
 import { convertId } from '../../../Utils.ts';
 import { LINKS, Hrefs } from '../../Constants.ts';
 

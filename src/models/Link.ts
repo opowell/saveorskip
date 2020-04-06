@@ -1,5 +1,8 @@
 export default class {
-  constructor(url, saved, props) {
+  url: any;
+  saved: any;
+  [k: string]: any;
+  constructor(url: any, saved: any, props: { [x: string]: any } | null) {
     this.url = url;
     this.saved = saved;
     if (props != null) {

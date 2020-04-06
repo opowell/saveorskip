@@ -8,14 +8,16 @@
     </b-modal>
     <objects-table
       ref="table"
-      :object="scrapers"
-      @create="addScraperPrompt"
       @click="openScraper"
+      @create="addScraperPrompt"
+      @deleteSelectedRows="deleteScrapers"
+      :object="scrapers"
       :ineditable-row-names="[]"
       :crumbs="crumbs"
-      @deleteSelectedRows="deleteScrapers"
       :givenCols="['id', 'priority', 'name', 'domain']"
-      :fetchData="fetchData"
+      :fetchInitialData="fetchInitialData"
+      :fetchRows="fetchRows"
+      :numResults="numResults"
       :addItemText="'Add Scraper...'"
     />
   </div>
@@ -24,6 +26,7 @@
 <script>
 import ObjectsTable from '../components/ObjectsTable.vue';
 import * as idb from '../../../store/idb.ts';
+import { STORE_SCRAPERS } from '../../../store/Constants';
 
 export default {
   name: 'Scrapers',
@@ -32,7 +35,7 @@ export default {
   },
   data() {
     return {
-      scrapers: [],
+      numResults: 0,
     };
   },
   computed: {
@@ -57,10 +60,12 @@ export default {
         });
       }
     },
-    async fetchData() {
-      this.scrapers.splice(this.scrapers.length);
+    async fetchInitialData() {
+      this.numResults = await idb.getNumResults({ storeName: STORE_SCRAPERS, filters: this.$refs.table.filters });
+    },
+    async fetchRows() {
       let fetchedData = await idb.getScrapers();
-      this.scrapers.push(...fetchedData);
+      return fetchedData;
     },
     addScraperPrompt() {
       this.$bvModal.show('addScraperModal');

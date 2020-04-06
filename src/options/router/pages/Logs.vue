@@ -10,9 +10,9 @@
       :givenCols="['id', 'time', 'message', 'objectType', 'objectKeys']"
       :showAdd="false"
       :hoverProp="false"
-      :totalRows="numLogs"
-      @pageChanged="checkIfNeedData"
-      :fetchData="fetchData"
+      :numResults="numLogs"
+      :fetchInitialData="fetchInitialData"
+      :fetchRows="fetchRows"
     >
     </objects-table>
   </div>
@@ -20,18 +20,14 @@
 
 <script>
 import ObjectsTable from '../components/ObjectsTable.vue';
-import * as idb from '../../../store/idb.ts';
-import { STORE_LOGS } from '../../../store/Constants.js';
+import * as idb from '../../../store/idb';
+import { STORE_LOGS } from '../../../store/Constants';
+import { Hrefs } from '../../Constants.ts';
 
 export default {
   name: 'Logs',
   components: {
     ObjectsTable,
-  },
-  watch: {
-    $route() {
-      this.fetchData();
-    },
   },
   data() {
     return {
@@ -49,7 +45,7 @@ export default {
         },
         {
           text: 'Logs',
-          href: '#/logs',
+          href: Hrefs.logs(),
         },
       ];
     },
@@ -60,26 +56,13 @@ export default {
         idb.deleteLog(selection[i].id);
       }
     },
-    async fetchData() {
+    async fetchInitialData() {
       this.logs.splice(0, this.logs.length);
       this.numLogs = await idb.getNumLogs();
-      this.fetchMoreData();
     },
-    checkIfNeedData(event) {
-      if (this.logs.length < this.numLogs && this.logs.length < this.$refs.table.perPage * (event - 1) + 1) {
-        this.fetchMoreData();
-      }
-    },
-    async fetchMoreData() {
+    async fetchRows() {
       let items = await idb.getStoreResults({ storeName: STORE_LOGS, filters: this.$refs.table.filters, offset: this.logs.length, numRows: 100 });
-      this.logs.push(...items);
-      this.$nextTick(async function() {
-        if (this.$refs.table.items.length < this.$refs.table.perPage) {
-          if (this.logs.length < this.numLogs) {
-            await this.fetchMoreData();
-          }
-        }
-      });
+      return items;
     },
   },
 };

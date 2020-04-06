@@ -1,11 +1,12 @@
 /* eslint-disable no-undef */
-let out = {};
+// @ts-nocheck
+let out = <any>{};
 
 out.name = 'www.reddit.com';
 out.domain = 'www.reddit.com';
 
 out.getLinks = function() {
-  let links = [];
+  let links: any[] = [];
   if (sos.isOverlaidPost()) {
     return links;
   }

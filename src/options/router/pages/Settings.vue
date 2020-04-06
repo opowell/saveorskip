@@ -7,7 +7,7 @@
       <span>
         <b-form-group>
           <b-form-radio v-model="selected" name="some-radios" value="A">Local only (IndexedDB)</b-form-radio>
-          <b-form-radio v-model="selected" name="some-radios" value="B" disabled>Remote (coming soon!)</b-form-radio>
+          <b-form-radio v-model="selected" name="some-radios" value="B" disabled>Local and Cloud (under development)</b-form-radio>
         </b-form-group>
       </span>
     </div>

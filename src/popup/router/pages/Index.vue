@@ -86,9 +86,9 @@
 </template>
 
 <script>
-import * as idb from '../../../store/idb.ts';
-import { Source } from '../../../models/Source.js';
-import { convertId } from '../../../Utils.ts';
+import * as idb from '../../../store/idb';
+import { Source } from '../../../models/Source';
+import { convertId } from '../../../Utils';
 
 export default {
   async mounted() {
@@ -101,11 +101,20 @@ export default {
     }
     this.linkStatus = await idb.getCurUrlLinkStatus();
     this.sourceStatus = await idb.getCurUrlSourceStatus();
+
+    const thisComponent = this;
+
+    chrome.runtime.sendMessage('getCurPage', async function(response) {
+      thisComponent.curPage = response;
+      thisComponent.linkStatus = await idb.getCurUrlLinkStatus();
+    });
   },
   data() {
     return {
       profiles: [],
       linkStatus: '',
+      sourceStatus: '',
+      curPage: '',
     };
   },
   computed: {
@@ -153,38 +162,26 @@ export default {
       }
       return false;
     },
-    links() {
-      return this.curPage == null ? [] : this.curPage.links;
-    },
-    sources() {
-      return this.curPage == null ? [] : this.curPage.sources;
-    },
     linkSaved() {
-      return this.linkStatus === true;
+      return this.linkStatus === 1;
     },
     linkSkipped() {
-      return this.linkStatus === false;
+      return this.linkStatus === 0;
     },
     linkNeither() {
-      return this.linkStatus === 'neither';
-    },
-    sourceStatus() {
-      return this.$store.state.curUrlAsSource;
+      return !this.linkSaved && !this.linkSkipped;
     },
     sourceSaved() {
-      return this.sourceStatus === true;
+      return this.sourceStatus === 1;
     },
     sourceSkipped() {
-      return this.sourceStatus === false;
+      return this.sourceStatus === 0;
     },
     sourceNeither() {
-      return this.sourceStatus === 'neither';
+      return !this.sourceSaved && !this.sourceSkipped;
     },
     targetId() {
       return this.$store.state.targetId;
-    },
-    curPage() {
-      return this.$store.state.curPage;
     },
     target() {
       return this.$store.getters.curTarget;
@@ -218,7 +215,7 @@ export default {
     deleteSource() {
       this.$store.dispatch('removeSource', {
         targetId: this.targetId,
-        url: this.$store.state.curPage.url,
+        url: this.curPage.url,
       });
     },
     setTargetEv(event) {
@@ -229,17 +226,19 @@ export default {
     },
     async save() {
       await idb.saveOrSkipLink({
-        link: this.$store.state.curPage,
+        link: this.curPage,
         action: 'save',
         targetId: this.targetId,
       });
+      this.linkStatus = 1;
     },
     async skip() {
       idb.saveOrSkipLink({
-        link: this.$store.state.curPage,
+        link: this.curPage,
         action: 'not save',
         targetId: this.targetId,
       });
+      this.linkStatus = 0;
     },
     saveAndGo() {
       this.save();
@@ -253,7 +252,7 @@ export default {
       this.go();
     },
     async saveAsSource(save) {
-      let source = Source(this.$store.state.curPage.url, this.targetId);
+      let source = Source(this.curPage.url, this.targetId);
       source.generatedBy = 'user';
       await idb.saveOrSkipSource({
         source,
@@ -267,8 +266,9 @@ export default {
     async removeLink() {
       await idb.removeLink({
         targetId: this.targetId,
-        url: this.$store.state.curPage.url,
+        url: this.curPage.url,
       });
+      this.linkStatus = 'neither';
     },
   },
 };

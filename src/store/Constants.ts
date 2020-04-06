@@ -1,10 +1,10 @@
-import { openDB } from 'idb';
-import { resetState } from './index.js';
-import { storeProfile, addScraper, storeSource, addLog } from './idb.ts';
-import RedditScraper from '../scrapers/reddit.js';
-import HackerNewsScraper from '../scrapers/hackernews.js';
-import DefaultScraper from '../scrapers/default.js';
-import TheGuardianScraper from '../scrapers/theguardian.js';
+import { openDB, IDBPDatabase } from 'idb';
+import { resetState } from './index';
+import { storeProfile, addScraper, storeSource, addLog } from './idb';
+import RedditScraper from '../scrapers/reddit';
+import HackerNewsScraper from '../scrapers/hackernews';
+import DefaultScraper from '../scrapers/default';
+import TheGuardianScraper from '../scrapers/theguardian';
 export const DB_NAME = 'saveorskip';
 
 export const STORE_LINKS = 'links';
@@ -29,8 +29,8 @@ export const getDBVersion = async function() {
   return (await dbPromise).version;
 };
 
-export const setDBVersion = async function(x) {
-  localStorage.setItem('dbVersion', x);
+export const setDBVersion = async function(x: number) {
+  localStorage.setItem('dbVersion', x + '');
 };
 
 if (!('indexedDB' in window)) {
@@ -60,7 +60,7 @@ export const reset = async function() {
       providerId: sources[i],
       consumerId: 1,
       pointsChange: 5,
-      overwrite: 0,
+      overwrite: false,
     };
     await storeSource(srcObj);
   }
@@ -71,22 +71,29 @@ export const reset = async function() {
   resetState();
 };
 
-export const setDBPromise = async function(dbp) {
-  dbPromise = dbp;
-  setDBVersion(await dbp.version);
+export const setDBPromise = async function(dbp: Promise<IDBPDatabase<unknown>>) {
+  try {
+    dbPromise = dbp;
+    let x = await dbp;
+    setDBVersion(x.version);
+  } catch (e) {
+    console.log(e);
+    debugger;
+  }
 };
 
 export const getDBPromise = function() {
   return dbPromise;
 };
 
+// @ts-ignore
 let dbVersion = +localStorage.getItem('dbVersion');
 if (dbVersion === 0) {
   dbVersion = 1;
 }
 
 // When anything below changes, increment DB_VERSION or delete existing database. This forces the database schema to be updated.
-let dbPromise = openDB(DB_NAME, dbVersion, {
+let dbPromise: Promise<IDBPDatabase<unknown>> = openDB(DB_NAME, dbVersion, {
   async upgrade(db, oldVersion, newVersion, transaction) {
     if (oldVersion === 0) {
       console.log('Creating stores');
@@ -114,6 +121,11 @@ let dbPromise = openDB(DB_NAME, dbVersion, {
     }
   },
   async blocking() {
-    (await dbPromise).close();
+    console.log('blocking something, closing');
+    this.close();
+  },
+
+  blocked() {
+    console.log('blocked');
   },
 });

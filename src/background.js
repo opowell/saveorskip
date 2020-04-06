@@ -1,9 +1,9 @@
 // CAREFUL ABOUT EXPORTING FUNCTIONS FROM HERE. DO NOT IMPORT GENERAL CODE RUNNING OUTSIDE OF THE BACKGROUND PAGE.
 
 import store from './store';
-import * as idb from './store/idb.ts';
-import * as types from './store/mutation-types.js';
-import { trimmedUrl, scoreFnJustPoints } from './Utils.ts';
+import * as idb from './store/idb';
+import * as types from './store/mutation-types';
+import { trimmedUrl, scoreFnJustPoints } from './Utils';
 
 global.browser = require('webextension-polyfill');
 
@@ -225,7 +225,7 @@ async function getSourcesOfUrl({ url, profileId }) {
   });
 }
 
-chrome.runtime.onMessage.addListener(async function(message, sender, sendResponse) {
+async function handleMessage(message, sender) {
   let senderUrl = trimmedUrl(sender.url);
   console.log('message received from ' + senderUrl, message);
 
@@ -235,8 +235,14 @@ chrome.runtime.onMessage.addListener(async function(message, sender, sendRespons
   }
 
   switch (action) {
+    case 'getCurPage':
+      let page = store.state.curPage;
+      return page;
+    case 'getCurPageLinkStatus':
+      let out = idb.getCurUrlLinkStatus();
+      return out;
     case 'scrapeIfNecessary':
-      await idb.scrapeIfNecessary(message.profile);
+      idb.scrapeIfNecessary(message.profile);
       break;
     case 'testPage':
       idb.dispatchToStores('setTestPageUrl', {
@@ -263,7 +269,7 @@ chrome.runtime.onMessage.addListener(async function(message, sender, sendRespons
         closeWhenDone = true;
         store.commit(types.REMOVE_URL_TO_SCRAPE, senderUrl);
       }
-      let scraper = await getScraper(senderUrl);
+      let scraper = getScraper(senderUrl);
       console.log('sending response with scraper ' + scraper.id);
       let payload = {
         scraper,
@@ -322,6 +328,12 @@ chrome.runtime.onMessage.addListener(async function(message, sender, sendRespons
     case 'saveAsSource':
       break;
   }
+}
+
+// Cannot use async / await directly in addListener.
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  handleMessage(message, sender).then(sendResponse);
+  return true;
 });
 
 let DEFAULT_SCRAPER_PRIORITY = 1;

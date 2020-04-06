@@ -12,11 +12,9 @@
 </template>
 
 <script>
-import { DB_NAME } from '../../../store/Constants.js';
-import * as idb from '../../../store/idb.ts';
-import { deleteDB } from 'idb';
+import { DB_NAME } from '../../../store/Constants';
 import ObjectsTable from '../components/ObjectsTable.vue';
-import { LINKS } from '../../Constants.ts';
+import { LINKS } from '../../Constants';
 
 export default {
   name: 'Home',
@@ -78,7 +76,7 @@ export default {
           this.$router.push('settings');
           break;
         case 'Logs':
-          this.$router.push('logs');
+          this.$router.push(LINKS.LOGS);
           break;
         case 'Indices':
           this.$router.push('indices');

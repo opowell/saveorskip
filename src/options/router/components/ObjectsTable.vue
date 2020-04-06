@@ -52,7 +52,7 @@
       <div>
         Load preset:
         <select v-model="selectedIndex">
-          <option v-for="(preset, index) in indices" :key="displayIndex(preset)" :value="preset">
+          <option v-for="preset in indices" :key="displayIndex(preset)" :value="preset">
             {{ displayIndex(preset) }}
           </option>
         </select>
@@ -101,7 +101,7 @@
           <button @click="clearSelection" title="De-select all selected objects.">Clear selection</button>
           <button @click="deleteSelectedRows" title="Delete selected objects.">Delete {{ selection.length }}...</button>
         </span>
-        <span v-show="!hasSelection" style="display: flex">
+        <span v-show="!hasSelection" style="display: flex; flex-wrap: wrap;">
           <slot name="header"></slot>
           <button v-if="showAddComputed" @click="addItemPrompt">{{ addItemText }}</button>
           <button @click="editFilters">Edit Filters...</button>
@@ -143,7 +143,7 @@
         </div>
       </template>
 
-      <template v-slot:head(__checkbox)="data">
+      <template v-slot:head(__checkbox)>
         <input id="checkBoxHeader" type="checkbox" v-model="selectAll" @change="selectAllChange($event)" />
       </template>
 
@@ -352,6 +352,10 @@ export default {
       if (this.storeNames != null) {
         this.indices.splice(0, this.indices.length);
         this.indices = await idb.getIndices({ offset: 0, numRows: 100, storeNames: this.storeNames });
+        for (let i = 0; i < this.indices.length; i++) {
+          let index = this.indices[i];
+          index.tokens = index.keyPath.split('_');
+        }
       }
     },
     stringToFilter(string) {
@@ -528,10 +532,13 @@ export default {
       if (filtersStr.length > 0 && this.sortOrder === 'decreasing') {
         sortStr = '&sort=decr';
       }
-      try {
-        this.$router.push(path + filtersStr + sortStr);
-        this.currentPage = 1;
-      } catch (err) {}
+      let newPath = path + filtersStr + sortStr;
+      if (encodeURI('/' + newPath) !== this.$router.currentRoute.fullPath) {
+        try {
+          this.$router.push(newPath);
+        } catch (err) {}
+      }
+      this.currentPage = 1;
     },
     saveFilters() {
       this.$bvModal.hide('editFiltersModal');

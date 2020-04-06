@@ -23,9 +23,9 @@
 
 <script>
 import ObjectsTable from '../components/ObjectsTable.vue';
-import * as idb from '../../../store/idb.ts';
-import { STORE_SOURCES } from '../../../store/Constants.js';
-import { convertId } from '../../../Utils.ts';
+import * as idb from '../../../store/idb';
+import { STORE_SOURCES } from '../../../store/Constants';
+import { convertId } from '../../../Utils';
 
 export default {
   name: 'Source',

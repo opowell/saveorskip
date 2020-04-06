@@ -1,4 +1,5 @@
-var sos = {};
+// @ts-nocheck
+var sos = <any>{};
 
 sos.name = 'The Guardian';
 sos.domain = 'www.theguardian.com';
@@ -41,7 +42,7 @@ sos.getSourcesForUrl = function(targetUrl) {
 };
 
 sos.getSources = function() {
-  let sources = [];
+  let sources: any[] = [];
   // eslint-disable-next-line prettier/prettier
   let selectorStrings = ['.submeta__link', '[rel="author"]', '.pillar-link--current-section'];
   for (let sel in selectorStrings) {
@@ -67,7 +68,7 @@ sos.getSources = function() {
   return sources;
 };
 
-sos.getPageAttributes = function(page) {
+sos.getPageAttributes = function(page: any) {
   sos.title = document.title;
 };
 

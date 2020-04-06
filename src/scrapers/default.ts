@@ -1,34 +1,38 @@
-var sos = {};
+var sos = <any>{};
 
-sos.name = 'Hacker News';
-sos.domain = 'news.ycombinator.com';
+sos.priority = 0; // higher value, higher priority
+
+sos.name = 'All other pages.';
+sos.domain = ''; // match any url.
 
 sos.getLinks = function() {
   let links = [];
-  let linkEls = document.querySelectorAll('.storyLink');
+  let linkEls = document.querySelectorAll('a');
   for (let i = 0; i < linkEls.length; i++) {
     let url = linkEls[i].getAttribute('href');
+    if (url == null) {
+      continue;
+    }
     url = sos.buildUrl(url);
+    if (sos.isParentUrl(url)) {
+      continue;
+    }
     if (!links.includes(url)) {
-      links.push({
-        url,
-        title: linkEls[i].innerText,
-      });
+      links.push(url);
     }
   }
   return links;
 };
 
-sos.getSourcesForUrl = function(targetUrl) {
+sos.getSourcesForUrl = function(url) {
   let sources = [];
   let linkEls = document.querySelectorAll('a');
   for (let i = 0; i < linkEls.length; i++) {
     let linkUrl = linkEls[i].getAttribute('href');
     linkUrl = sos.buildUrl(linkUrl);
-    console.log('compare ' + targetUrl + ' vs. ' + linkUrl);
-    if (targetUrl === linkUrl) {
+    if (url === linkUrl) {
       sources.push({
-        linkId: targetUrl,
+        linkId: url,
         source: {
           id: sos.trimmedUrl(location.href),
           points: 1,
@@ -42,10 +46,16 @@ sos.getSourcesForUrl = function(targetUrl) {
 
 sos.getSources = function() {
   let sources = [];
-  let userEls = document.querySelectorAll('.hnuser');
-  for (let i = 0; i < userEls.length; i++) {
-    let url = userEls[i].getAttribute('href');
+  let linkEls = document.querySelectorAll('a');
+  for (let i = 0; i < linkEls.length; i++) {
+    let url = linkEls[i].getAttribute('href');
+    if (url == null) {
+      continue;
+    }
     url = sos.buildUrl(url);
+    if (!sos.isParentUrl(url)) {
+      continue;
+    }
     let alreadyInArray = false;
     for (let j in sources) {
       if (sources[j].url === url) {
@@ -61,6 +71,16 @@ sos.getSources = function() {
     }
   }
   return sources;
+};
+
+sos.onScriptLoad = function() {
+  sos.isParentUrl = function(url) {
+    let curUrl = sos.buildUrl(window.location.href);
+    if (curUrl.includes(url) && url !== curUrl) {
+      return true;
+    }
+    return false;
+  };
 };
 
 sos.getPageAttributes = function(page) {

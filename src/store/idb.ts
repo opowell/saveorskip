@@ -1,4 +1,4 @@
-import store from './index.js';
+import store from './index';
 import { openDB } from 'idb';
 import {
   getDBPromise,
@@ -16,11 +16,12 @@ import {
   INDEX_STORES,
   KEYPATH_SEPARATOR,
   setDBPromise,
-} from './Constants.js';
-import * as AutoGenProfile from '../models/AutoGenProfile.js';
-import * as types from './mutation-types.js';
+} from './Constants';
+import * as AutoGenProfile from '../models/AutoGenProfile';
+import * as types from './mutation-types';
 // eslint-disable-next-line prettier/prettier
 import { trimmedUrl, drawRandomElFromObject, scoreFnJustPoints } from '../Utils';
+import { SET_CUR_PAGE2 } from '../popup/store/mutation-types';
 
 /**
  * Should not call Vuex store directly. Instead, broadcast messages to all tabs with the corresponding store modification. Tabs then update their own stores (and Vue instances).
@@ -29,12 +30,12 @@ export async function dispatchToStores(functionName: string, payload: any) {
   // Call for this page.
   await store.dispatch(functionName, payload);
 
-  // Call for all other pages.
-  chrome.runtime.sendMessage({
-    action: 'storeDispatch',
-    storeAction: functionName,
-    storePayload: payload,
-  });
+  // // Call for all other pages.
+  // chrome.runtime.sendMessage({
+  //   action: 'storeDispatch',
+  //   storeAction: functionName,
+  //   storePayload: payload,
+  // });
 }
 
 export async function setCurPage(payload: any) {
@@ -50,6 +51,11 @@ export async function setCurPage(payload: any) {
   await dispatchToStores('setCurPage', payload);
   // await setCurUrlLinkStatus();
   // await setCurUrlSourceStatus();
+  chrome.runtime.sendMessage({
+    action: 'storeDispatch',
+    storeAction: SET_CUR_PAGE2,
+    storePayload: payload,
+  });
 }
 
 export async function storePage(page: any, profileId: number | string, linkAction: any, sourceAction: any) {
@@ -108,7 +114,7 @@ export async function storePage(page: any, profileId: number | string, linkActio
   }
 }
 
-export async function addProfileChildrenCounts(profile: Object) {
+export async function addProfileChildrenCounts(profile: { [k: string]: any; id: string | number }) {
   profile['Links'] = await getNumResults({
     storeName: STORE_LINKS,
     filters: [
@@ -258,7 +264,7 @@ export async function setDefaultSourceAction(profileId: number | string, action:
   await db.put(STORE_PROFILES, profile);
 }
 
-export async function getLink({ profileId, linkId, createIfNecessary }: { profileId: string | number; linkId: string; createIfNecessary: boolean }) {
+export async function getLink({ profileId, linkId, createIfNecessary = false }: { profileId: string | number; linkId: string; createIfNecessary?: boolean }) {
   let db = await getDBPromise();
   let out = await db.get(STORE_LINKS, [profileId, linkId]);
   if (out == null && createIfNecessary) {
@@ -344,16 +350,12 @@ export async function getProfile(id: string | number) {
 export async function storeProfile(
   profile: any,
   {
-    overwriteProps,
-    updateScrapeSettings,
-    numNewLinksFound,
-    keepExistingProps,
-  }: { overwriteProps: boolean; updateScrapeSettings: boolean; numNewLinksFound: number; keepExistingProps: boolean }
+    overwriteProps = false,
+    updateScrapeSettings = false,
+    numNewLinksFound = 0,
+    keepExistingProps = true,
+  }: { overwriteProps?: boolean; updateScrapeSettings?: boolean; numNewLinksFound?: number; keepExistingProps?: boolean }
 ) {
-  if (keepExistingProps == null) {
-    keepExistingProps = true;
-  }
-
   if (profile.id == null && profile.url != null) {
     profile.id = profile.url;
   }
@@ -436,7 +438,7 @@ export async function getScrapers() {
   return values;
 }
 
-export async function scrapeIfNecessary(source) {
+export async function scrapeIfNecessary(source: { [k: string]: any; id: string | number; providerId: string | number }) {
   let profileId = source.id;
   if (source.providerId != null) {
     profileId = source.providerId;
@@ -449,8 +451,8 @@ export async function scrapeIfNecessary(source) {
   }
 }
 
-export async function scrapeProfile(url: string) {
-  if (url == null || url.length < 1) {
+export async function scrapeProfile(url: string | number) {
+  if (typeof url !== 'string') {
     return;
   }
   console.log('scraping ' + url);
@@ -484,7 +486,16 @@ export async function getSuggestion(profileId: string | number) {
 
       let linksCursor = null;
       try {
-        linksCursor = await getLinksByTimeAdded(source.providerId);
+        // linksCursor = await getLinksByTimeAdded(source.providerId);
+        let query = {
+          storeName: STORE_LINKS,
+          lowerBounds: [source.providerId],
+          upperBounds: [source.providerId],
+        };
+        linksCursor = await getCursor(query);
+        if (linksCursor == null) {
+          continue;
+        }
         let nextUrl = null;
         while (nextUrl === null) {
           // Check if current link already exists on profile.
@@ -553,7 +564,7 @@ export async function addLink(payload: any) {
   let numNewLinks = 0;
 
   if (payload.profileId === payload.url) {
-    return;
+    return 0;
   }
   payload.url = trimmedUrl(payload.url);
 
@@ -717,7 +728,7 @@ export async function storeSource({
   pointsChange,
   overwrite,
 }: {
-  source: Object;
+  source: { [k: string]: any };
   providerId: string | number;
   consumerId: string | number;
   pointsChange: number;
@@ -769,7 +780,27 @@ export async function storeSource({
   // await setCurUrlSourceStatus();
 }
 
-export async function saveOrSkipSource({ source, targetId, action }: { source: Object; targetId: string | number; action: string }) {
+export async function saveOrSkipSource({
+  source,
+  targetId,
+  action,
+}: {
+  source: {
+    generatedBy: string;
+    id: string | number;
+    url: string;
+    points: number;
+    providerId:
+      | string
+      | number
+      | {
+          id: string | number;
+        };
+    consumerId?: string | number;
+  };
+  targetId: string | number;
+  action: string;
+}) {
   const consumerId = targetId;
   const db = await getDBPromise();
 
@@ -778,13 +809,18 @@ export async function saveOrSkipSource({ source, targetId, action }: { source: O
     providerId = source.url;
   }
   if (source.providerId != null) {
+    // @ts-ignore
     providerId = source.providerId;
   }
   if (typeof providerId === 'object') {
+    // @ts-ignore
     if (providerId.id != null) {
+      // @ts-ignore
       providerId = providerId.id;
     }
+    // @ts-ignore
     if (providerId.url != null) {
+      // @ts-ignore
       providerId = providerId.url;
     }
   }
@@ -882,7 +918,7 @@ export async function getScraper({ scraperId }: { scraperId: number }) {
 }
 
 // export async function addScraper({ domain, getLinks, getSources, getSourcesOfLink, getPageAttributes, onScriptLoad }) {
-export async function addScraper(scraper: Object) {
+export async function addScraper(scraper: { [k: string]: any }) {
   let db = await getDBPromise();
   for (let i in scraper) {
     if (typeof scraper[i] === 'function') {
@@ -942,14 +978,17 @@ export async function storeLinkSource(source: any) {
   });
 }
 
-function getIndexFromKeyPath(keyPath) {
+function getIndexFromKeyPath(keyPath: Array<string | number>) {
   return keyPath.join(KEYPATH_SEPARATOR);
 }
 
-async function getCursor(query) {
+async function getCursor(query: any) {
   try {
     let out = null;
     let index = await getIndex(query);
+    if (index == null) {
+      return;
+    }
     let cursor;
     if (query.lowerBounds.length > 0) {
       let keyRng = IDBKeyRange.bound(query.lowerBounds, query.upperBounds);
@@ -965,18 +1004,22 @@ async function getCursor(query) {
   }
 }
 
-async function getIndexFn(query) {
-  const db = await getDBPromise();
-  let tx = await db.transaction(query.storeName);
-  let objStore = await tx.objectStore(query.storeName);
-  if (query.keyPath.length === 0) {
-    return objStore;
+async function getIndexFn(query: any) {
+  try {
+    const db = await getDBPromise();
+    let tx = db.transaction(query.storeName);
+    let objStore = tx.objectStore(query.storeName);
+    if (query.keyPath.length === 0) {
+      return objStore;
+    }
+    let index = objStore.index(getIndexFromKeyPath(query.keyPath));
+    return index;
+  } catch (e) {
+    throw e;
   }
-  let index = await objStore.index(getIndexFromKeyPath(query.keyPath));
-  return index;
 }
 
-export async function getIndex(query) {
+export async function getIndex(query: any) {
   console.log('getting ' + query.storeName + ' by ', query);
   let index;
   try {
@@ -988,50 +1031,63 @@ export async function getIndex(query) {
       if (index == null) {
         debugger;
       }
+    } else {
+      console.log(e);
+      debugger;
     }
   }
   return index;
 }
 
-export async function createIndex(storeName, keyPath) {
+export async function createIndex(storeName: string, keyPath: Array<string>) {
   let version = (await getDBVersion()) + 1;
   let keyPathName = keyPath.join(KEYPATH_SEPARATOR);
 
-  let newDBPromise = await openDB(DB_NAME, version, {
+  let newDBPromise = openDB(DB_NAME, version, {
     async upgrade(db, oldVersion, newVersion, transaction) {
       console.log(db, oldVersion, newVersion, transaction, keyPath, keyPathName);
       const store = transaction.objectStore(storeName);
       store.createIndex(keyPathName, keyPath);
     },
-    blocked() {
-      debugger;
-    },
     async blocking() {
-      (await newDBPromise).close();
+      console.log('blocking something, closing');
+      this.close();
     },
-    terminated() {
-      debugger;
+
+    blocked() {
+      console.log('blocked');
     },
   });
   setDBPromise(newDBPromise);
+  await newDBPromise;
 }
 
-export async function deleteIndex(storeName, keyPathName) {
+export async function deleteIndex(storeName: string, keyPathName: string) {
   let version = (await getDBVersion()) + 1;
 
-  let newDBPromise = await openDB(DB_NAME, version, {
+  let newDBPromise = openDB(DB_NAME, version, {
     async upgrade(db, oldVersion, newVersion, transaction) {
       const store = transaction.objectStore(storeName);
       store.deleteIndex(keyPathName);
     },
     async blocking() {
-      (await newDBPromise).close();
+      console.log('blocking something, closing');
+      this.close();
+    },
+
+    blocked() {
+      console.log('blocked');
     },
   });
   setDBPromise(newDBPromise);
+  await newDBPromise;
 }
 
-function getQueryFromFilters(filters, storeName, sortOrder) {
+function getQueryFromFilters(
+  storeName: string,
+  filters?: Array<{ field: string; lowerValue: string | number; upperValue: string | number; [k: string]: any }>,
+  sortOrder = 'increasing'
+) {
   let query = {
     keyPath: [],
     lowerBounds: [],
@@ -1051,11 +1107,11 @@ function getQueryFromFilters(filters, storeName, sortOrder) {
         continue;
       }
       query.keyPath.push(filter.field);
-      let lv = filter.lowerValue;
+      let lv: string | number = filter.lowerValue;
       if (lv == 'undefined' || lv === '' || lv == null) {
         lv = -Infinity;
       }
-      let uv = filter.upperValue;
+      let uv: string | number | Array<any> | null = filter.upperValue;
       if (uv == 'undefined' || uv === '' || uv == null) {
         uv = [Infinity, Infinity, Infinity];
       }
@@ -1072,9 +1128,21 @@ function getQueryFromFilters(filters, storeName, sortOrder) {
   return query;
 }
 
-export async function getStoreResults({ storeName, filters, offset, numRows, newestFirst, sortOrder }) {
-  let out = [];
-  let query = getQueryFromFilters(filters, storeName, sortOrder);
+export async function getStoreResults({
+  storeName,
+  filters,
+  offset,
+  numRows,
+  sortOrder = 'increasing',
+}: {
+  storeName: string;
+  filters: Array<any>;
+  offset: number;
+  numRows: number;
+  sortOrder?: string;
+}) {
+  let out: Array<any> = [];
+  let query = getQueryFromFilters(storeName, filters, sortOrder);
   let cursor = await getCursor(query);
   if (cursor == null) {
     console.log('error getting cursor for ', query);
@@ -1105,8 +1173,8 @@ export async function getStoreResults({ storeName, filters, offset, numRows, new
   return out;
 }
 
-export async function getNumResults({ storeName, filters }) {
-  let query = getQueryFromFilters(filters, storeName);
+export async function getNumResults({ storeName, filters }: { storeName: string; filters: Array<any> }) {
+  let query = getQueryFromFilters(storeName, filters);
   let index = await getIndex(query);
   if (index == null) {
     console.log('error getting index for ', query);
@@ -1115,8 +1183,13 @@ export async function getNumResults({ storeName, filters }) {
   }
 
   try {
-    let keyRng = IDBKeyRange.bound(query.lowerBounds, query.upperBounds);
-    let out = index.count(keyRng);
+    let out;
+    if (query.lowerBounds.length > 0) {
+      let keyRng = IDBKeyRange.bound(query.lowerBounds, query.upperBounds);
+      out = await index.count(keyRng);
+    } else {
+      out = await index.count();
+    }
     return out;
   } catch (e) {
     console.log('error getting numResults', e, storeName, filters);
@@ -1126,7 +1199,19 @@ export async function getNumResults({ storeName, filters }) {
   return -1;
 }
 
-export async function getIndices({ offset, numRows, filters, storeNames, sortOrder }) {
+export async function getIndices({
+  offset,
+  numRows,
+  filters,
+  storeNames,
+  sortOrder,
+}: {
+  offset: number;
+  numRows: number;
+  filters: Array<any>;
+  storeNames: Array<string>;
+  sortOrder: string;
+}) {
   let out = [];
   const db = await getDBPromise();
   let indices = [];
@@ -1154,41 +1239,6 @@ export async function getIndices({ offset, numRows, filters, storeNames, sortOrd
   return out;
 }
 
-// export async function getLogs({ offset, numRows, newestFirst }) {
-//   let out = [];
-//   const db = await getDBPromise();
-//   let tx = await db.transaction(STORE_LOGS);
-//   let objStore = await tx.objectStore(STORE_LOGS);
-//   let index = await objStore.index(INDEX_LOGS_TIME);
-//   let direction = 'next';
-//   if (newestFirst) {
-//     direction = 'prev';
-//   }
-//   let cursor = await index.openCursor(null, direction);
-//   if (offset > 0) {
-//     await cursor.advance(offset);
-//   }
-//   let hasMoreItems = true;
-//   for (let i = 0; i < numRows; i++) {
-//     if (!hasMoreItems) {
-//       break;
-//     }
-//     console.log('adding ', cursor.value);
-//     if (cursor.value === out[out.length - 1]) {
-//       break;
-//     }
-//     out.push(cursor.value);
-//     try {
-//       await cursor.continue();
-//     } catch (err) {
-//       console.log('no more items, stopping');
-//       hasMoreItems = false;
-//     }
-//   }
-//   await tx.done;
-//   return out;
-// }
-
 export async function getNumLogs() {
   let db = await getDBPromise();
   let out = await db.count(STORE_LOGS);
@@ -1208,18 +1258,12 @@ export async function getNumIndices() {
   return out;
 }
 
-// export async function getNumProfiles() {
-//   let db = await getDBPromise();
-//   let out = await db.count(STORE_PROFILES);
-//   return out;
-// }
-
-export async function deleteLog(id) {
+export async function deleteLog(id: number | string) {
   let db = await getDBPromise();
   await db.delete(STORE_LOGS, id);
 }
 
-export async function addLog({ objectKeys, objectType, message }) {
+export async function addLog({ objectKeys, objectType, message }: { objectKeys: any; objectType: string; message: string }) {
   let db = await getDBPromise();
   let msgObj = {
     objectKeys,
@@ -1230,58 +1274,7 @@ export async function addLog({ objectKeys, objectType, message }) {
   await db.put(STORE_LOGS, msgObj);
 }
 
-// export async function addProfile(profile) {
-//   if (profile.defaultLinkAction == null) {
-//     profile.defaultLinkAction = 'save';
-//   }
-//   if (profile.defaultSourceAction == null) {
-//     profile.defaultSourceAction = 'nothing';
-//   }
-//   if (profile.autoGenerated == null) {
-//     profile.autoGenerated = false;
-//   }
-//   if (profile.name == null) {
-//     profile.name = profile.id;
-//   }
-
-//   const db = await getDBPromise();
-//   let links = profile.links;
-//   let sources = profile.sources;
-//   let pointsSave = profile.pointsSave;
-//   let pointsSkip = profile.pointsSkip;
-//   let points = profile.points;
-
-//   await addLinks({
-//     links,
-//     profileId: profile.id,
-//   });
-
-//   Vue.delete(profile, 'links');
-//   Vue.delete(profile, 'sources');
-
-//   delete profile.saved;
-//   delete profile.points;
-//   delete profile.profileId;
-//   delete profile.title;
-//   delete profile.url;
-//   delete profile.timeSaved;
-
-//   profile.timeAdded = new Date();
-
-//   console.log('Storing profile:', profile);
-
-//   await db.put(STORE_PROFILES, profile);
-//   await fetchProfiles();
-
-//   profile.links = links;
-//   profile.sources = sources;
-
-//   if (pointsSave != null) profile.pointsSave = pointsSave;
-//   if (pointsSkip != null) profile.pointsSkip = pointsSkip;
-//   if (points != null) profile.points = points;
-// }
-
-export async function setTarget(profileId) {
+export async function setTarget(profileId: string | number) {
   let profile = await getProfile(profileId);
   store.commit(types.SET_POPUP_PROFILE, profile);
 }

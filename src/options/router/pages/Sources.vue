@@ -32,10 +32,10 @@
 
 <script>
 import ObjectsTable from '../components/ObjectsTable.vue';
-import * as idb from '../../../store/idb.ts';
-import { Source } from '../../../models/Source.js';
-import { convertId } from '../../../Utils.ts';
-import { STORE_SOURCES } from '../../../store/Constants.js';
+import * as idb from '../../../store/idb';
+import { Source } from '../../../models/Source';
+import { convertId } from '../../../Utils';
+import { STORE_SOURCES } from '../../../store/Constants';
 
 export default {
   name: 'ProfilePage',

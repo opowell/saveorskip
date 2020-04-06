@@ -1,38 +1,35 @@
-var sos = {};
+// @ts-nocheck
+var sos = <any>{};
 
-sos.priority = 0; // higher value, higher priority
-
-sos.name = 'All other pages.';
-sos.domain = ''; // match any url.
+sos.name = 'Hacker News';
+sos.domain = 'news.ycombinator.com';
 
 sos.getLinks = function() {
-  let links = [];
-  let linkEls = document.querySelectorAll('a');
+  let links: (string | null)[] = [];
+  let linkEls = document.querySelectorAll('.storyLink');
   for (let i = 0; i < linkEls.length; i++) {
     let url = linkEls[i].getAttribute('href');
-    if (url == null) {
-      continue;
-    }
     url = sos.buildUrl(url);
-    if (sos.isParentUrl(url)) {
-      continue;
-    }
     if (!links.includes(url)) {
-      links.push(url);
+      links.push({
+        url,
+        title: linkEls[i].innerText,
+      });
     }
   }
   return links;
 };
 
-sos.getSourcesForUrl = function(url) {
+sos.getSourcesForUrl = function(targetUrl: string | null) {
   let sources = [];
   let linkEls = document.querySelectorAll('a');
   for (let i = 0; i < linkEls.length; i++) {
     let linkUrl = linkEls[i].getAttribute('href');
     linkUrl = sos.buildUrl(linkUrl);
-    if (url === linkUrl) {
+    console.log('compare ' + targetUrl + ' vs. ' + linkUrl);
+    if (targetUrl === linkUrl) {
       sources.push({
-        linkId: url,
+        linkId: targetUrl,
         source: {
           id: sos.trimmedUrl(location.href),
           points: 1,
@@ -45,17 +42,11 @@ sos.getSourcesForUrl = function(url) {
 };
 
 sos.getSources = function() {
-  let sources = [];
-  let linkEls = document.querySelectorAll('a');
-  for (let i = 0; i < linkEls.length; i++) {
-    let url = linkEls[i].getAttribute('href');
-    if (url == null) {
-      continue;
-    }
+  let sources: { url: string | null; points: number }[] = [];
+  let userEls = document.querySelectorAll('.hnuser');
+  for (let i = 0; i < userEls.length; i++) {
+    let url = userEls[i].getAttribute('href');
     url = sos.buildUrl(url);
-    if (!sos.isParentUrl(url)) {
-      continue;
-    }
     let alreadyInArray = false;
     for (let j in sources) {
       if (sources[j].url === url) {
@@ -73,17 +64,7 @@ sos.getSources = function() {
   return sources;
 };
 
-sos.onScriptLoad = function() {
-  sos.isParentUrl = function(url) {
-    let curUrl = sos.buildUrl(window.location.href);
-    if (curUrl.includes(url) && url !== curUrl) {
-      return true;
-    }
-    return false;
-  };
-};
-
-sos.getPageAttributes = function(page) {
+sos.getPageAttributes = function(page: any) {
   sos.title = document.title;
 };
 

@@ -1,5 +1,9 @@
 export default class {
-  constructor(name) {
+  name: string;
+  defaultLinkAction: string;
+  defaultSourceAction: string;
+  getSuggestion: string;
+  constructor(name: string) {
     this.name = name;
     this.defaultLinkAction = 'save';
     this.defaultSourceAction = 'nothing';

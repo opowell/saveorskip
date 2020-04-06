@@ -37,7 +37,7 @@
 <script>
 import ObjectsTable from '../components/ObjectsTable.vue';
 import * as idb from '../../../store/idb.ts';
-import { INDEX_STORES, STORE_LINKS, STORE_PROFILES, STORE_SOURCES } from '../../../store/Constants.js';
+import { INDEX_STORES, STORE_LINKS, STORE_PROFILES, STORE_SOURCES } from '../../../store/Constants';
 
 export default {
   name: 'Indices',

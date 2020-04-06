@@ -2,14 +2,13 @@ import Vue from 'vue';
 import Vuex from 'vuex';
 import VuexPersistence from 'vuex-persist';
 
-import * as getters from './getters';
 import mutations from './mutations';
 import * as actions from './actions';
 
 Vue.use(Vuex);
 
 // Store things here that need to be loaded by new pages upon load (i.e. popup).
-const stateReducer = function(state) {
+const stateReducer = function(state: { activeTabId: any; curPage: any; targetId: any }) {
   return {
     activeTabId: state.activeTabId,
     curPage: state.curPage,
@@ -68,9 +67,10 @@ const initState = {
 
 const store = new Vuex.Store({
   state: initState,
-  getters,
+  // @ts-ignore
   mutations,
   actions,
+  // @ts-ignore
   plugins: [vuexLocal.plugin],
 });
 

@@ -26,8 +26,8 @@
 
 <script>
 import ObjectsTable from '../components/ObjectsTable.vue';
-import * as idb from '../../../store/idb.ts';
-import { STORE_PROFILES } from '../../../store/Constants.js';
+import * as idb from '../../../store/idb';
+import { STORE_PROFILES } from '../../../store/Constants';
 export default {
   name: 'Profiles',
   components: {
@@ -72,7 +72,9 @@ export default {
         sortOrder: this.$refs.table.sortOrder,
       });
       for (let i in items) {
-        await idb.addProfileChildrenCounts(items[i]);
+        try {
+          await idb.addProfileChildrenCounts(items[i]);
+        } catch (e) {}
       }
       return items;
     },

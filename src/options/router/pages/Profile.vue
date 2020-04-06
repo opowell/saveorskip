@@ -55,7 +55,7 @@
 import ObjectsTable from '../components/ObjectsTable.vue';
 import * as idb from '../../../store/idb.ts';
 import { convertId } from '../../../Utils.ts';
-import { LINKS, Hrefs } from '../../Constants.ts';
+import { Hrefs } from '../../Constants.ts';
 
 export default {
   name: 'Profile',
@@ -194,9 +194,9 @@ export default {
     },
     fieldLinks() {
       return {
-        Links: '#/profile/' + encodeURIComponent(this.$route.params.id) + '/links?filters=,timeAdded,&sort=decr',
-        Sources: '#/profile/' + encodeURIComponent(this.$route.params.id) + '/sources',
-        Logs: '#/logs?filters=Profile,objectType,Profile]]' + encodeURIComponent(this.$route.params.id) + ',objectKeys,' + encodeURIComponent(this.$route.params.id) + ']]',
+        Links: Hrefs.links(this.$route.params.id),
+        Sources: Hrefs.sources(this.$route.params.id),
+        Logs: Hrefs.profileLogs(this.$route.params.id),
       };
     },
     canAddProperty() {

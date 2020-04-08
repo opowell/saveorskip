@@ -4,6 +4,7 @@ import store from './store';
 import * as idb from './store/idb';
 import * as types from './store/mutation-types';
 import { trimmedUrl, scoreFnJustPoints } from './Utils';
+import { SET_CUR_PAGE2 } from './popup/store/mutation-types';
 
 global.browser = require('webextension-polyfill');
 
@@ -189,6 +190,11 @@ chrome.tabs.onActivated.addListener(function(activeInfo) {
     tabId: activeInfo.tabId,
   });
   chrome.tabs.sendMessage(activeInfo.tabId, { action: 'getPage' });
+
+  chrome.tabs.getSelected(null, function(tab) {
+    let url = tab.url;
+    idb.dispatchToStores(SET_CUR_PAGE2, { url });
+  });
 });
 
 chrome.tabs.onUpdated.addListener(async function(tabId, changeInfo, tab) {

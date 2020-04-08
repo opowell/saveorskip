@@ -31,11 +31,11 @@ export async function dispatchToStores(functionName: string, payload: any) {
   await store.dispatch(functionName, payload);
 
   // // Call for all other pages.
-  // chrome.runtime.sendMessage({
-  //   action: 'storeDispatch',
-  //   storeAction: functionName,
-  //   storePayload: payload,
-  // });
+  chrome.runtime.sendMessage({
+    action: 'storeDispatch',
+    storeAction: functionName,
+    storePayload: payload,
+  });
 }
 
 export async function setCurPage(payload: any) {
@@ -288,11 +288,8 @@ export async function loadLink({ profileId, linkId }: { profileId: string | numb
 export async function loadSource(key: any) {
   const db = await getDBPromise();
   let out = await db.get(STORE_SOURCES, key);
-  if (out == null) {
-    return;
-  }
   // out.Links = await db.countFromIndex(STORE_LINKS, INDEX_LINKS_PROFILEID, key[1]);
-  store.commit(types.LOAD_SOURCE, out);
+  return out;
 }
 
 export async function deleteLink({ profileId, linkId }: { profileId: string | number; linkId: string }) {

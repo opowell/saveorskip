@@ -24,4 +24,7 @@ export const Hrefs = {
   sources(id: string | number) {
     return '#/profile/' + encodeURIComponent(id) + '/sources?filters=,timeAdded,&sort=decr';
   },
+  source(profileId: string | number, sourceId: string | number) {
+    return Hrefs.profile(profileId) + '/source/' + encodeURIComponent(sourceId);
+  },
 };

@@ -217,24 +217,6 @@ export default {
       }
       return this.profile.name;
     },
-    profileStats() {
-      return this.$store.state.profileStats;
-    },
-    numProps() {
-      return this.profile == null ? 0 : Object.keys(this.profile).length;
-    },
-    numLinks() {
-      if (this.profileStats == null) {
-        return 0;
-      }
-      return this.profileStats.numLinks;
-    },
-    numSources() {
-      if (this.profileStats == null) {
-        return 0;
-      }
-      return this.profileStats.numSources;
-    },
     fields() {
       let out = [];
       for (let i = 0; i < this.fieldNames.length; i++) {

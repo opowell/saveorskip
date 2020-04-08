@@ -38,49 +38,7 @@
       </select>
       <div v-else>----</div>
     </div>
-    <div class="menu-item" title="Default link action to take on newly opened pages.">
-      <span style="flex: 1 1 auto;">Default link action:&nbsp;</span>
-      <select v-if="profiles.length > 0" @change="setDefaultLinkActionEv">
-        <option v-for="action in ['save', 'skip', 'nothing']" :key="action" :value="action" :selected="action == defaultLinkAction">
-          {{ action }}
-        </option>
-      </select>
-      <div v-else>----</div>
-    </div>
-    <div class="menu-item" title="Default source action to take on newly opened pages.">
-      <span style="flex: 1 1 auto;">Default source action:&nbsp;</span>
-      <select v-if="profiles.length > 0" @change="setDefaultSourceActionEv">
-        <option v-for="action in ['save', 'skip', 'nothing']" :key="action" :value="action" :selected="action == defaultSourceAction">
-          {{ action }}
-        </option>
-      </select>
-      <div v-else>----</div>
-    </div>
-    <!-- <div class="menu-divider" /> -->
-
-    <!-- <div class="menu-item">Current page</div>
-    <template v-for="(value, name) in curLink">
-      <div :key="name" v-if="name !== 'links' && name !== 'sources' && name !== 'profileId'" class="menu-item" :title="value">
-        <span style="flex: 1 1 auto; margin-right: 10px;">{{ name }}: </span>
-        <span>{{ value }}</span>
-      </div>
-    </template>
-    <div class="menu-item">
-      <span style="flex: 1 1 auto;">Links:</span>
-      <span>{{ numLinks }}</span>
-    </div> -->
-
-    <!-- <div class="menu-item" style="word-break: break-all; white-space: initial;" v-for="(link, index) in links" :title="link" :key="link.url">{{ index + 1 }}. {{ link }}</div>
-    <div class="menu-divider" /> -->
-    <!-- <div class="menu-item">
-      <span style="flex: 1 1 auto;">Sources:</span>
-      <span>{{ numSources }}</span>
-    </div> -->
-    <!-- <div class="menu-item" style="word-break: break-all; white-space: initial;" v-for="(source, index) in sources" :title="source" :key="source.url">
-      {{ index + 1 }}. {{ source }}
-    </div> -->
     <div class="menu-divider" />
-    <!-- <div class="menu-item" :title="nextLink">Next Link: {{ nextLink }}</div> -->
     <div class="menu-item menu-button" @click="showOptions">Manage...</div>
   </div>
 </template>
@@ -105,51 +63,25 @@ export default {
     const thisComponent = this;
 
     chrome.runtime.sendMessage('getCurPage', async function(response) {
-      thisComponent.curPage = response;
+      // thisComponent.curPage = response;
       thisComponent.linkStatus = await idb.getCurUrlLinkStatus();
     });
+
+    // this.curPage = this.$store.state.curPage;
   },
   data() {
     return {
       profiles: [],
       linkStatus: '',
       sourceStatus: '',
-      curPage: '',
     };
   },
   computed: {
+    curPage() {
+      return this.$store.state.curPage;
+    },
     status() {
       return this.$store.state.status;
-    },
-    defaultLinkAction() {
-      if (this.$store.state.targetId == null) {
-        return 'nothing';
-      }
-      if (this.$store.state.popup.profile == null) {
-        return 'nothing';
-      }
-      switch (this.$store.state.popup.profile.defaultLinkAction) {
-        case 'save':
-          return 'save';
-        case 'skip':
-          return 'skip';
-      }
-      return 'nothing';
-    },
-    defaultSourceAction() {
-      if (this.$store.state.targetId == null) {
-        return 'nothing';
-      }
-      if (this.$store.state.popup.profile == null) {
-        return 'nothing';
-      }
-      switch (this.$store.state.popup.profile.defaultSourceAction) {
-        case 'save':
-          return 'save';
-        case 'skip':
-          return 'skip';
-      }
-      return 'nothing';
     },
     hasTarget() {
       return this.targetId != null && this.targetId !== '';
@@ -206,12 +138,6 @@ export default {
     },
   },
   methods: {
-    setDefaultLinkActionEv(event) {
-      idb.setDefaultLinkAction(this.targetId, event.target.value);
-    },
-    setDefaultSourceActionEv(event) {
-      idb.setDefaultSourceAction(this.targetId, event.target.value);
-    },
     deleteSource() {
       this.$store.dispatch('removeSource', {
         targetId: this.targetId,

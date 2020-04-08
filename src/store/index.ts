@@ -1,5 +1,5 @@
 import Vue from 'vue';
-import Vuex from 'vuex';
+import Vuex, { Store } from 'vuex';
 import VuexPersistence from 'vuex-persist';
 
 import mutations from './mutations';
@@ -7,19 +7,9 @@ import * as actions from './actions';
 
 Vue.use(Vuex);
 
-// Store things here that need to be loaded by new pages upon load (i.e. popup).
-const stateReducer = function(state: { activeTabId: any; curPage: any; targetId: any }) {
-  return {
-    activeTabId: state.activeTabId,
-    curPage: state.curPage,
-    targetId: state.targetId,
-  };
-};
-
 const vuexLocal = new VuexPersistence({
   key: 'saveorskip',
   storage: window.localStorage,
-  reducer: stateReducer,
 });
 
 const initState = {
@@ -28,7 +18,6 @@ const initState = {
 
   // Set of profiles.
   profile: null,
-  profileStats: null,
   scrapers: [],
   source: null,
   profileSourceStats: null,
@@ -50,7 +39,6 @@ const initState = {
   needCurSuggestion: true,
   sourceForCurUrl: null,
   nextSuggestion: null,
-  scrapeDelayMS: 1000 * 60 * 60 * 24,
   urlToScrape: null,
 
   popup: {
@@ -65,7 +53,7 @@ const initState = {
   status: 'Waiting',
 };
 
-const store = new Vuex.Store({
+const store: Store<unknown> = new Vuex.Store({
   state: initState,
   // @ts-ignore
   mutations,

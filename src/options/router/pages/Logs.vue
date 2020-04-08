@@ -61,7 +61,13 @@ export default {
       this.numLogs = await idb.getNumLogs();
     },
     async fetchRows() {
-      let items = await idb.getStoreResults({ storeName: STORE_LOGS, filters: this.$refs.table.filters, offset: this.logs.length, numRows: 100 });
+      let items = await idb.getStoreResults({
+        storeName: STORE_LOGS,
+        filters: this.$refs.table.filters,
+        offset: this.logs.length,
+        numRows: 100,
+        sortOrder: this.$refs.table.sortOrder,
+      });
       return items;
     },
   },

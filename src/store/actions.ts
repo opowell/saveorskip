@@ -91,7 +91,3 @@ export const loadProfile = ({ commit }: { commit: any }, payload: any) => {
 export const loadSources = ({ commit }: { commit: any }, payload: any) => {
   commit(types.LOAD_SOURCES, payload);
 };
-
-export const loadProfileStats = ({ commit }: { commit: any }, payload: any) => {
-  commit(types.LOAD_PROFILE_STATS, payload);
-};

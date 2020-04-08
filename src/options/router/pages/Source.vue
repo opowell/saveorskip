@@ -8,7 +8,7 @@
       :object="source"
       :crumbs="crumbs"
       @save="saveObject"
-      :fetchData="fetchData"
+      :fetchInitialData="fetchInitialData"
       :ineditable-row-names="['points', 'consumerId', 'providerId', 'saved', 'timeAdded']"
       :ineditable-col-names="['consumerId']"
       :links="fieldLinks"
@@ -26,6 +26,7 @@ import ObjectsTable from '../components/ObjectsTable.vue';
 import * as idb from '../../../store/idb';
 import { STORE_SOURCES } from '../../../store/Constants';
 import { convertId } from '../../../Utils';
+import { Hrefs } from '../../Constants';
 
 export default {
   name: 'Source',
@@ -40,6 +41,7 @@ export default {
   data() {
     return {
       profile: null,
+      source: null,
     };
   },
   methods: {
@@ -60,30 +62,20 @@ export default {
     },
     saveObject() {
       idb.saveObject(STORE_SOURCES, this.source);
-      this.fetchData();
+      this.fetchInitialData();
     },
-    async fetchData() {
+    async fetchInitialData() {
       let profileId = this.profileId;
       let sourceId = this.$route.params.sourceId;
-      idb.loadSource([profileId, sourceId]);
+      this.source = await idb.loadSource([profileId, sourceId]);
       this.profile = await idb.getProfile(this.profileId);
-      this.$refs.table.changesPending = false;
     },
   },
   computed: {
     fieldLinks() {
       return {
-        providerId: '#/profile/' + encodeURIComponent(this.$route.params.sourceId),
+        providerId: Hrefs.profile(this.$route.params.sourceId),
       };
-    },
-    profileSourceStats() {
-      return this.$store.state.profileSourceStats;
-    },
-    numLinks() {
-      if (this.profileSourceStats == null) {
-        return '';
-      }
-      return this.profileSourceStats.numLinks;
     },
     profileId() {
       return convertId(this.$route.params.profileId);
@@ -102,12 +94,6 @@ export default {
     },
     sourceId() {
       return this.$route.params.sourceId;
-    },
-    source() {
-      return this.$store.state.source;
-    },
-    profileStats() {
-      return this.$store.state.profileStats;
     },
     removableFieldNames() {
       let out = [];
@@ -134,15 +120,15 @@ export default {
         },
         {
           text: 'Profiles',
-          href: '#/profiles?filters=user,generatedBy,user',
+          href: Hrefs.profiles(),
         },
         {
           text: this.profileName,
-          href: '#/profile/' + encodeURIComponent(this.$route.params.profileId),
+          href: Hrefs.profile(this.$route.params.profileId),
         },
         {
           text: 'Sources',
-          href: '#/profile/' + encodeURIComponent(this.$route.params.profileId) + '/sources',
+          href: Hrefs.sources(this.$route.params.profileId),
         },
         {
           text: this.sourceId,

@@ -21,24 +21,9 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 
   switch (action) {
     case 'storeDispatch':
-      store.dispatch(request.storeAction, request.storePayload);
+      try {
+        store.dispatch(request.storeAction, request.storePayload);
+      } catch (e) {}
       break;
   }
 });
-
-// const sos = {};
-
-// sos.log = function(message) {
-//   console.log('popup.js received message: ' + JSON.stringify(message));
-//   let div = document.createElement('div');
-//   div.appendChild(document.createTextNode(JSON.stringify(message)));
-//   document.getElementById('messages').appendChild(div);
-// };
-
-// sos.sendMessage = function(text) {
-//   chrome.runtime.sendMessage(text);
-// };
-
-// sos.showNextPage = function() {
-//   chrome.runtime.sendMessage('showNextPage');
-// };

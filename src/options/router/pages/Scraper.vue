@@ -27,6 +27,8 @@
     </b-modal>
     <objects-table
       ref="table"
+      @deleteObject="askDeleteObject"
+      @save="saveObject"
       :crumbs="crumbs"
       :object="scraper"
       :ineditable-row-names="['id', 'domain', 'priority']"
@@ -39,10 +41,9 @@
         getSources:
           'Function that returns an array of this page\'s sources. Each source can either be a string (with the url of the source), or an object with the properties \'url\' and \'points\'. Alternatively, you can return \'pointsSave\' and \'pointsSkip\' to differentiate points changes for save and skip actions. For the save action, the points are added to the source score. For skip actions, the points are deducted from the source score.',
       }"
-      @save="saveObject"
-      :fetchData="fetchData"
-      @deleteObject="askDeleteObject"
+      :fetchInitialData="fetchInitialData"
       :addItemText="'Add Field...'"
+      :numResults="numResults"
     >
       <template v-slot:header>
         <button @click="scrapePagePrompt" title="Open and scrape a page.">Test...</button>
@@ -62,10 +63,7 @@ export default {
     ObjectsTable,
   },
   watch: {
-    '$route.params.id': function(id) {
-      this.fetchData();
-    },
-    testPage: function(x) {
+    testPage(x) {
       if (x !== null) {
         this.message = 'Finished scraping.';
       } else {
@@ -77,6 +75,7 @@ export default {
     return {
       scraper: {},
       message: '',
+      numResults: 0,
     };
   },
   methods: {
@@ -108,9 +107,10 @@ export default {
       });
       this.$router.push({ name: 'scrapers' });
     },
-    async fetchData() {
+    async fetchInitialData() {
       this.scraper = await idb.getScraper({ scraperId: this.scraperId });
       this.$refs.table.changesPending = false;
+      this.numResults = Object.keys(this.scraper).length;
     },
   },
   computed: {

@@ -37,14 +37,6 @@ export default {
     state.profile = payload;
   },
 
-  [types.LOAD_PROFILE_STATS](state: { profileStats: any }, payload: any) {
-    state.profileStats = payload;
-  },
-
-  [types.LOAD_PROFILE_SOURCE_STATS](state: { profileSourceStats: any }, payload: any) {
-    state.profileSourceStats = payload;
-  },
-
   [types.LOAD_LINK](state: string, payload: any) {
     state.link = payload;
   },

@@ -6,6 +6,9 @@ export const LINKS = {
 };
 
 export const Hrefs = {
+  link(profileId: string | number, linkUrl: string | number) {
+    return '#/profile/' + encodeURIComponent(profileId) + '/links/' + encodeURIComponent(linkUrl);
+  },
   links(id: string | number) {
     return '#/profile/' + encodeURIComponent(id) + '/links?filters=,timeAdded,&sort=decr';
   },

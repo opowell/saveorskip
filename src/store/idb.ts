@@ -19,9 +19,9 @@ import {
 } from './Constants';
 import * as AutoGenProfile from '../models/AutoGenProfile';
 import * as types from './mutation-types';
-// eslint-disable-next-line prettier/prettier
-import { trimmedUrl, drawRandomElFromObject, scoreFnJustPoints } from '../Utils';
-import { SET_CUR_PAGE2 } from '../popup/store/mutation-types';
+import { trimmedUrl, drawRandomElFromObject, scoreFnJustPoints, convertId } from '../Utils';
+
+let state: any = store.state;
 
 /**
  * Should not call Vuex store directly. Instead, broadcast messages to all tabs with the corresponding store modification. Tabs then update their own stores (and Vue instances).
@@ -38,24 +38,30 @@ export async function dispatchToStores(functionName: string, payload: any) {
   });
 }
 
-export async function setCurPage(payload: any) {
-  if (payload == null) {
-    return;
+export async function getLinkStatus(profileId: string | number, pageUrl: string) {
+  try {
+    let db = await getDBPromise();
+    profileId = convertId(profileId);
+    let link = await db.get(STORE_LINKS, [profileId, pageUrl]);
+    if (link == null) {
+      return 'neither';
+    }
+    return link.saved;
+  } catch (err) {
+    console.log(err);
   }
-  if (payload.id != null && payload.url == null) {
-    payload.url = payload.id;
+  return 'neither';
+}
+
+export async function getSourceStatus(profileId: string | number, pageUrl: string) {
+  let db = await getDBPromise();
+  profileId = convertId(profileId);
+  let link = await db.get(STORE_SOURCES, [profileId, pageUrl]);
+  if (link == null) {
+    return 'neither';
+  } else {
+    return link.saved;
   }
-  if (payload.title != null && payload.name == null) {
-    payload.title = payload.name;
-  }
-  await dispatchToStores('setCurPage', payload);
-  // await setCurUrlLinkStatus();
-  // await setCurUrlSourceStatus();
-  chrome.runtime.sendMessage({
-    action: 'storeDispatch',
-    storeAction: SET_CUR_PAGE2,
-    storePayload: payload,
-  });
 }
 
 export async function storePage(page: any, profileId: number | string, linkAction: any, sourceAction: any) {
@@ -100,10 +106,10 @@ export async function storePage(page: any, profileId: number | string, linkActio
   store.commit(types.REMOVE_URL_TO_SCRAPE, profileId);
 
   // Page as link and source for current consumer profile.
-  if (store.state.targetId != null) {
+  if (state.profileId != null) {
     await saveOrSkipLink({
       link: page,
-      targetId: store.state.targetId,
+      targetId: state.profileId,
       action: linkAction,
     });
     // await saveOrSkipSource({
@@ -158,18 +164,6 @@ export async function loadProfile(payload: any) {
   let profile = await db.get(STORE_PROFILES, profileId);
   await addProfileChildrenCounts(profile);
   return profile;
-}
-
-export async function loadPopupProfile() {
-  let profileId = store.state.targetId;
-  const db = await getDBPromise();
-  let profile = await db.get(STORE_PROFILES, profileId);
-  await dispatchToStores('setPopupProfile', profile);
-}
-
-export async function loadSources(payload: any) {
-  let out = await getProfileSources(payload.profileId);
-  await dispatchToStores('loadSources', out);
 }
 
 export async function setSkippedLinkIfNew(profileId: string | number, link: any) {
@@ -279,10 +273,7 @@ export async function getLink({ profileId, linkId, createIfNecessary = false }: 
 
 export async function loadLink({ profileId, linkId }: { profileId: string | number; linkId: string }) {
   let out = await getLink({ profileId, linkId, createIfNecessary: false });
-  if (out == null) {
-    return;
-  }
-  store.commit(types.LOAD_LINK, out);
+  return out;
 }
 
 export async function loadSource(key: any) {
@@ -295,8 +286,6 @@ export async function loadSource(key: any) {
 export async function deleteLink({ profileId, linkId }: { profileId: string | number; linkId: string }) {
   let db = await getDBPromise();
   await db.delete(STORE_LINKS, [profileId, linkId]);
-  store.commit(types.LOAD_LINK, undefined);
-  store.commit(types.DELETE_LINK, { profileId, url: linkId });
 }
 
 export async function deleteObject(store: string, key: any) {
@@ -537,13 +526,13 @@ export async function getLinks(profileId: string | number) {
 export async function deleteProfile(payload: any) {
   let db = await getDBPromise();
   await db.delete(STORE_PROFILES, payload.profileId);
-  store.dispatch('deleteProfile', payload);
+  return true;
 }
 
 export async function loadScrapers() {
   let scrapers = await getScrapers();
   store.commit(types.LOAD_SCRAPERS, scrapers);
-  console.log('scrapers: ' + JSON.stringify(store.state.scrapers));
+  console.log('scrapers: ' + JSON.stringify(state.scrapers));
 }
 
 export async function deleteScraper({ scraperId }: { scraperId: number }) {
@@ -554,7 +543,6 @@ export async function deleteScraper({ scraperId }: { scraperId: number }) {
 export async function deleteProfileSource({ profileId, sourceId }: { profileId: string | number; sourceId: string | number }) {
   let db = await getDBPromise();
   await db.delete(STORE_SOURCES, [profileId, sourceId]);
-  store.commit(types.DELETE_PROFILE_SOURCE, { profileId, sourceId });
 }
 
 export async function addLink(payload: any) {
@@ -902,10 +890,9 @@ export async function removeLink(payload: any) {
   // await setCurUrlLinkStatus();
 }
 
-export async function removeSource(payload: any) {
+export async function removeSource(payload: { targetId: string | number; url: string | number }) {
   let db = await getDBPromise();
   await db.delete(STORE_SOURCES, [payload.targetId, payload.url]);
-  // await setCurUrlSourceStatus();
 }
 
 export async function getScraper({ scraperId }: { scraperId: number }) {
@@ -1272,26 +1259,22 @@ export async function addLog({ objectKeys, objectType, message }: { objectKeys: 
 }
 
 export async function setTarget(profileId: string | number) {
-  let profile = await getProfile(profileId);
-  store.commit(types.SET_POPUP_PROFILE, profile);
+  store.commit(types.SET_TARGET, profileId);
 }
 
 export async function getCurUrlLinkStatus() {
   try {
-    if (store.state.targetId == null) {
+    if (state.profileId == null) {
       return 'neither';
     }
-    if (store.state.curPage == null) {
+    if (state.pageUrl == null) {
       return 'neither';
     }
-    let url = store.state.curPage.url;
-    if (url == null) {
-      return 'neither';
-    }
+    let url = state.pageUrl;
     url = trimmedUrl(url);
 
     let db = await getDBPromise();
-    let link = await db.get(STORE_LINKS, [store.state.targetId, url]);
+    let link = await db.get(STORE_LINKS, [state.profileId, url]);
     if (link == null) {
       return 'neither';
     }
@@ -1303,19 +1286,16 @@ export async function getCurUrlLinkStatus() {
 }
 
 export async function getCurUrlSourceStatus() {
-  if (store.state.targetId == null) {
+  if (state.profileId == null) {
     return 'neither';
   }
-  if (store.state.curPage == null) {
-    return 'neither';
-  }
-  let url = store.state.curPage.url;
+  let url = state.pageUrl;
   if (url == null) {
     return 'neither';
   }
   url = trimmedUrl(url);
   let db = await getDBPromise();
-  let link = await db.get(STORE_SOURCES, [store.state.targetId, url]);
+  let link = await db.get(STORE_SOURCES, [state.profileId, url]);
   if (link == null) {
     return 'neither';
   } else {

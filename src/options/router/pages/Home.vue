@@ -56,12 +56,6 @@ export default {
         },
       ];
     },
-    numProfiles() {
-      return this.$store.state.profiles.length;
-    },
-    numProfilesText() {
-      return this.numProfiles > 0 ? '(' + this.numProfiles + ')' : '';
-    },
   },
   methods: {
     clickRow({ item, index, event }) {

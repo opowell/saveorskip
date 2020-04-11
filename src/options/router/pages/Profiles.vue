@@ -59,6 +59,7 @@ export default {
           profileId: selection[i].id,
         });
       }
+      this.$refs.table.callFetchData();
     },
     async fetchInitialData() {
       this.numResults = await idb.getNumResults({ storeName: STORE_PROFILES, filters: this.$refs.table.filters });
@@ -92,7 +93,7 @@ export default {
         generatedBy: 'user',
       };
       await idb.storeProfile(profile, {});
-      this.fetchInitialData();
+      this.$refs.table.callFetchData();
     },
     openProfile({ item, index, event }) {
       this.$router.push({ name: 'profile', params: { id: item.id } });

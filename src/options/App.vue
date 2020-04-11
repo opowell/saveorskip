@@ -5,15 +5,8 @@
 </template>
 
 <script>
-import store from '../store';
-
 export default {
   name: 'App',
-  mounted() {
-    chrome.tabs.query({ active: true }, function(tabs) {
-      store.dispatch('setCurPage', { url: tabs[0].url });
-    });
-  },
 };
 </script>
 

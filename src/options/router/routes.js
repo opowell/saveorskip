@@ -13,9 +13,9 @@ import Sources from './pages/Sources';
 
 export default [
   {
+    name: 'settings',
     path: '/settings',
     component: Settings,
-    name: 'settings',
   },
   {
     name: 'home',
@@ -23,53 +23,53 @@ export default [
     component: Home,
   },
   {
+    name: 'profile',
     path: '/profile/:id',
     component: Profile,
-    name: 'profile',
   },
   {
+    name: 'profileLink',
     path: '/profile/:profileId/link/:linkId',
     component: Link,
-    name: 'profileLink',
   },
   {
+    name: 'profileLinks',
     path: '/profile/:id/links',
     component: Links,
-    name: 'profileLinks',
   },
   {
+    name: 'profiles',
     path: '/profiles',
     component: Profiles,
-    name: 'profiles',
   },
   {
+    name: 'profileSources',
     path: '/profile/:id/sources',
     component: Sources,
-    name: 'profileSources',
   },
   {
+    name: 'profileSource',
     path: '/profile/:profileId/sources/:sourceId',
     component: Source,
-    name: 'profileSource',
   },
   {
+    name: 'scrapers',
     path: '/scrapers',
     component: Scrapers,
-    name: 'scrapers',
   },
   {
+    name: 'logs',
     path: '/logs',
     component: Logs,
-    name: 'logs',
   },
   {
+    name: 'indices',
     path: '/indices',
     component: Indices,
-    name: 'indices',
   },
   {
+    name: 'scraper',
     path: '/scrapers/:id',
     component: Scraper,
-    name: 'scraper',
   },
 ];

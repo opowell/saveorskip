@@ -12,16 +12,8 @@ export const setTestPageUrl = ({ commit }: { commit: any }, payload: any) => {
   commit(types.SET_TEST_PAGE_URL, payload);
 };
 
-export const setCurPage = ({ commit }: { commit: any }, payload: any) => {
-  commit(types.SET_CUR_PAGE, payload);
-};
-
 export const setUrlToScrape = ({ commit }: { commit: any }, payload: any) => {
   commit(types.SET_URL_TO_SCRAPE, payload);
-};
-
-export const addProfile = ({ commit }: { commit: any }, payload: any) => {
-  commit(types.ADD_PROFILE, payload);
 };
 
 export const saveOrSkipLink = ({ commit }: { commit: any }, payload: any) => {
@@ -30,30 +22,6 @@ export const saveOrSkipLink = ({ commit }: { commit: any }, payload: any) => {
 
 export const addSources = ({ commit }: { commit: any }, payload: any) => {
   commit(types.ADD_SOURCES, payload);
-};
-
-export const removeSource = ({ commit }: { commit: any }, payload: any) => {
-  commit(types.REMOVE_SOURCE, payload);
-};
-
-export const deleteProfile = ({ commit }: { commit: any }, payload: any) => {
-  commit(types.DELETE_PROFILE, payload);
-};
-
-// export const renameProfile = ({ commit }: { commit: any }, payload: any) => {
-//   commit(types.RENAME_PROFILE, payload);
-// };
-
-export const duplicateProfile = ({ commit }: { commit: any }, payload: any) => {
-  commit(types.DUPLICATE_PROFILE, payload);
-};
-
-// export const renameSource = ({ commit }: { commit: any }, payload: any) => {
-//   commit(types.RENAME_SOURCE, payload);
-// };
-
-export const duplicateSource = ({ commit }: { commit: any }, payload: any) => {
-  commit(types.DUPLICATE_SOURCE, payload);
 };
 
 export const setNeedCurSuggestion = ({ commit }: { commit: any }, payload: any) => {
@@ -86,8 +54,4 @@ export const setNextSuggestion = ({ commit }: { commit: any }, payload: any) => 
 
 export const loadProfile = ({ commit }: { commit: any }, payload: any) => {
   commit(types.LOAD_PROFILE, payload);
-};
-
-export const loadSources = ({ commit }: { commit: any }, payload: any) => {
-  commit(types.LOAD_SOURCES, payload);
 };

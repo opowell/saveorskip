@@ -10,7 +10,7 @@
       :ineditable-row-names="['profileId', 'url', 'title', 'timeAdded', 'saved']"
       :ineditable-col-names="['profileId']"
       @save="saveLink"
-      :fetchData="fetchData"
+      :fetchInitialData="fetchInitialData"
       @deleteObject="askDeleteObject"
       :rowNamesToSkip="['profileId']"
       :addItemText="'Add Field...'"
@@ -28,25 +28,16 @@ import * as idb from '../../../store/idb.ts';
 import Vue from 'vue';
 import ObjectsTable from '../components/ObjectsTable.vue';
 import { convertId } from '../../../Utils.ts';
+import { Hrefs } from '../../Constants';
 
 export default {
   name: 'ProfileLink',
   components: {
     ObjectsTable,
   },
-  watch: {
-    '$route.params.profileId'(id) {
-      this.fetchData();
-    },
-    '$route.params.linkId'(id) {
-      this.fetchData();
-    },
-  },
-  mounted() {
-    this.fetchData();
-  },
   data() {
     return {
+      link: null,
       profile: null,
     };
   },
@@ -71,6 +62,7 @@ export default {
         linkId: this.$route.params.linkId,
       });
       idb.saveLink(this.link);
+      // eslint-disable-next-line eqeqeq
       if (this.link.profileId != this.profileId || this.link.url != this.linkId) {
         this.$router.push({
           name: 'link',
@@ -80,7 +72,7 @@ export default {
           },
         });
       }
-      this.fetchData();
+      this.$refs.table.callFetchData();
     },
     askDeleteObject() {
       this.$bvModal.show('deleteLinkModal');
@@ -90,27 +82,19 @@ export default {
         profileId: this.profileId,
         linkId: this.linkId,
       });
-      this.$router.push({ name: 'profileLinks', params: { id: this.profileId } });
+      this.$router.push(Hrefs.links(this.profileId));
     },
-    async fetchData() {
-      idb.loadLink({
+    async fetchInitialData() {
+      this.link = await idb.loadLink({
         profileId: this.profileId,
         linkId: this.linkId,
       });
-      this.changesPending = false;
       this.profile = await idb.getProfile(this.profileId);
-    },
-    reset() {
-      this.filter = '';
-      this.fetchData();
     },
   },
   computed: {
     canAddProperty() {
       return this.filter != null && this.filter.length > 0 && (this.link == null || this.link[this.filter] == null);
-    },
-    profiles() {
-      return this.$store.state.profiles;
     },
     fields() {
       let out = [];
@@ -143,9 +127,6 @@ export default {
     linkId() {
       return convertId(this.$route.params.linkId);
     },
-    link() {
-      return this.$store.state.link;
-    },
     profileId() {
       return convertId(this.$route.params.profileId);
     },
@@ -169,19 +150,19 @@ export default {
         },
         {
           text: 'Profiles',
-          href: '#/profiles?filters=user,generatedBy,user',
+          href: Hrefs.profiles(),
         },
         {
           text: this.profileName,
-          href: '#/profile/' + encodeURIComponent(this.profileId),
+          href: Hrefs.profile(this.profileId),
         },
         {
           text: 'Links',
-          href: '#/profile/' + encodeURIComponent(this.profileId) + '/links?filters=1,saved,1',
+          href: Hrefs.links(this.profileId),
         },
         {
           text: this.linkId,
-          href: '#/profile/' + encodeURIComponent(this.profileId) + '/links/' + encodeURIComponent(this.linkId),
+          href: Hrefs.link(this.profileId, this.linkId),
         },
       ];
     },

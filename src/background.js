@@ -3,39 +3,9 @@
 import store from './store';
 import * as idb from './store/idb';
 import * as types from './store/mutation-types';
-import { trimmedUrl, scoreFnJustPoints } from './Utils';
-import { SET_CUR_PAGE2 } from './popup/store/mutation-types';
+import { trimmedUrl, convertId } from './Utils';
 
 global.browser = require('webextension-polyfill');
-
-/*
- * gotoNext - whether or not to move to a new page after saving.
- **/
-async function saveOrSkip(gotoNext, action) {
-  console.log('background: saveOrSkip ' + JSON.stringify(action));
-  store.state.curPage.profileId = store.state.targetId;
-  store.state.curPage.saved = action === 'save' ? 1 : 0;
-  // await idb.saveLink(store.state.curPage);
-  // let cb = null;
-  if (gotoNext === true) {
-    // cb = showNextPage;
-    showNextPage();
-  }
-  // saveSourcesOfUrl(store.state.curPage.url, cb, action);
-}
-
-// function saveOrSkipLink(gotoNext, action, link) {
-//   idb.saveOrSkipLink({
-//     link: link,
-//     action: action,
-//     targetId: store.state.targetId,
-//   });
-//   let cb = null;
-//   if (gotoNext === true) {
-//     cb = showNextPage;
-//   }
-//   saveSourcesOfUrl(link.url, cb, action);
-// }
 
 // Save a list of sources to storage.
 function saveSources(sourcesToSave, callback) {
@@ -186,28 +156,45 @@ async function loadNextSuggestion(profileId) {
 
 chrome.tabs.onActivated.addListener(function(activeInfo) {
   console.log('tab activated', activeInfo);
+
+  setPageUrl();
+
   store.commit(types.SET_ACTIVE_TAB_ID, {
     tabId: activeInfo.tabId,
   });
-  chrome.tabs.sendMessage(activeInfo.tabId, { action: 'getPage' });
 
-  chrome.tabs.getSelected(null, function(tab) {
-    let url = tab.url;
-    idb.dispatchToStores(SET_CUR_PAGE2, { url });
-  });
+  chrome.tabs.sendMessage(activeInfo.tabId, { action: 'getPage' });
 });
+
+const state = {
+  pageUrl: null,
+  linkStatus: null,
+  sourceStatus: null,
+};
+
+function setPageUrl() {
+  chrome.tabs.getSelected(null, async function(tab) {
+    state.pageUrl = trimmedUrl(tab.url);
+    state.linkStatus = await idb.getLinkStatus(state.profileId, state.pageUrl);
+    state.sourceStatus = await idb.getSourceStatus(state.profileId, state.pageUrl);
+    chrome.runtime.sendMessage({
+      action: 'setPageUrl',
+      pageUrl: state.pageUrl,
+      linkStatus: state.linkStatus,
+      sourceStatus: state.sourceStatus,
+    });
+  });
+}
 
 chrome.tabs.onUpdated.addListener(async function(tabId, changeInfo, tab) {
   console.log('tab updated', tabId, changeInfo, tab);
   if (tabId === store.state.activeTabId) {
+    setPageUrl();
     chrome.tabs.sendMessage(tab.id, { action: 'getPage' });
   }
 });
 
 async function doGetPage(senderUrl, message, sender) {
-  if (sender.tab.active) {
-    await idb.setCurPage(message.page);
-  }
   if (senderUrl === store.state.testPageUrl) {
     idb.dispatchToStores('setTestPage', { page: message.page });
   }
@@ -241,6 +228,11 @@ async function handleMessage(message, sender) {
   }
 
   switch (action) {
+    case 'getPopupData':
+      const popupData = {};
+      popupData.profileId = store.state.profileId;
+      popupData.pageUrl = store.state.pageUrl;
+      return popupData;
     case 'getCurPage':
       let page = store.state.curPage;
       return page;
@@ -294,39 +286,6 @@ async function handleMessage(message, sender) {
     // NOT SURE NEEDED
     case 'showNextPage':
       showNextPage();
-      break;
-    // let tUrl = trimmedUrl(sender.tab.url);
-    // if (tUrl === store.state.urlToScrape) {
-    //   saveSourcesOfUrl(tUrl, null, 'save');
-    // } else if (tUrl === store.state.sourceToScrape) {
-    //   saveAsSource(sender.tab, store.state.targetId, tUrl);
-    // } else if (sender.tab.id !== store.state.curSuggestionTabId) {
-    //   if (sender.tab.active) {
-    //     // store.commit(types.SET_CUR_PAGE, {
-    //     //   url: sender.tab.url,
-    //     // });
-    //     // idb.setCurPage(sender.tab.url);
-    //     store.commit(types.SET_ACTIVE_TAB_ID, {
-    //       tabId: sender.tab.id,
-    //     });
-    //     await idb.setSkippedLinkIfNew(store.state.targetId, message.link);
-    //     await idb.setSkippedSourceIfNew(store.state.targetId, message.link);
-    //     await idb.setCurPage(message.link);
-    //   }
-    // } else {
-    //   saveAsSource(sender.tab, store.state.targetId, tUrl);
-    // }
-    case 'saveAndGo':
-      saveOrSkip(true, 'save');
-      break;
-    case 'skipAndGo':
-      saveOrSkip(true, 'skip');
-      break;
-    case 'save':
-      saveOrSkip(false, 'save');
-      break;
-    case 'skip':
-      saveOrSkip(false, 'skip');
       break;
     case 'go':
       showNextPage(message.profileId);
@@ -392,29 +351,6 @@ async function getLinksCB(links) {
   store.commit(types.SET_SOURCE_TO_SCRAPE, '');
 }
 
-// Whether or not an array of links contains a particular link
-// eslint-disable-next-line no-unused-vars
-function arrayContainsLink(array, linkToFind) {
-  let urlToFind = trimmedUrl(linkToFind.url);
-  for (let i = 0; i < array.length; i++) {
-    let link = array[i];
-    if (typeof link === 'object') {
-      link = link.url;
-    }
-    if (trimmedUrl(link) === urlToFind) {
-      return true;
-    }
-  }
-  return false;
-}
-
-// Whether or not an object of links contains a particular link.
-// eslint-disable-next-line no-unused-vars
-function objContainsLink(links, linkToFind) {
-  let urlToFind = trimmedUrl(linkToFind.url);
-  return links[urlToFind] != null;
-}
-
 // Open URL and get suggestion from it.
 // eslint-disable-next-line no-unused-vars
 function openUrl(newURL, getSuggestion) {
@@ -445,4 +381,5 @@ function changeActiveTabToUrl(newURL) {
 
 idb.loadScrapers();
 
-idb.loadPopupProfile();
+state.profileId = localStorage.getItem('profileId');
+state.profileId = convertId(state.profileId);

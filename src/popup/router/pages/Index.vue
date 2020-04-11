@@ -3,36 +3,32 @@
     <div style="display: flex; padding-bottom: 2px; justify-content: center; font-size: 200%;">
       <span class="menu-tile" @click="go" title="Go to the next suggestion."> go forward&nbsp;<i class="fas fa-arrow-right" style="color: #444;"></i> </span>
     </div>
-    <div class="menu-item" :title="curPageUrl">
-      <span style="flex: 1 1 auto; margin-right: 10px;">Current page: </span>
-      <span style="text-overflow: ellipsis; white-space: nowrap; overflow: hidden;">{{ curPageUrl }}</span>
-    </div>
-    <div class="menu-item" :title="curPageUrl">
-      <span style="flex: 1 1 auto; margin-right: 10px;">Status: </span>
-      <span style="text-overflow: ellipsis; white-space: nowrap; overflow: hidden;">{{ status }}</span>
+    <div class="menu-item" :title="pageUrl">
+      <span style="flex: 1 1 auto; margin-right: 10px;">Page: </span>
+      <span style="text-overflow: ellipsis; white-space: nowrap; overflow: hidden;">{{ pageUrl }}</span>
     </div>
     <div class="menu-divider" />
-    <div class="menu-item" title="The status of the current link on the current profile as a link.">
+    <div class="menu-item" title="The status of the page on the profile as a link.">
       <span style="flex: 1 1 auto;">Link:&nbsp;</span>
       <span class="button-group">
-        <i title="Current link is a saved link." class="far fa-star" @click="save" :class="{ bgselected: linkSaved }" style="color: green"></i>
-        <i title="Current link is a not saved link." class="far fa-star" @click="skip" :class="{ bgselected: linkSkipped }" style="color: red"></i>
-        <i title="Current link is a not a link on the current profile." class="fas fa-trash" @click="removeLink" :class="{ bgselected: linkNeither }" style="color: grey"></i>
+        <i title="Page is a saved link." class="far fa-star" @click="save" :class="{ bgselected: linkSaved }" style="color: green"></i>
+        <i title="Page is not a saved link." class="far fa-star" @click="skip" :class="{ bgselected: linkSkipped }" style="color: red"></i>
+        <i title="Page is a not a link on the current profile." class="fas fa-trash" @click="removeLink" :class="{ bgselected: linkNeither }" style="color: grey"></i>
       </span>
     </div>
-    <div class="menu-item" title="The status of the current link on the current profile as a source.">
+    <div class="menu-item" title="The status of the page on the profile as a source.">
       <span style="flex: 1 1 auto;">Source:&nbsp;</span>
       <span class="button-group">
-        <i title="Current link is a saved source." class="far fa-star" @click="saveAsSource(true)" :class="{ bgselected: sourceSaved }" style="color: green"></i>
-        <i title="Current link is a not saved link." class="far fa-star" @click="saveAsSource(false)" :class="{ bgselected: sourceSkipped }" style="color: red"></i>
-        <i title="Current link is a not a source on the current profile." class="fas fa-trash" @click="deleteSource" :class="{ bgselected: sourceNeither }" style="color: grey"></i>
+        <i title="Page is a saved source." class="far fa-star" @click="saveAsSource(true)" :class="{ bgselected: sourceSaved }" style="color: green"></i>
+        <i title="Page is not a saved source." class="far fa-star" @click="saveAsSource(false)" :class="{ bgselected: sourceSkipped }" style="color: red"></i>
+        <i title="Page is a not a source on the profile." class="fas fa-trash" @click="deleteSource" :class="{ bgselected: sourceNeither }" style="color: grey"></i>
       </span>
     </div>
     <div class="menu-divider" />
     <div class="menu-item" title="The current profile to save links and sources to.">
       <span style="flex: 1 1 auto;">Profile:&nbsp;</span>
       <select v-if="profiles.length > 0" id="target-select" @change="setTargetEv">
-        <option v-for="profile in profiles" :key="profile.id" :value="profile.id" :selected="profile.id == targetId">
+        <option v-for="profile in profiles" :key="profile.id" :value="profile.id" :selected="profile.id == profileId">
           {{ profile.name }}
         </option>
       </select>
@@ -46,7 +42,6 @@
 <script>
 import * as idb from '../../../store/idb';
 import { Source } from '../../../models/Source';
-import { convertId } from '../../../Utils';
 
 export default {
   async mounted() {
@@ -57,32 +52,46 @@ export default {
     } else {
       await this.setTarget(this.targetId);
     }
-    this.linkStatus = await idb.getCurUrlLinkStatus();
-    this.sourceStatus = await idb.getCurUrlSourceStatus();
 
     const thisComponent = this;
 
-    chrome.runtime.sendMessage('getCurPage', async function(response) {
-      // thisComponent.curPage = response;
-      thisComponent.linkStatus = await idb.getCurUrlLinkStatus();
+    chrome.runtime.sendMessage('getPopupData', function(response) {
+      thisComponent.pageUrl = response.pageUrl;
+      thisComponent.profileId = response.profileId;
     });
 
-    // this.curPage = this.$store.state.curPage;
+    chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
+      switch (request.action) {
+        case 'setPageUrl':
+          this.pageUrl = request.pageUrl;
+          break;
+        case 'setProfileId':
+          this.profileId = request.profileId;
+          break;
+      }
+    });
+  },
+  watch: {
+    pageUrl() {
+      this.updateDa();
+    },
+    profileId() {
+      this.updateStatuses();
+    },
   },
   data() {
     return {
       profiles: [],
-      linkStatus: '',
-      sourceStatus: '',
+      status: 'ready',
+      profile: null,
+      page: null,
+      linkStatus: null,
+      sourceStatus: null,
+      pageUrl: null,
+      profileId: null,
     };
   },
   computed: {
-    curPage() {
-      return this.$store.state.curPage;
-    },
-    status() {
-      return this.$store.state.status;
-    },
     hasTarget() {
       return this.targetId != null && this.targetId !== '';
     },
@@ -112,21 +121,6 @@ export default {
     sourceNeither() {
       return !this.sourceSaved && !this.sourceSkipped;
     },
-    targetId() {
-      return this.$store.state.targetId;
-    },
-    target() {
-      return this.$store.getters.curTarget;
-    },
-    nextLink() {
-      return this.$store.state.nextSuggestion;
-    },
-    numLinks() {
-      return this.links == null ? '-' : this.links.length;
-    },
-    numSources() {
-      return this.sources == null ? '-' : this.sources.length;
-    },
     curPageUrl() {
       if (this.curPage == null) {
         return '---';
@@ -138,17 +132,18 @@ export default {
     },
   },
   methods: {
+    async updateStatuses() {
+      this.linkStatus = await idb.getCurUrlLinkStatus();
+      this.sourceStatus = await idb.getCurUrlSourceStatus();
+    },
     deleteSource() {
-      this.$store.dispatch('removeSource', {
-        targetId: this.targetId,
-        url: this.curPage.url,
-      });
+      idb.removeSource({ targetId: this.targetId, url: this.curPageUrl });
     },
     setTargetEv(event) {
       this.setTarget(event.target.value);
     },
     async setTarget(profileId) {
-      await idb.setTarget(convertId(profileId));
+      this.profileId = profileId;
     },
     async save() {
       await idb.saveOrSkipLink({
@@ -166,16 +161,8 @@ export default {
       });
       this.linkStatus = 0;
     },
-    saveAndGo() {
-      this.save();
-      this.go();
-    },
     go() {
       chrome.runtime.sendMessage({ action: 'go', profileId: this.targetId });
-    },
-    skipAndGo() {
-      this.skip();
-      this.go();
     },
     async saveAsSource(save) {
       let source = Source(this.curPage.url, this.targetId);

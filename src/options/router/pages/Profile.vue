@@ -9,8 +9,8 @@
       </div>
       <div style="display: flex">
         <button @click="openSuggestion" :disabled="getSuggestionResult == null || getSuggestionResult.url == null">Open</button>
-        <button @click="storeSuggestion('save')" :disabled="getSuggestionResult == null || getSuggestionResult.url == null">Save</button>
-        <button @click="storeSuggestion('skip')" :disabled="getSuggestionResult == null || getSuggestionResult.url == null">Skip</button>
+        <button @click="storeSuggestion(LINK_STATUS.SAVE)" :disabled="getSuggestionResult == null || getSuggestionResult.url == null">Save</button>
+        <button @click="storeSuggestion(LINK_STATUS.SKIP)" :disabled="getSuggestionResult == null || getSuggestionResult.url == null">Skip</button>
       </div>
     </b-modal>
 
@@ -75,14 +75,11 @@ export default {
       chrome.tabs.create({ url: 'http://' + this.getSuggestionResult.url, active: true });
     },
     storeSuggestion(action) {
-      idb.saveOrSkipLink({
-        link: {
-          url: this.getSuggestionResult.url,
-          sources: [this.getSuggestionResult.profileId],
-        },
-        action,
-        targetId: this.profileId,
-      });
+      let link = {
+        url: this.getSuggestionResult.url,
+        sources: [this.getSuggestionResult.profileId],
+      };
+      idb.saveOrSkipLink(action, this.profileId, link);
     },
     openSuggestionModal() {
       this.$bvModal.show('getSuggestionModal');
@@ -249,7 +246,7 @@ export default {
       return [
         {
           text: 'Home',
-          href: '#/',
+          href: Hrefs.home(),
         },
         {
           text: 'Profiles',

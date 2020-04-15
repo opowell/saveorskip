@@ -73,9 +73,7 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
   } else if (request.action === 'getLinks') {
     sos.getLinksWithResponse(sendResponse);
   } else if (request.action === 'getPage') {
-    let page = sos.getPage();
-    console.log('got page: ' + JSON.stringify(page));
-    chrome.runtime.sendMessage({ action: 'getPage', page });
+    sos.sendPageObj();
   } else {
     console.log('sos unknown message: ' + request.action, request);
     sendResponse({}); // Send nothing..
@@ -132,16 +130,20 @@ let getScraperCallback = function(response) {
 };
 
 sos.finishScraperLoad = function() {
-  let page = sos.getPage();
-
-  chrome.runtime.sendMessage({
-    action: 'getPage',
-    page,
-  });
+  sos.sendPageObj();
 
   if (sos.closeWhenDone === true) {
     window.close();
   }
+};
+
+sos.sendPageObj = function() {
+  let page = sos.getPage();
+  console.log('got page: ' + JSON.stringify(page));
+  chrome.runtime.sendMessage({
+    action: 'getPage',
+    page,
+  });
 };
 
 console.log('finished running, sending pageLoaded message');

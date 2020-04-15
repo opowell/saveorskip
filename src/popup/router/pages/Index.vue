@@ -7,20 +7,24 @@
       <span style="flex: 1 1 auto; margin-right: 10px;">Page: </span>
       <span style="text-overflow: ellipsis; white-space: nowrap; overflow: hidden;">{{ pageUrl }}</span>
     </div>
+    <div class="menu-item" :title="pageUrl">
+      <span style="flex: 1 1 auto; margin-right: 10px;">Page Obj: </span>
+      <span style="text-overflow: ellipsis; white-space: nowrap; overflow: hidden;">{{ page == null ? 'null' : page.url }}</span>
+    </div>
     <div class="menu-divider" />
     <div class="menu-item" title="The status of the page on the profile as a link.">
       <span style="flex: 1 1 auto;">Link:&nbsp;</span>
       <span class="button-group">
-        <i title="Page is a saved link." class="far fa-star" @click="save" :class="{ bgselected: linkSaved }" style="color: green"></i>
-        <i title="Page is not a saved link." class="far fa-star" @click="skip" :class="{ bgselected: linkSkipped }" style="color: red"></i>
+        <i title="Page is a saved link." class="far fa-star" @click="storeLinkStatus(LINK_STATUS.SAVED)" :class="{ bgselected: linkSaved }" style="color: green"></i>
+        <i title="Page is not a saved link." class="far fa-star" @click="storeLinkStatus(LINK_STATUS.SKIPPED)" :class="{ bgselected: linkSkipped }" style="color: red"></i>
         <i title="Page is a not a link on the current profile." class="fas fa-trash" @click="removeLink" :class="{ bgselected: linkNeither }" style="color: grey"></i>
       </span>
     </div>
     <div class="menu-item" title="The status of the page on the profile as a source.">
       <span style="flex: 1 1 auto;">Source:&nbsp;</span>
       <span class="button-group">
-        <i title="Page is a saved source." class="far fa-star" @click="saveAsSource(true)" :class="{ bgselected: sourceSaved }" style="color: green"></i>
-        <i title="Page is not a saved source." class="far fa-star" @click="saveAsSource(false)" :class="{ bgselected: sourceSkipped }" style="color: red"></i>
+        <i title="Page is a saved source." class="far fa-star" @click="saveAsSource(LINK_STATUS.SAVED)" :class="{ bgselected: sourceSaved }" style="color: green"></i>
+        <i title="Page is not a saved source." class="far fa-star" @click="saveAsSource(LINK_STATUS.SKIPPED)" :class="{ bgselected: sourceSkipped }" style="color: red"></i>
         <i title="Page is a not a source on the profile." class="fas fa-trash" @click="deleteSource" :class="{ bgselected: sourceNeither }" style="color: grey"></i>
       </span>
     </div>
@@ -42,43 +46,9 @@
 <script>
 import * as idb from '../../../store/idb';
 import { Source } from '../../../models/Source';
+import { LINK_STATUS } from '../../../store/Constants.ts';
 
 export default {
-  async mounted() {
-    let loadedProfiles = await idb.fetchProfiles([{ field: 'generatedBy', lowerValue: 'user', upperValue: 'user' }]);
-    this.profiles.push(...loadedProfiles);
-    if (!this.hasValidTarget && this.profiles.length > 0) {
-      await this.setTarget(this.profiles[0].id);
-    } else {
-      await this.setTarget(this.targetId);
-    }
-
-    const thisComponent = this;
-
-    chrome.runtime.sendMessage('getPopupData', function(response) {
-      thisComponent.pageUrl = response.pageUrl;
-      thisComponent.profileId = response.profileId;
-    });
-
-    chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
-      switch (request.action) {
-        case 'setPageUrl':
-          this.pageUrl = request.pageUrl;
-          break;
-        case 'setProfileId':
-          this.profileId = request.profileId;
-          break;
-      }
-    });
-  },
-  watch: {
-    pageUrl() {
-      this.updateDa();
-    },
-    profileId() {
-      this.updateStatuses();
-    },
-  },
   data() {
     return {
       profiles: [],
@@ -89,55 +59,93 @@ export default {
       sourceStatus: null,
       pageUrl: null,
       profileId: null,
+      LINK_STATUS,
     };
+  },
+  async mounted() {
+    let loadedProfiles = await idb.fetchProfiles([{ field: 'generatedBy', lowerValue: 'user', upperValue: 'user' }]);
+    this.profiles.push(...loadedProfiles);
+    if (!this.hasValidTarget && this.profiles.length > 0) {
+      await this.setTarget(this.profiles[0].id);
+    } else {
+      await this.setTarget(this.profileId);
+    }
+
+    const thisComponent = this;
+
+    chrome.runtime.sendMessage('getPopupData', function(response) {
+      thisComponent.pageUrl = response.pageUrl;
+      thisComponent.profileId = response.profileId;
+      thisComponent.page = response.page;
+    });
+
+    chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
+      switch (request.action) {
+        case 'setPageUrl':
+          this.pageUrl = request.pageUrl;
+          break;
+        case 'setProfileId':
+          this.profileId = request.profileId;
+          break;
+        case 'setPage':
+          this.page = request.page;
+          break;
+      }
+    });
+  },
+  watch: {
+    pageUrl() {
+      this.updateStatuses();
+    },
+    profileId() {
+      this.updateStatuses();
+    },
   },
   computed: {
     hasTarget() {
-      return this.targetId != null && this.targetId !== '';
+      return this.profileId != null && this.profileId !== '';
     },
     hasValidTarget() {
       for (let i in this.profiles) {
-        if (this.profiles[i].id === this.targetId) {
+        if (this.profiles[i].id === this.profileId) {
           return true;
         }
       }
       return false;
     },
     linkSaved() {
-      return this.linkStatus === 1;
+      return this.linkStatus === LINK_STATUS.SAVED;
     },
     linkSkipped() {
-      return this.linkStatus === 0;
+      return this.linkStatus === LINK_STATUS.SKIPPED;
     },
     linkNeither() {
       return !this.linkSaved && !this.linkSkipped;
     },
     sourceSaved() {
-      return this.sourceStatus === 1;
+      return this.sourceStatus === LINK_STATUS.SAVED;
     },
     sourceSkipped() {
-      return this.sourceStatus === 0;
+      return this.sourceStatus === LINK_STATUS.SKIPPED;
     },
     sourceNeither() {
       return !this.sourceSaved && !this.sourceSkipped;
     },
-    curPageUrl() {
-      if (this.curPage == null) {
-        return '---';
-      }
-      if (this.curPage.url == null) {
-        return this.curPage.id;
-      }
-      return this.curPage.url;
-    },
   },
   methods: {
     async updateStatuses() {
-      this.linkStatus = await idb.getCurUrlLinkStatus();
-      this.sourceStatus = await idb.getCurUrlSourceStatus();
+      if (this.profileId == null) {
+        return;
+      }
+      if (this.pageUrl == null) {
+        return;
+      }
+      console.log('updating popup', this.profileId, this.pageUrl);
+      this.linkStatus = await idb.getLinkStatus(this.profileId, this.pageUrl);
+      this.sourceStatus = await idb.getSourceStatus(this.profileId, this.pageUrl);
     },
     deleteSource() {
-      idb.removeSource({ targetId: this.targetId, url: this.curPageUrl });
+      idb.removeSource({ targetId: this.profileId, url: this.pageUrl });
     },
     setTargetEv(event) {
       this.setTarget(event.target.value);
@@ -145,41 +153,26 @@ export default {
     async setTarget(profileId) {
       this.profileId = profileId;
     },
-    async save() {
-      await idb.saveOrSkipLink({
-        link: this.curPage,
-        action: 'save',
-        targetId: this.targetId,
-      });
-      this.linkStatus = 1;
-    },
-    async skip() {
-      idb.saveOrSkipLink({
-        link: this.curPage,
-        action: 'not save',
-        targetId: this.targetId,
-      });
-      this.linkStatus = 0;
+    async storeLinkStatus(status) {
+      await idb.setLinkStatus(this.pageUrl, status, this.profileId, this.page);
+      this.linkStatus = status;
     },
     go() {
-      chrome.runtime.sendMessage({ action: 'go', profileId: this.targetId });
+      chrome.runtime.sendMessage({ action: 'go', profileId: this.profileId });
     },
-    async saveAsSource(save) {
-      let source = Source(this.curPage.url, this.targetId);
+    async saveAsSource(action) {
+      let source = Source(this.pageUrl, this.profileId);
       source.generatedBy = 'user';
-      await idb.saveOrSkipSource({
-        source,
-        targetId: this.targetId,
-        action: save ? 'save' : 'skip',
-      });
+      await idb.saveOrSkipSource(action, this.profileId, source);
+      this.sourceStatus = action;
     },
     showOptions() {
       chrome.runtime.openOptionsPage();
     },
     async removeLink() {
       await idb.removeLink({
-        targetId: this.targetId,
-        url: this.curPage.url,
+        targetId: this.profileId,
+        url: this.pageUrl,
       });
       this.linkStatus = 'neither';
     },

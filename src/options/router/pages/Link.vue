@@ -146,7 +146,7 @@ export default {
       return [
         {
           text: 'Home',
-          href: '#/',
+          href: Hrefs.home(),
         },
         {
           text: 'Profiles',

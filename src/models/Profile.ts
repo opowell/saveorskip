@@ -1,11 +1,13 @@
+import { LINK_STATUS } from '../store/Constants';
+
 export default class {
   name: string;
-  defaultLinkAction: string;
+  defaultLinkAction: number;
   defaultSourceAction: string;
   getSuggestion: string;
   constructor(name: string) {
     this.name = name;
-    this.defaultLinkAction = 'save';
+    this.defaultLinkAction = LINK_STATUS.SAVED;
     this.defaultSourceAction = 'nothing';
     this.getSuggestion = `
 async function loadNextSuggestion() {

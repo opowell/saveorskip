@@ -1,6 +1,5 @@
 import Vue from 'vue';
 import App from './App';
-import * as idb from '../store/idb.ts';
 import store from '../store';
 import router from './router';
 
@@ -17,18 +16,4 @@ window.vue = new Vue({
   store,
   router,
   render: h => h(App),
-});
-
-chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
-  console.log('received message: ' + JSON.stringify(request));
-  let action = request;
-  if (request.action != null) {
-    action = request.action;
-  }
-
-  switch (action) {
-    case 'storeDispatch':
-      store.dispatch(request.storeAction, request.storePayload);
-      break;
-  }
 });

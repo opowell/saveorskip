@@ -62,7 +62,7 @@
     <!-- User Interface controls -->
     <div style="display: flex; align-items: baseline; flex: 0 0 auto; padding: 1em; background-color: rgb(226, 226, 226);">
       <b-breadcrumb :items="crumbs" />
-      <div class="query" style="display: flex; align-items: baseline;" @click="editFilters">
+      <div class="query" @click="editFilters">
         <span
           class="filter"
           :class="{ filterMovable: tempFilters.length > 1 }"
@@ -928,7 +928,7 @@ export default {
           }
         }
         for (let i in this.object) {
-          console.log(i);
+          // console.log(i);
           let exists = false;
           for (let j in out) {
             if (out[j].name === this.valueToString(i)) {
@@ -980,6 +980,9 @@ export default {
   margin-left: 0.4rem;
   border-radius: 2px;
   background-color: #f7f7f7;
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
 }
 
 .query:hover {

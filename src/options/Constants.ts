@@ -5,7 +5,17 @@ export const LINKS = {
   LOGS: 'logs?filters=,time,&sort=decr',
 };
 
+import Vue from 'vue';
+
+export const MessageEventBus = new Vue();
+
 export const Hrefs = {
+  home() {
+    return '#/';
+  },
+  indices() {
+    return '#/indices';
+  },
   link(profileId: string | number, linkUrl: string | number) {
     return '#/profile/' + encodeURIComponent(profileId) + '/links/' + encodeURIComponent(linkUrl);
   },
@@ -23,6 +33,12 @@ export const Hrefs = {
   },
   profile(id: string | number) {
     return '#/profile/' + encodeURIComponent(id);
+  },
+  scraper(id: string | number) {
+    return '#/scrapers/' + encodeURIComponent(id);
+  },
+  scrapers() {
+    return '#/scrapers';
   },
   sources(id: string | number) {
     return '#/profile/' + encodeURIComponent(id) + '/sources?filters=,timeAdded,&sort=decr';

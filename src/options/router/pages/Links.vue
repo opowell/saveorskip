@@ -34,7 +34,8 @@
 import ObjectsTable from '../components/ObjectsTable.vue';
 import * as idb from '../../../store/idb';
 import { convertId } from '../../../Utils';
-import { STORE_LINKS } from '../../../store/Constants';
+import { STORE_LINKS, LINK_STATUS } from '../../../store/Constants.ts';
+import { Hrefs } from '../../Constants';
 
 export default {
   name: 'ProfileLinks',
@@ -85,12 +86,8 @@ export default {
     async addLink() {
       let url = document.getElementById('addLinkUrlInput').value;
       let title = document.getElementById('addLinkTitleInput').value;
-      let link = {
-        targetId: this.profileId,
-        action: 'save',
-        link: { url, title },
-      };
-      await idb.saveOrSkipLink(link);
+      let link = { url, title };
+      await idb.saveOrSkipLink(LINK_STATUS.SAVE, this.profileId, link);
       await this.fetchInitialData();
     },
     openLink({ item, index, event }) {
@@ -123,19 +120,19 @@ export default {
       return [
         {
           text: 'Home',
-          href: '#/',
+          href: Hrefs.home(),
         },
         {
           text: 'Profiles',
-          href: '#/profiles?filters=user,generatedBy,user',
+          href: Hrefs.profiles(),
         },
         {
           text: this.profileName,
-          href: '#/profile/' + encodeURIComponent(this.profileId),
+          href: Hrefs.profile(this.profileId),
         },
         {
           text: 'Links',
-          href: '#/profile/' + encodeURIComponent(this.profileId) + '/links?filters=1,saved,1',
+          href: Hrefs.links(this.profileId),
         },
       ];
     },

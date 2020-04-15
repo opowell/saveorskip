@@ -4,6 +4,7 @@ import store from './store';
 import * as idb from './store/idb';
 import * as types from './store/mutation-types';
 import { trimmedUrl, convertId } from './Utils';
+import { LINK_STATUS } from './store/Constants.ts';
 
 global.browser = require('webextension-polyfill');
 
@@ -113,8 +114,8 @@ function saveSourcesOfUrl(url, cb, action) {
 
 // Selects a random source, with prob. of selecting source i proportional to source i's points.
 async function showNextPage(profileId) {
-  await idb.dispatchToStores('gettingSuggestion', profileId);
-  await idb.dispatchToStores('status', 'Getting suggestion');
+  await store.dispatch('gettingSuggestion', profileId);
+  await store.dispatch('status', 'Getting suggestion');
   // If next suggestion already exists, use it and find a new one.
   console.log('show next link');
   if (store.state.nextSuggestion != null) {
@@ -139,7 +140,7 @@ async function showNextPage(profileId) {
 }
 
 async function loadNextSuggestion(profileId) {
-  await idb.dispatchToStores('status', 'Getting suggestion');
+  await store.dispatch('status', 'Getting suggestion');
   try {
     console.log('Loading next link');
     let nextLink = await idb.getSuggestion(profileId);
@@ -147,34 +148,20 @@ async function loadNextSuggestion(profileId) {
       changeActiveTabToUrl(nextLink.url);
       return;
     } else {
-      await idb.dispatchToStores('status', 'Waiting for suggestion');
+      await store.dispatch('status', 'Waiting for suggestion');
     }
   } catch (err) {
     console.log(err);
   }
 }
 
-chrome.tabs.onActivated.addListener(function(activeInfo) {
-  console.log('tab activated', activeInfo);
-
-  setPageUrl();
-
-  store.commit(types.SET_ACTIVE_TAB_ID, {
-    tabId: activeInfo.tabId,
-  });
-
-  chrome.tabs.sendMessage(activeInfo.tabId, { action: 'getPage' });
-});
-
-const state = {
-  pageUrl: null,
-  linkStatus: null,
-  sourceStatus: null,
-};
-
-function setPageUrl() {
-  chrome.tabs.getSelected(null, async function(tab) {
+function setPageUrl(tabId) {
+  const getTabFn = async function(tab) {
     state.pageUrl = trimmedUrl(tab.url);
+    if (state.page == null || state.page.url !== state.pageUrl) {
+      state.page = null;
+      getPageObj(tab.id);
+    }
     state.linkStatus = await idb.getLinkStatus(state.profileId, state.pageUrl);
     state.sourceStatus = await idb.getSourceStatus(state.profileId, state.pageUrl);
     chrome.runtime.sendMessage({
@@ -183,24 +170,45 @@ function setPageUrl() {
       linkStatus: state.linkStatus,
       sourceStatus: state.sourceStatus,
     });
+  };
+  if (tabId != null) {
+    chrome.tabs.get(tabId, getTabFn);
+  } else {
+    chrome.tabs.getSelected(null, getTabFn);
+  }
+}
+
+async function getCurrentPageObj(sender) {
+  chrome.tabs.getSelected(null, async function(tab) {
+    getPageObj(tab.id);
   });
 }
 
-chrome.tabs.onUpdated.addListener(async function(tabId, changeInfo, tab) {
-  console.log('tab updated', tabId, changeInfo, tab);
-  if (tabId === store.state.activeTabId) {
-    setPageUrl();
-    chrome.tabs.sendMessage(tab.id, { action: 'getPage' });
+async function getPageObj(tabId) {
+  // 'tabId' must be at least 0.
+  if (tabId < 0) {
+    return;
   }
-});
+  chrome.tabs.sendMessage(tabId, { action: 'getPage' });
+}
 
 async function doGetPage(senderUrl, message, sender) {
-  if (senderUrl === store.state.testPageUrl) {
-    idb.dispatchToStores('setTestPage', { page: message.page });
+  if (senderUrl === state.testPageUrl) {
+    store.dispatch('setTestPage', { page: message.page });
   }
-  let profile = await idb.getProfile(store.state.targetId);
-  // eslint-disable-next-line prettier/prettier
-  await idb.storePage(message.page, senderUrl, profile.defaultLinkAction, profile.defaultSourceAction);
+  let profile = await idb.getProfile(state.profileId);
+  message.page.url = senderUrl;
+  await idb.storePage(message.page, state.profileId, profile.defaultLinkAction, profile.defaultSourceAction);
+  setPageUrl();
+  setPage(message.page);
+}
+
+function setPage(page) {
+  state.page = page;
+  chrome.runtime.sendMessage({
+    action: 'setPage',
+    page: state.page,
+  });
 }
 
 async function getSourcesOfUrl({ url, profileId }) {
@@ -230,42 +238,33 @@ async function handleMessage(message, sender) {
   switch (action) {
     case 'getPopupData':
       const popupData = {};
-      popupData.profileId = store.state.profileId;
-      popupData.pageUrl = store.state.pageUrl;
+      popupData.profileId = state.profileId;
+      popupData.pageUrl = state.pageUrl;
+      popupData.page = state.page;
+      // If no page, ask for it to be loaded.
+      if (state.page == null) {
+        getCurrentPageObj(senderUrl, message, sender);
+      }
       return popupData;
-    case 'getCurPage':
-      let page = store.state.curPage;
-      return page;
-    case 'getCurPageLinkStatus':
-      let out = idb.getCurUrlLinkStatus();
-      return out;
-    case 'scrapeIfNecessary':
-      idb.scrapeIfNecessary(message.profile);
-      break;
-    case 'testPage':
-      idb.dispatchToStores('setTestPageUrl', {
-        url: message.url,
-      });
+    case 'setTestPageUrl':
+      state.testPageUrl = message.url;
       chrome.tabs.create({ url: 'http://' + message.url, active: false });
       break;
-    case 'storeDispatch':
-      idb.dispatchToStores(message.storeAction, message.storePayload);
-      break;
     case 'saveSourcesOfUrl':
-      store.commit(types.SET_URL_TO_SCRAPE, message.url);
-      saveSourcesOfUrl(message.url, null, 'save');
+      state.urlToScrape = message.url;
+      saveSourcesOfUrl(message.url, null, LINK_STATUS.SAVED);
       break;
     case 'getPage':
       doGetPage(senderUrl, message, sender);
       break;
     case 'pageLoaded':
       let closeWhenDone = false;
-      if (senderUrl === store.state.testPageUrl) {
+      if (senderUrl === state.testPageUrl) {
         closeWhenDone = true;
       }
-      if (store.state.urlsToScrape[senderUrl] === true) {
+      if (state.urlsToScrape[senderUrl] === true) {
         closeWhenDone = true;
-        store.commit(types.REMOVE_URL_TO_SCRAPE, senderUrl);
+        delete state.urlsToScrape[senderUrl];
       }
       let scraper = getScraper(senderUrl);
       console.log('sending response with scraper ' + scraper.id);
@@ -277,7 +276,7 @@ async function handleMessage(message, sender) {
       // sendResponse(payload);
       getSourcesOfUrl({
         url: senderUrl,
-        profileId: store.state.targetId,
+        profileId: state.targetId,
       });
       break;
     case 'scrapeProfile':
@@ -294,12 +293,6 @@ async function handleMessage(message, sender) {
       break;
   }
 }
-
-// Cannot use async / await directly in addListener.
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  handleMessage(message, sender).then(sendResponse);
-  return true;
-});
 
 let DEFAULT_SCRAPER_PRIORITY = 1;
 
@@ -377,9 +370,43 @@ function changeActiveTabToUrl(newURL) {
   });
 }
 
-// SETTINGS
+// LISTEN TO TAB CHANGES / ACTIVATIONS
+chrome.tabs.onActivated.addListener(function(activeInfo) {
+  console.log('tab activated', activeInfo);
+
+  setPageUrl(activeInfo.tabId);
+  state.activeTabId = activeInfo.tabId;
+
+  chrome.tabs.sendMessage(activeInfo.tabId, { action: 'getPage' });
+});
+
+chrome.tabs.onUpdated.addListener(async function(tabId, changeInfo, tab) {
+  console.log('tab updated', tabId, changeInfo, tab);
+  if (tabId === state.activeTabId) {
+    setPageUrl(tabId);
+    chrome.tabs.sendMessage(tabId, { action: 'getPage' });
+  }
+});
+// END TAB CHANGES / ACTIVATIONS.
+
+// MESSAGING
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  // Cannot use async / await directly in addListener.
+  handleMessage(message, sender).then(sendResponse);
+  return true;
+});
+
+const state = {
+  pageUrl: null,
+  page: null,
+  linkStatus: null,
+  sourceStatus: null,
+  urlsToScrape: {},
+};
 
 idb.loadScrapers();
 
 state.profileId = localStorage.getItem('profileId');
 state.profileId = convertId(state.profileId);
+
+setPageUrl();

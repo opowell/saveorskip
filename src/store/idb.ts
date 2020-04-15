@@ -16,27 +16,13 @@ import {
   INDEX_STORES,
   KEYPATH_SEPARATOR,
   setDBPromise,
+  LINK_STATUS,
 } from './Constants';
-import * as AutoGenProfile from '../models/AutoGenProfile';
 import * as types from './mutation-types';
 import { trimmedUrl, drawRandomElFromObject, scoreFnJustPoints, convertId } from '../Utils';
+import { MessageEventBus } from '../options/Constants';
 
 let state: any = store.state;
-
-/**
- * Should not call Vuex store directly. Instead, broadcast messages to all tabs with the corresponding store modification. Tabs then update their own stores (and Vue instances).
- */
-export async function dispatchToStores(functionName: string, payload: any) {
-  // Call for this page.
-  await store.dispatch(functionName, payload);
-
-  // // Call for all other pages.
-  chrome.runtime.sendMessage({
-    action: 'storeDispatch',
-    storeAction: functionName,
-    storePayload: payload,
-  });
-}
 
 export async function getLinkStatus(profileId: string | number, pageUrl: string) {
   try {
@@ -79,7 +65,7 @@ export async function storePage(page: any, profileId: number | string, linkActio
     }
     link.url = trimmedUrl(link.url);
     if (link.saved == null) {
-      link.saved = 1;
+      link.saved = LINK_STATUS.SAVED;
     }
     link.profileId = profileId;
     numNewLinksFound += await addLink(link);
@@ -103,15 +89,11 @@ export async function storePage(page: any, profileId: number | string, linkActio
 
   page.generatedBy = 'auto';
   await storeProfile(page, { overwriteProps: false, updateScrapeSettings: true, numNewLinksFound });
-  store.commit(types.REMOVE_URL_TO_SCRAPE, profileId);
+  delete state.urlsToScrape[profileId];
 
   // Page as link and source for current consumer profile.
-  if (state.profileId != null) {
-    await saveOrSkipLink({
-      link: page,
-      targetId: state.profileId,
-      action: linkAction,
-    });
+  if (profileId != null) {
+    await saveOrSkipLink(linkAction, profileId, page);
     // await saveOrSkipSource({
     //   source: page,
     //   targetId: store.state.targetId,
@@ -176,11 +158,7 @@ export async function setSkippedLinkIfNew(profileId: string | number, link: any)
   if (storeItem != null) {
     return;
   }
-  await saveOrSkipLink({
-    action: 'skip',
-    targetId: profileId,
-    link,
-  });
+  await saveOrSkipLink(LINK_STATUS.SKIPPED, profileId, link);
 }
 
 export async function setTestPage(page: any) {}
@@ -220,7 +198,7 @@ export async function setSkippedSourceIfNew(profileId: number | string, source: 
     await addSources({
       sources: source.sources,
     });
-    AutoGenProfile.incrementScrapeDate(storeItem);
+    incrementScrapeDate(storeItem);
     await db.put(STORE_PROFILES, storeItem);
     source.url = prevUrl;
     source.title = prevTitle;
@@ -228,12 +206,8 @@ export async function setSkippedSourceIfNew(profileId: number | string, source: 
   }
   source.points = 0;
   source.generatedBy = 'auto';
-  AutoGenProfile.incrementScrapeDate(source);
-  await saveOrSkipSource({
-    action: 'skip',
-    targetId: profileId,
-    source,
-  });
+  incrementScrapeDate(source);
+  await saveOrSkipSource(LINK_STATUS.SKIPPED, profileId, source);
   source.url = prevUrl;
   source.title = prevTitle;
 }
@@ -314,6 +288,7 @@ export async function saveObject(storeName: string, object: Object) {
     let objKey = await db.put(storeName, object);
     return objKey;
   } catch (e) {
+    console.log(storeName, object);
     console.log(e);
     console.log(e.stack);
   }
@@ -442,7 +417,7 @@ export async function scrapeProfile(url: string | number) {
     return;
   }
   console.log('scraping ' + url);
-  store.commit(types.ADD_PROFILE_TO_SCRAPE, url);
+  state.urlsToScrape[url] = true;
   chrome.tabs.create({ url: 'http://' + url, active: false });
 }
 
@@ -612,11 +587,7 @@ export async function addSources({ sources }: { sources: Array<any> }) {
   }
   for (let i = 0; i < sources.length; i++) {
     let source = sources[i];
-    await saveOrSkipSource({
-      source,
-      targetId: source.consumerId,
-      action: 'save',
-    });
+    await saveOrSkipSource(LINK_STATUS.SAVED, source.consumerId, source);
   }
   // await setCurUrlSourceStatus();
 }
@@ -627,7 +598,7 @@ export async function setSourceSaved(payload: any) {
   let link: { [k: string]: any; [k: number]: any } = {
     url: trimmedUrl(payload.link.url),
     title: payload.link.title,
-    saved: payload.action === 'save' ? 1 : 0,
+    saved: payload.action,
     profileId: payload.targetId,
   };
   if (payload.props != null) {
@@ -644,19 +615,19 @@ export async function setSourceSaved(payload: any) {
   // chrome.runtime.sendMessage('save');
 }
 
-export async function saveOrSkipLink(payload: any) {
-  let link = payload.link;
+export async function setLinkStatus(url: string, action: number, profileId: number | string, page: Object) {
+  return await saveOrSkipLink(action, profileId, page);
+}
 
-  let linksProp = link.links;
-  delete link.links;
-
+export async function saveOrSkipLink(action: number, profileId: number | string, link = <any>{}) {
   link.url = trimmedUrl(link.url);
-  link.saved = payload.action === 'save' ? 1 : 0;
-  link.profileId = payload.targetId;
+  link.saved = action;
+  link.profileId = profileId;
   link.timeAdded = new Date();
 
   let db = await getDBPromise();
-  let storeObject = await db.get(STORE_LINKS, [link.profileId, link.url]);
+  console.log('saving or skipping', action, profileId, link);
+  let storeObject = await db.get(STORE_LINKS, [profileId, link.url]);
 
   // If necessary, reverse previous action.
   if (storeObject != null && storeObject.saved !== link.saved) {
@@ -689,21 +660,20 @@ export async function saveOrSkipLink(payload: any) {
       };
     }
     if (source.points == null) {
-      if (payload.action === 'save') {
+      if (action === LINK_STATUS.SAVED) {
         source.points = source.pointsSave;
       } else {
         source.points = source.pointsSkip;
       }
     }
-    await saveOrSkipSource({
-      targetId: payload.targetId,
-      source,
-      action: 'skip', // TODO: check if source exists. update, instead of overwrite.
-    });
+    await saveOrSkipSource(
+      LINK_STATUS.SKIPPED, // TODO: check if source exists. update, instead of overwrite.
+      profileId,
+      source
+    );
   }
 
   addLink(link);
-  // await setCurUrlLinkStatus();
 }
 
 export async function storeSource({
@@ -765,11 +735,9 @@ export async function storeSource({
   // await setCurUrlSourceStatus();
 }
 
-export async function saveOrSkipSource({
-  source,
-  targetId,
-  action,
-}: {
+export async function saveOrSkipSource(
+  action: number,
+  profileId: number | string,
   source: {
     generatedBy: string;
     id: string | number;
@@ -782,11 +750,9 @@ export async function saveOrSkipSource({
           id: string | number;
         };
     consumerId?: string | number;
-  };
-  targetId: string | number;
-  action: string;
-}) {
-  const consumerId = targetId;
+  }
+) {
+  const consumerId = profileId;
   const db = await getDBPromise();
 
   let providerId = source.id;
@@ -811,14 +777,14 @@ export async function saveOrSkipSource({
   }
 
   if (source.points == null) {
-    source.points = action === 'save' ? 1 : -1;
+    source.points = action === LINK_STATUS.SAVED ? 1 : -1;
   }
 
   let sourceConnection: { [k: string]: any; points?: number; saved?: number; timeAdded?: Date } = {};
   sourceConnection.points = source.points;
   sourceConnection[STORE_SOURCES_PROVIDERID] = trimmedUrl(providerId);
   sourceConnection[STORE_SOURCES_CONSUMERID] = consumerId;
-  sourceConnection.saved = action === 'save' ? 1 : 0;
+  sourceConnection.saved = action === LINK_STATUS.SAVED ? 1 : 0;
   sourceConnection.timeAdded = new Date();
 
   let storeObject = await db.get(STORE_SOURCES, [consumerId, providerId]);
@@ -852,11 +818,15 @@ export async function addLinks({ links, profileId }: { links: Array<any>; profil
   }
 }
 
+export function incrementScrapeDate(source: { nextScrape: Date }) {
+  source.nextScrape = new Date(new Date().getTime() + 24 * 60 * 60 * 1000);
+}
+
 export async function updateProfileScrapeDate({ sourceUrl }: { sourceUrl: string }) {
   let db = await getDBPromise();
   let source = await db.get(STORE_PROFILES, sourceUrl);
   if (source != null) {
-    AutoGenProfile.incrementScrapeDate(source);
+    incrementScrapeDate(source);
     await db.put(STORE_PROFILES, source);
   }
 }
@@ -1004,7 +974,7 @@ async function getIndexFn(query: any) {
 }
 
 export async function getIndex(query: any) {
-  console.log('getting ' + query.storeName + ' by ', query);
+  // console.log('getting ' + query.storeName + ' by ', query);
   let index;
   try {
     index = await getIndexFn(query);
@@ -1142,7 +1112,6 @@ export async function getStoreResults({
     if (!hasMoreItems) {
       break;
     }
-    console.log('adding ', cursor.value);
     if (cursor.value === out[out.length - 1]) {
       break;
     }
@@ -1256,10 +1225,8 @@ export async function addLog({ objectKeys, objectType, message }: { objectKeys: 
     time: new Date(),
   };
   await db.put(STORE_LOGS, msgObj);
-}
-
-export async function setTarget(profileId: string | number) {
-  store.commit(types.SET_TARGET, profileId);
+  let popupMessage = objectType + ' ' + JSON.stringify(objectKeys) + ': ' + message;
+  MessageEventBus.$emit('showMessage', popupMessage);
 }
 
 export async function getCurUrlLinkStatus() {

@@ -38,6 +38,7 @@
 import ObjectsTable from '../components/ObjectsTable.vue';
 import * as idb from '../../../store/idb.ts';
 import { INDEX_STORES, STORE_LINKS, STORE_PROFILES, STORE_SOURCES } from '../../../store/Constants';
+import { Hrefs } from '../../Constants';
 
 export default {
   name: 'Indices',
@@ -56,11 +57,11 @@ export default {
       return [
         {
           text: 'Home',
-          href: '#/',
+          href: Hrefs.home(),
         },
         {
           text: 'Indices',
-          href: '#/indices',
+          href: Hrefs.indices(),
         },
       ];
     },

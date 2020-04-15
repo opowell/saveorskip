@@ -1,9 +1,9 @@
 <template>
   <div style="height: 100%;">
-    <b-modal id="addProfileModal" title="Add Profile" @ok="addProfile" no-fade>
+    <b-modal id="addProfileModal" title="Add Profile" @shown="focusModalElement" @ok="addProfile" no-fade>
       <div>
         <span>Name:</span>
-        <input id="addProfileNameInput" type="text" v-on:keyup.enter="addProfile" />
+        <input ref="input" id="addProfileNameInput" type="text" v-on:keyup.enter="addProfile" />
       </div>
     </b-modal>
     <objects-table
@@ -28,6 +28,8 @@
 import ObjectsTable from '../components/ObjectsTable.vue';
 import * as idb from '../../../store/idb';
 import { STORE_PROFILES } from '../../../store/Constants';
+import { Hrefs } from '../../Constants';
+
 export default {
   name: 'Profiles',
   components: {
@@ -43,16 +45,19 @@ export default {
       return [
         {
           text: 'Home',
-          href: '#/',
+          href: Hrefs.home(),
         },
         {
           text: 'Profiles',
-          href: '#/profiles?filters=user,generatedBy,user',
+          href: Hrefs.profiles(),
         },
       ];
     },
   },
   methods: {
+    focusModalElement() {
+      this.$refs.input.focus();
+    },
     deleteProfiles(selection) {
       for (let i in selection) {
         idb.deleteProfile({

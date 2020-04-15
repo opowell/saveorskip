@@ -12,9 +12,10 @@
 </template>
 
 <script>
-import { DB_NAME } from '../../../store/Constants';
+import { DB_NAME, createDB } from '../../../store/Constants';
 import ObjectsTable from '../components/ObjectsTable.vue';
 import { LINKS } from '../../Constants';
+import { deleteDB } from 'idb';
 
 export default {
   name: 'Home',
@@ -30,7 +31,7 @@ export default {
         },
         {
           name: 'Scrapers',
-          description: 'Code for extracting links and sources from webpages from a certain domain.',
+          description: 'Code for extracting links and sources from webpages.',
         },
         {
           name: 'Settings',
@@ -42,7 +43,7 @@ export default {
         },
         {
           name: 'Indices',
-          description: 'Stored indices. These speed up searches, but slow down writes.',
+          description: 'Stored indices. These are required for searches, but slow down writes.',
         },
       ],
     };
@@ -81,21 +82,13 @@ export default {
       this.$bvModal.show('deleteAllModal');
     },
     async resetDB() {
-      // let delDBRequest = window.indexedDB.deleteDatabase(DB_NAME);
-      // delDBRequest.onsuccess = function(event) {
-      //   debugger;
-      //   idb.fetchProfiles();
-      // }
-      // delDBRequest.onerror = function(event) {
-      //   debugger;
-      // }
+      console.log('Starting reset...');
       await deleteDB(DB_NAME, {
         blocked() {
           console.log('call was blocked!');
-          // debugger;
         },
       });
-      // await idb.fetchProfiles();
+      createDB();
     },
   },
 };

@@ -1,6 +1,4 @@
 import * as types from './mutation-types';
-import Profile from '../models/Profile';
-import { Source } from '../models/Source';
 import { trimmedUrl } from '../Utils';
 
 /**
@@ -10,35 +8,6 @@ export default {
   [types.LOAD_SCRAPERS](state: { scrapers: any[] }, payload: any) {
     state.scrapers.splice(0, state.scrapers.length);
     state.scrapers.push(...payload);
-  },
-
-  [types.ADD_PROFILE_TO_SCRAPE](state: { urlsToScrape: { [x: string]: boolean } }, payload: string | number) {
-    state.urlsToScrape[payload] = true;
-  },
-
-  [types.REMOVE_URL_TO_SCRAPE](state: { urlsToScrape: { [x: string]: any } }, payload: string | number) {
-    delete state.urlsToScrape[payload];
-  },
-
-  [types.LOAD_PROFILE](state: { profile: any }, payload: any) {
-    state.profile = payload;
-  },
-
-  [types.LOAD_LINK](state: string, payload: any) {
-    state.link = payload;
-  },
-
-  [types.LOAD_SOURCE](state: { source: any }, payload: any) {
-    state.source = payload;
-  },
-
-  [types.SET_SOURCE_SAVED](state: any, payload: { targetId: any; source: any; saved: any }) {
-    let profile = findProfile(state, payload.targetId);
-    // Profile.setSourceSaved(profile, payload.source, payload.saved);
-  },
-
-  [types.SET_TARGET](state: { targetId: any }, payload: any) {
-    state.targetId = payload;
   },
 
   [types.LOAD_PROFILE_SOURCE_LINKS](state: { profileSourceLinks: any[] }, payload: string | any[]) {
@@ -84,11 +53,6 @@ export default {
   //   state.profiles.push(copy);
   //   state.profileDuplicate = copy;
   // },
-
-  [types.SET_TEST_PAGE_URL](state: { testPageUrl: any; testPage: null }, payload: { url: any }) {
-    state.testPageUrl = payload.url;
-    state.testPage = null;
-  },
 
   [types.SET_TEST_PAGE](state: { testPage: any }, payload: { page: any }) {
     state.testPage = payload.page;

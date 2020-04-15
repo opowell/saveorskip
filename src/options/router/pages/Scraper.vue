@@ -56,6 +56,7 @@
 import ObjectsTable from '../components/ObjectsTable.vue';
 import * as idb from '../../../store/idb.ts';
 import { convertId } from '../../../Utils.ts';
+import { Hrefs } from '../../Constants';
 
 export default {
   name: 'Scraper',
@@ -76,6 +77,7 @@ export default {
       scraper: {},
       message: '',
       numResults: 0,
+      testPage: null,
     };
   },
   methods: {
@@ -88,10 +90,7 @@ export default {
       if (url.length < 1) {
         return;
       }
-      // chrome.runtime.sendMessage({ action: 'testPage', url });
-      await idb.dispatchToStores('setTestPageUrl', {
-        url,
-      });
+      chrome.runtime.sendMessage({ action: 'setTestPageUrl', url });
       chrome.tabs.create({ url: 'http://' + url, active: false });
     },
     askDeleteObject() {
@@ -123,9 +122,6 @@ export default {
       }
       return this.scraper.defaultTestUrl;
     },
-    testPage() {
-      return this.$store.state.testPage;
-    },
     scraperId() {
       return convertId(this.$route.params.id);
     },
@@ -142,15 +138,15 @@ export default {
       return [
         {
           text: 'Home',
-          href: '#/',
+          href: Hrefs.home(),
         },
         {
           text: 'Scrapers',
-          href: '#/scrapers',
+          href: Hrefs.scrapers(),
         },
         {
           text: this.scraperName,
-          href: '#/scrapers/' + encodeURIComponent(this.scraperId),
+          href: Hrefs.scraper(this.scraperId),
         },
       ];
     },

@@ -80,6 +80,7 @@ export default {
       for (let i in items) {
         try {
           await idb.addProfileChildrenCounts(items[i]);
+          console.log('found', items[i]);
         } catch (e) {}
       }
       return items;

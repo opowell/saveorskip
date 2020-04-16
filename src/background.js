@@ -197,6 +197,10 @@ async function doGetPage(senderUrl, message, sender) {
     store.dispatch('setTestPage', { page: message.page });
   }
   let profile = await idb.getProfile(state.profileId);
+  if (profile == null) {
+    console.log('No profile, not storing page.');
+    return;
+  }
   message.page.url = senderUrl;
   await idb.storePage(message.page, state.profileId, profile.defaultLinkAction, profile.defaultSourceAction);
   setPageUrl();
@@ -266,8 +270,8 @@ async function handleMessage(message, sender) {
         closeWhenDone = true;
         delete state.urlsToScrape[senderUrl];
       }
-      let scraper = getScraper(senderUrl);
-      console.log('sending response with scraper ' + scraper.id);
+      let scraper = await getScraper(senderUrl);
+      console.log('sending response for ' + senderUrl + ' with scraper' + scraper.id, scraper);
       let payload = {
         scraper,
         closeWhenDone,

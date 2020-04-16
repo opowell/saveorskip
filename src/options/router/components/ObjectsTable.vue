@@ -323,7 +323,7 @@ export default {
       perPage: 50,
       currentPage: 1,
       status: 'Ready',
-      tableBusy: false,
+      tableBusy: true,
       curDragFilterIndex: -1,
       redrawAfterDrop: false,
       tempFilters: [],
@@ -430,14 +430,16 @@ export default {
       return false;
     },
     async callFetchData() {
-      this.items.splice(0, this.items.length);
       this.status = 'Loading...';
+      this.tableBusy = true;
       if (this.fetchInitialData) {
-        this.tableBusy = true;
+        if (Array.isArray(this.object)) {
+          this.object.splice(0, this.object.length);
+        }
         await this.fetchInitialData();
-        this.tableBusy = false;
       }
       await this.checkIfNeedData();
+      this.tableBusy = false;
       this.status = 'Finished loading';
     },
     clearSelection() {
@@ -450,7 +452,8 @@ export default {
           return;
         }
         let newItems = await this.fetchRows();
-        this.items.push(...newItems);
+        console.log('checked data, got', newItems);
+        this.object.push(...newItems);
         this.$refs.table.refresh();
         if (newItems.length > 0) {
           this.$nextTick(async function() {

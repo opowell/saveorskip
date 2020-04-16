@@ -89,17 +89,12 @@ export async function storePage(page: any, profileId: number | string, linkActio
 
   page.generatedBy = 'auto';
   await storeProfile(page, { overwriteProps: false, updateScrapeSettings: true, numNewLinksFound });
-  delete state.urlsToScrape[profileId];
+  // let state: any = store.state;
+  // delete state.urlsToScrape[profileId];
 
   // Page as link and source for current consumer profile.
-  if (profileId != null) {
-    await saveOrSkipLink(linkAction, profileId, page);
-    // await saveOrSkipSource({
-    //   source: page,
-    //   targetId: store.state.targetId,
-    //   action: sourceAction,
-    // });
-  }
+  await saveOrSkipLink(linkAction, profileId, page);
+  await saveOrSkipSource(sourceAction, profileId, page);
 }
 
 export async function addProfileChildrenCounts(profile: { [k: string]: any; id: string | number }) {
@@ -355,6 +350,15 @@ export async function storeProfile(
     storeProfile.generatedBy = 'user';
   }
 
+  for (let i in profile.links) {
+    let link = profile.links[i];
+    if (typeof link === 'string') {
+      link = { url: link };
+    }
+    link.profileId = profile.id;
+    numNewLinksFound += await addLink(link);
+  }
+
   if (updateScrapeSettings) {
     if (storeProfile.scrapeIncrement == null) {
       storeProfile.scrapeIncrement = 24 * 60 * 60 * 1000;
@@ -520,7 +524,7 @@ export async function deleteProfileSource({ profileId, sourceId }: { profileId: 
   await db.delete(STORE_SOURCES, [profileId, sourceId]);
 }
 
-export async function addLink(payload: any) {
+export async function addLink(payload: any): Promise<number> {
   let numNewLinks = 0;
 
   if (payload.profileId === payload.url) {
@@ -791,16 +795,19 @@ export async function saveOrSkipSource(
   if (storeObject != null) {
     sourceConnection.points = sourceConnection.points - 0 + (storeObject.points - 0);
   }
-  await db.put(STORE_SOURCES, sourceConnection);
+  let objKey = await db.put(STORE_SOURCES, sourceConnection);
+
+  addLog({
+    objectKeys: objKey,
+    objectType: 'Source',
+    message: 'Store',
+  });
 
   source.id = providerId;
   source.generatedBy = 'auto';
   delete source.providerId;
   delete source.consumerId;
   await storeProfile(source, { overwriteProps: false, updateScrapeSettings: false });
-
-  console.log('Source ' + consumerId + ' <-- ' + providerId + ' stored successfully.');
-  // await setCurUrlSourceStatus();
 }
 
 export async function addLinks({ links, profileId }: { links: Array<any>; profileId: string | number }) {
@@ -982,13 +989,12 @@ export async function getIndex(query: any) {
     if (e.name === 'NotFoundError') {
       await createIndex(query.storeName, query.keyPath);
       index = await getIndexFn(query);
-      if (index == null) {
-        debugger;
-      }
     } else {
       console.log(e);
-      debugger;
     }
+  }
+  if (index == null) {
+    console.log('error getting index for ', query);
   }
   return index;
 }
@@ -1130,8 +1136,6 @@ export async function getNumResults({ storeName, filters }: { storeName: string;
   let query = getQueryFromFilters(storeName, filters);
   let index = await getIndex(query);
   if (index == null) {
-    console.log('error getting index for ', query);
-    debugger;
     return -1;
   }
 

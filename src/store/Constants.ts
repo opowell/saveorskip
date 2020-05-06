@@ -1,10 +1,11 @@
 import { openDB, IDBPDatabase } from 'idb';
 import { resetState } from './index';
-import { storeProfile, addScraper, storeSource, addLog } from './idb';
+import { storeProfile, addLink, addScraper, storeSource, addLog } from './idb';
 import RedditScraper from '../scrapers/reddit';
 import HackerNewsScraper from '../scrapers/hackernews';
 import DefaultScraper from '../scrapers/default';
 import TheGuardianScraper from '../scrapers/theguardian';
+import { trimmedUrl } from '../Utils';
 export const DB_NAME = 'saveorskip';
 
 export const STORE_LINKS = 'links';
@@ -73,6 +74,7 @@ export const reset = async function() {
   var microsecondsPerWeek = 1000 * 60 * 60 * 24 * 7;
   var oneWeekAgo = new Date().getTime() - microsecondsPerWeek;
 
+  console.log('parsing history');
   chrome.history.search(
     {
       text: '', // Return every history item....
@@ -82,19 +84,19 @@ export const reset = async function() {
       // For each history item, get details on all visits.
       for (var i = 0; i < historyItems.length; ++i) {
         var url = historyItems[i].url;
+        url = trimmedUrl(url);
         console.log('found url ' + url);
-        // for (let i in sources) {
-        //   let srcObj = {
-        //     source: {
-        //       saved: 0,
-        //     },
-        //     providerId: sources[i],
-        //     consumerId: 1,
-        //     pointsChange: 5,
-        //     overwrite: false,
-        //   };
-        //   await storeSource(srcObj);
-        // }
+        let srcObj = {
+          source: {
+            saved: 1,
+          },
+          providerId: url,
+          consumerId: 1,
+          pointsChange: 3,
+          overwrite: false,
+        };
+        await storeSource(srcObj);
+        await addLink({ profileId: 1, url });
       }
     }
   );

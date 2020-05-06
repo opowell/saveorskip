@@ -1,5 +1,5 @@
 <template>
-  <div style="position: absolute; bottom: 0px; z-index: 5; width: 100%; display: flex; justify-content: center;">
+  <div style="position: absolute; bottom: 0px; z-index: 5; width: 100%; display: flex; align-items: start; max-width: 40%; overflow: scroll; max-height: 50%; left: 30%">
     <b-alert :show="dismissCountDown" v-html="message" dismissible variant="warning" @dismissed="dismissCountDown = 0" @dismiss-count-down="countDownChanged" />
   </div>
 </template>

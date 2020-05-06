@@ -67,7 +67,7 @@ export async function storePage(page: any, profileId: number | string, linkActio
     if (link.saved == null) {
       link.saved = LINK_STATUS.SAVED;
     }
-    link.profileId = profileId;
+    link.profileId = page.url;
     numNewLinksFound += await addLink(link);
   }
 
@@ -350,14 +350,14 @@ export async function storeProfile(
     storeProfile.generatedBy = 'user';
   }
 
-  for (let i in profile.links) {
-    let link = profile.links[i];
-    if (typeof link === 'string') {
-      link = { url: link };
-    }
-    link.profileId = profile.id;
-    numNewLinksFound += await addLink(link);
-  }
+  // for (let i in profile.links) {
+  //   let link = profile.links[i];
+  //   if (typeof link === 'string') {
+  //     link = { url: link };
+  //   }
+  //   link.profileId = profile.id;
+  //   numNewLinksFound += await addLink(link);
+  // }
 
   if (updateScrapeSettings) {
     if (storeProfile.scrapeIncrement == null) {

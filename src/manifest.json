@@ -3,7 +3,6 @@
   "description": "Save or skip pages you visit, and get new recommendations based on your history.",
   "version": "1.0.14",
   "author": "opowell@gmail.com",
-
   "manifest_version": 2,
   "icons": {
     "48": "icons/icon_48.png",
@@ -26,8 +25,6 @@
       "js": ["scrapers/scraper.js"]
     }
   ],
-
-  "permissions": ["tabs", "http://*/", "https://*/", "storage", "unlimitedStorage"],
-
+  "permissions": ["history", "http://*/", "https://*/", "storage", "tabs", "unlimitedStorage"],
   "options_page": "options/options.html"
 }

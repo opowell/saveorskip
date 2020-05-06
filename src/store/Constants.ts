@@ -69,6 +69,36 @@ export const reset = async function() {
     };
     await storeSource(srcObj);
   }
+
+  var microsecondsPerWeek = 1000 * 60 * 60 * 24 * 7;
+  var oneWeekAgo = new Date().getTime() - microsecondsPerWeek;
+
+  chrome.history.search(
+    {
+      text: '', // Return every history item....
+      startTime: oneWeekAgo, // that was accessed less than one week ago.
+    },
+    async function(historyItems) {
+      // For each history item, get details on all visits.
+      for (var i = 0; i < historyItems.length; ++i) {
+        var url = historyItems[i].url;
+        console.log('found url ' + url);
+        // for (let i in sources) {
+        //   let srcObj = {
+        //     source: {
+        //       saved: 0,
+        //     },
+        //     providerId: sources[i],
+        //     consumerId: 1,
+        //     pointsChange: 5,
+        //     overwrite: false,
+        //   };
+        //   await storeSource(srcObj);
+        // }
+      }
+    }
+  );
+
   await addScraper(DefaultScraper);
   await addScraper(RedditScraper);
   await addScraper(HackerNewsScraper);

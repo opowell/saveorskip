@@ -26,6 +26,7 @@ let state: any = store.state;
 
 export async function getLinkStatus(profileId: string | number, pageUrl: string) {
   try {
+    if (typeof profileId === 'number' && isNaN(profileId)) return;
     let db = await getDBPromise();
     profileId = convertId(profileId);
     let link = await db.get(STORE_LINKS, [profileId, pageUrl]);
@@ -40,6 +41,9 @@ export async function getLinkStatus(profileId: string | number, pageUrl: string)
 }
 
 export async function getSourceStatus(profileId: string | number, pageUrl: string) {
+  if (typeof profileId === 'number') {
+    if (isNaN(profileId)) return;
+  }
   let db = await getDBPromise();
   profileId = convertId(profileId);
   let link = await db.get(STORE_SOURCES, [profileId, pageUrl]);

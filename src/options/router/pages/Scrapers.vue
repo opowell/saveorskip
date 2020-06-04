@@ -11,7 +11,6 @@
       @click="openScraper"
       @create="addScraperPrompt"
       @deleteSelectedRows="deleteScrapers"
-      :object="scrapers"
       :ineditable-row-names="[]"
       :crumbs="crumbs"
       :givenCols="['id', 'priority', 'name', 'domain']"

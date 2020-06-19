@@ -63,13 +63,12 @@ export default {
     };
   },
   async mounted() {
-    let loadedProfiles = await idb.fetchProfiles([{ field: 'generatedBy', lowerValue: 'user', upperValue: 'user' }]);
+    let loadedProfiles = await idb.fetchProfiles([{ field: 'generatedBy', lowerValue: 'user', upperValue: 'user' }], 100);
     this.profiles.push(...loadedProfiles);
     if (!this.hasValidTarget && this.profiles.length > 0) {
-      await this.setTarget(this.profiles[0].id);
-    } else {
-      await this.setTarget(this.profileId);
+      this.profileId = this.profiles[0].id;
     }
+    console.log('this profile = ' + this.profileId);
 
     const thisComponent = this;
 
@@ -148,10 +147,7 @@ export default {
       idb.removeSource({ targetId: this.profileId, url: this.pageUrl });
     },
     setTargetEv(event) {
-      this.setTarget(event.target.value);
-    },
-    async setTarget(profileId) {
-      this.profileId = profileId;
+      this.profileId = event.target.value;
     },
     async storeLinkStatus(status) {
       await idb.setLinkStatus(this.pageUrl, status, this.profileId, this.page);

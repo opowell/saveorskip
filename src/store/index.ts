@@ -28,6 +28,7 @@ const initState = {
   needCurSuggestion: true,
   sourceForCurUrl: null,
   nextSuggestion: null,
+  urlsToScrape: [],
   urlToScrape: null,
 
   scrapers: [],

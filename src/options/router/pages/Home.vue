@@ -2,6 +2,8 @@
   <div style="height: 100%;">
     <b-modal id="deleteAllModal" title="Reset database" @ok="resetDB" no-fade>
       <p class="my-4">Are you sure you want to permanently delete all of your data?</p>
+      <p class="my-4"><input type="checkbox" id="create" /><label for="create">Create new profile</label></p>
+      <p class="my-4"><input type="checkbox" id="parse" /><label for="parse">Parse browser history</label></p>
     </b-modal>
     <objects-table ref="table" :object="tableRows" :showAdd="false" @click="clickRow" :selectable="false" thClass="hidden_header" :crumbs="crumbs">
       <template v-slot:header>

@@ -101,6 +101,42 @@ export async function storePage(page: any, profileId: number | string, linkActio
   await saveOrSkipSource(sourceAction, profileId, page);
 }
 
+export async function parseBrowserHistory({ cId }) {
+  var microsecondsPerWeek = 1000 * 60 * 60 * 24 * 7;
+  var oneWeekAgo = new Date().getTime() - microsecondsPerWeek;
+  var consumerId = cId;
+  console.log('parsing history');
+
+  let parseSearch = async function(historyItems) {
+    // For each history item, get details on all visits.
+    for (var i = 0; i < historyItems.length; ++i) {
+      var url = historyItems[i].url;
+      url = trimmedUrl(url);
+      console.log('found url ' + url);
+      let srcObj = {
+        source: {
+          saved: 1,
+        },
+        providerId: url,
+        consumerId: consumerId,
+        pointsChange: 3,
+        overwrite: false,
+      };
+      await storeSource(srcObj);
+      await addLink({ profileId: consumerId, url });
+      await scrapeIfNecessary({ id: url });
+    }
+  };
+
+  chrome.history.search(
+    {
+      text: '', // Return every history item....
+      startTime: oneWeekAgo, // that was accessed less than one week ago.
+    },
+    parseSearch
+  );
+}
+
 export async function addProfileChildrenCounts(profile: { [k: string]: any; id: string | number }) {
   profile['Links'] = await getNumResults({
     storeName: STORE_LINKS,
@@ -297,6 +333,9 @@ export async function getProfile(id: string | number) {
   if (id == null) {
     return null;
   }
+  if (typeof id === 'number' && isNaN(id)) {
+    return null;
+  }
   try {
     let db = await getDBPromise();
     let out = await db.get(STORE_PROFILES, id);
@@ -393,8 +432,8 @@ export async function storeProfile(
   }
 }
 
-export async function fetchProfiles(filters: Array<any>) {
-  const values = await getStoreResults({ storeName: 'profiles', filters, offset: 0, numRows: 100 });
+export async function fetchProfiles(filters: Array<any>, numRows: number) {
+  const values = await getStoreResults({ storeName: 'profiles', filters, offset: 0, numRows });
   for (let i = 0; i < values.length; i++) {
     addProfileChildrenCounts(values[i]);
   }
@@ -407,7 +446,7 @@ export async function getScrapers() {
   return values;
 }
 
-export async function scrapeIfNecessary(source: { [k: string]: any; id: string | number; providerId: string | number }) {
+export async function scrapeIfNecessary(source: { [k: string]: any; id: string | number; providerId?: string | number }) {
   let profileId = source.id;
   if (source.providerId != null) {
     profileId = source.providerId;

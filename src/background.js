@@ -411,6 +411,14 @@ const state = {
 idb.loadScrapers();
 
 state.profileId = localStorage.getItem('profileId');
-state.profileId = convertId(state.profileId);
+if (state.profileId == null) {
+  let profiles = idb.fetchProfiles([{ field: 'generatedBy', lowerValue: 'user', upperValue: 'user' }], 1);
+  profiles.then(value => {
+    state.profileId = value[0].id;
+    console.log('set profile id to ' + state.profileId);
+  });
+} else {
+  state.profileId = convertId(state.profileId);
+}
 
 setPageUrl();

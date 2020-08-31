@@ -14,10 +14,8 @@
 </template>
 
 <script>
-import { DB_NAME, createDB } from '../../../store/Constants';
 import ObjectsTable from '../components/ObjectsTable.vue';
 import { LINKS } from '../../Constants';
-import { deleteDB } from 'idb';
 
 export default {
   name: 'Home',
@@ -46,6 +44,10 @@ export default {
         {
           name: 'Indices',
           description: 'Stored indices. These are required for searches, but slow down writes.',
+        },
+        {
+          name: 'Scraping queue',
+          description: 'Queue of pages to scrape.',
         },
       ],
     };
@@ -78,19 +80,16 @@ export default {
         case 'Indices':
           this.$router.push('indices');
           break;
+        case 'Scraping queue':
+          this.$router.push('scraping-queue');
+          break;
       }
     },
     resetDBPrompt() {
       this.$bvModal.show('deleteAllModal');
     },
     async resetDB() {
-      console.log('Starting reset...');
-      await deleteDB(DB_NAME, {
-        blocked() {
-          console.log('call was blocked!');
-        },
-      });
-      createDB();
+      chrome.runtime.sendMessage('reset');
     },
   },
 };

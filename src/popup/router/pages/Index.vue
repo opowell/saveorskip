@@ -44,7 +44,6 @@
 </template>
 
 <script>
-import * as idb from '../../../store/idb';
 import { Source } from '../../../models/Source';
 import { LINK_STATUS } from '../../../store/Constants.ts';
 
@@ -63,19 +62,17 @@ export default {
     };
   },
   async mounted() {
-    let loadedProfiles = await idb.fetchProfiles([{ field: 'generatedBy', lowerValue: 'user', upperValue: 'user' }], 100);
-    this.profiles.push(...loadedProfiles);
-    if (!this.hasValidTarget && this.profiles.length > 0) {
-      this.profileId = this.profiles[0].id;
-    }
-    console.log('this profile = ' + this.profileId);
-
     const thisComponent = this;
 
     chrome.runtime.sendMessage('getPopupData', function(response) {
       thisComponent.pageUrl = response.pageUrl;
       thisComponent.profileId = response.profileId;
       thisComponent.page = response.page;
+      thisComponent.profiles.push(...response.profiles);
+      if (!thisComponent.hasValidTarget && thisComponent.profiles.length > 0) {
+        thisComponent.profileId = thisComponent.profiles[0].id;
+      }
+      console.log('this profile = ' + thisComponent.profileId);
     });
 
     chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
@@ -140,18 +137,23 @@ export default {
         return;
       }
       console.log('updating popup', this.profileId, this.pageUrl);
-      this.linkStatus = await idb.getLinkStatus(this.profileId, this.pageUrl);
-      this.sourceStatus = await idb.getSourceStatus(this.profileId, this.pageUrl);
+      const self = this;
+      chrome.runtime.sendMessage('getUrlStatus', function(response) {
+        self.linkStatus = response.linkStatus;
+        self.sourceStatus = response.sourceStatus;
+      });
     },
     deleteSource() {
-      idb.removeSource({ targetId: this.profileId, url: this.pageUrl });
+      chrome.runtime.sendMessage({ action: 'deleteProfileSource', targetId: this.profileId, url: this.pageUrl });
     },
     setTargetEv(event) {
       this.profileId = event.target.value;
     },
     async storeLinkStatus(status) {
-      await idb.setLinkStatus(this.pageUrl, status, this.profileId, this.page);
-      this.linkStatus = status;
+      const self = this;
+      chrome.runtime.sendMessage({ action: 'setLinkStatus', url: this.pageUrl, status, profileId: this.profileId, page: this.page }, function(response) {
+        self.linkStatus = status;
+      });
     },
     go() {
       chrome.runtime.sendMessage({ action: 'go', profileId: this.profileId });
@@ -159,14 +161,15 @@ export default {
     async saveAsSource(action) {
       let source = Source(this.pageUrl, this.profileId);
       source.generatedBy = 'user';
-      await idb.saveOrSkipSource(action, this.profileId, source);
+      chrome.runtime.sendMessage({ action: 'saveOrSkipSource', status: action, profileId: this.profileId, source });
       this.sourceStatus = action;
     },
     showOptions() {
       chrome.runtime.openOptionsPage();
     },
     async removeLink() {
-      await idb.removeLink({
+      chrome.runtime.sendMessage({
+        action: 'removeLink',
         targetId: this.profileId,
         url: this.pageUrl,
       });

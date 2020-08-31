@@ -101,13 +101,20 @@ export function trimmedUrl(url: any) {
     return url;
   }
 
-  if (url.includes('://')) {
-    url = url.substring(url.indexOf('://') + '://'.length);
-  }
+  url = trimString(url, 'http://');
+  url = trimString(url, 'https://');
+
   if (url.endsWith('/')) {
     url = url.substring(0, url.length - 1);
   }
 
+  return url;
+}
+
+export function trimString(url: string, toRemove: string) {
+  if (url.includes(toRemove)) {
+    url = url.substring(url.indexOf(toRemove) + toRemove.length);
+  }
   return url;
 }
 

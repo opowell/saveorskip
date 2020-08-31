@@ -1,11 +1,8 @@
 {
 	"folders": [
-		{
-			"path": "."
-		},
-		{
-			"path": "C:\\Users\\opowelladmin\\Documents\\GitHub\\pwa-training-labs\\indexed-db-lab\\app"
-		}
-	],
+    {
+      "path": "."
+    }
+  ],
 	"settings": {}
 }

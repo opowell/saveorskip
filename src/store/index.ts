@@ -32,6 +32,8 @@ const initState = {
   urlToScrape: null,
 
   scrapers: [],
+  scraperTabId: null, // background
+  isScraperRunning: false,
 
   testPageUrl: '',
   testPage: null,

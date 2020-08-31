@@ -16,7 +16,6 @@
   },
   "dependencies": {
     "@types/chrome": "0.0.103",
-    "@vue/devtools": "^5.3.3",
     "bootstrap-vue": "^2.1.0",
     "core-js": "^2.6.11",
     "idb": "^4.0.5",
@@ -37,6 +36,7 @@
     "@babel/core": "^7.7.5",
     "@babel/plugin-proposal-optional-chaining": "^7.7.5",
     "@babel/preset-env": "^7.7.6",
+    "@vue/devtools": "^5.3.3",
     "babel-eslint": "^10.0.3",
     "babel-loader": "^8.0.6",
     "copy-webpack-plugin": "^4.6.0",

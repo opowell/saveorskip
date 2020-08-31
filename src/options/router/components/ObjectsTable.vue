@@ -226,7 +226,6 @@
 <script>
 import Vue from 'vue';
 import ObjectsTableCell from './ObjectsTableCell.vue';
-import * as idb from '../../../store/idb.ts';
 
 export default {
   components: {
@@ -238,7 +237,7 @@ export default {
     colNamesToSkip: Array,
     displayIndexFn: Function,
     crumbs: Array,
-    fetchRows: Function,
+    fetchRows: Function, // Should usually call "setRows" after rows are returned.
     fetchInitialData: Function,
     givenCols: Array,
     givenRows: Array,
@@ -351,11 +350,14 @@ export default {
     async fetchIndices() {
       if (this.storeNames != null) {
         this.indices.splice(0, this.indices.length);
-        this.indices = await idb.getIndices({ offset: 0, numRows: 100, storeNames: this.storeNames });
-        for (let i = 0; i < this.indices.length; i++) {
-          let index = this.indices[i];
-          index.tokens = index.keyPath.split('_');
-        }
+        const self = this;
+        chrome.runtime.sendMessage({ action: 'getIndices', offset: 0, numRows: 100, storeNames: this.storeNames }, function(response) {
+          self.indices = response;
+          for (let i = 0; i < self.indices.length; i++) {
+            let index = self.indices[i];
+            index.tokens = index.keyPath.split('_');
+          }
+        });
       }
     },
     stringToFilter(string) {
@@ -436,6 +438,7 @@ export default {
         if (Array.isArray(this.object)) {
           this.object.splice(0, this.object.length);
         }
+        console.log('fetch initial data', this.fetchInitialData, this);
         await this.fetchInitialData();
       }
       await this.checkIfNeedData();
@@ -447,19 +450,23 @@ export default {
       document.getElementById('checkBoxHeader').checked = false;
     },
     async checkIfNeedData() {
+      console.log('check data', this, this.items.length, this.numResults);
       if (this.items.length < this.numResults && this.items.length < this.perPage * (this.currentPage - 1) + 1) {
-        if (!this.fetchRows) {
-          return;
+        console.log('need data, try to fetch rows');
+        if (typeof this.fetchRows === 'function') {
+          let items = await this.fetchRows();
+          if (typeof items === 'object') this.setRows(items);
         }
-        let newItems = await this.fetchRows();
-        console.log('checked data, got', newItems);
-        this.object.push(...newItems);
-        this.$refs.table.refresh();
-        if (newItems.length > 0) {
-          this.$nextTick(async function() {
-            this.checkIfNeedData();
-          });
-        }
+      }
+    },
+    setRows(newItems) {
+      console.log('checked data, got', newItems);
+      if (newItems != null) this.object.push(...newItems);
+      this.$refs.table.refresh();
+      if (newItems.length > 0) {
+        this.$nextTick(async function() {
+          this.checkIfNeedData();
+        });
       }
     },
     tryDecodeURIComponent(text) {
@@ -857,12 +864,14 @@ export default {
       if (Array.isArray(this.object)) {
         for (let i in this.object) {
           let item = this.object[i];
+          // eslint-disable-next-line no-labels
           nextItem: for (let a in item) {
             if (this.colNamesToSkip != null && this.colNamesToSkip.includes(a)) {
               continue;
             }
             for (let j in out) {
               if (out[j].key === a) {
+                // eslint-disable-next-line no-labels
                 continue nextItem;
               }
             }

@@ -7,6 +7,7 @@ import Profile from './pages/Profile';
 import Profiles from './pages/Profiles';
 import Scraper from './pages/Scraper';
 import Scrapers from './pages/Scrapers';
+import ScrapingQueue from './pages/ScrapingQueue';
 import Settings from './pages/Settings';
 import Source from './pages/Source';
 import Sources from './pages/Sources';
@@ -66,6 +67,11 @@ export default [
     name: 'indices',
     path: '/indices',
     component: Indices,
+  },
+  {
+    name: 'scraping-queue',
+    path: '/scraping-queue',
+    component: ScrapingQueue,
   },
   {
     name: 'scraper',

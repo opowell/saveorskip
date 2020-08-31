@@ -60,7 +60,7 @@ sos.getLinksWithResponse = function(sendResponse) {
 };
 
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
-  console.log('sos received message: ' + request.action);
+  console.log('sos received message: ' + request.action, request, sender, sendResponse);
 
   if (request.action === 'getScraper') {
     getScraperCallback(request.payload);
@@ -74,6 +74,8 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
     sos.getLinksWithResponse(sendResponse);
   } else if (request.action === 'getPage') {
     sos.sendPageObj();
+  } else if (request.action === 'setUrl') {
+    window.location.href = request.url;
   } else {
     console.log('sos unknown message: ' + request.action, request);
     sendResponse({}); // Send nothing..
@@ -100,6 +102,7 @@ sos.getPage = function() {
 
 sos.setIfNotNull = function(scraper, field) {
   if (scraper[field] != null) {
+    // eslint-disable-next-line no-eval
     eval(`sos[field] = ${scraper[field]}`);
   }
 };
@@ -112,7 +115,14 @@ let getScraperCallback = function(response) {
     return;
   }
   let { scraper, closeWhenDone } = response;
-  console.log('got scraper ' + scraper.id);
+  if (response.isScraperPage) {
+    console.log('THIS IS THE SCRAPING TAB!');
+    let elemDiv = document.createElement('div');
+    elemDiv.style.cssText =
+      'position:fixed;width:100%;height:100%;opacity:0.8;z-index:999999999;background:#000;color:#FFF;align-items: center; justify-content: center; display: flex; top: 0; left: 0; font-size: 5rem;';
+    elemDiv.innerHTML = '<div style="margin: 5rem">This tab is scraping pages for GoForward.</div>';
+    document.body.appendChild(elemDiv);
+  }
   sos.scraper = scraper;
   sos.closeWhenDone = closeWhenDone;
 

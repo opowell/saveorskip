@@ -17,6 +17,9 @@ import {
   KEYPATH_SEPARATOR,
   setDBPromise,
   LINK_STATUS,
+  STORE_SCRAPING_QUEUE,
+  STORE_SCRAPING_QUEUE_PROFILEID,
+  STORE_SCRAPING_QUEUE_TIMEQUEUED,
 } from './Constants';
 import * as types from './mutation-types';
 import { trimmedUrl, drawRandomElFromObject, scoreFnJustPoints, convertId } from '../Utils';
@@ -52,6 +55,22 @@ export async function getSourceStatus(profileId: string | number, pageUrl: strin
   } else {
     return link.saved;
   }
+}
+
+export async function removePageToScrape(url: string) {
+  let db = await getDBPromise();
+  url = convertId(url);
+  await db.delete(STORE_SCRAPING_QUEUE, url);
+}
+
+export async function getNextPageToScrape() {
+  let db = await getDBPromise();
+  let out = await db.getAllFromIndex(STORE_SCRAPING_QUEUE, STORE_SCRAPING_QUEUE_TIMEQUEUED);
+  console.log('get next scrape', out);
+  if (out.length < 1) return null;
+  out[0].status = 'started';
+  await db.put(STORE_SCRAPING_QUEUE, out[0]);
+  return out[0];
 }
 
 export async function storePage(page: any, profileId: number | string, linkAction: any, sourceAction: any) {
@@ -101,18 +120,20 @@ export async function storePage(page: any, profileId: number | string, linkActio
   await saveOrSkipSource(sourceAction, profileId, page);
 }
 
-export async function parseBrowserHistory({ cId }) {
+export async function parseBrowserHistory({ consumerId, maxScrapes }) {
+  state.isScraperRunning = true;
+
   var microsecondsPerWeek = 1000 * 60 * 60 * 24 * 7;
   var oneWeekAgo = new Date().getTime() - microsecondsPerWeek;
-  var consumerId = cId;
   console.log('parsing history');
 
   let parseSearch = async function(historyItems) {
     // For each history item, get details on all visits.
     for (var i = 0; i < historyItems.length; ++i) {
+      if (i >= maxScrapes) break;
       var url = historyItems[i].url;
       url = trimmedUrl(url);
-      console.log('found url ' + url);
+      // console.log('found url ' + url);
       let srcObj = {
         source: {
           saved: 1,
@@ -126,6 +147,8 @@ export async function parseBrowserHistory({ cId }) {
       await addLink({ profileId: consumerId, url });
       await scrapeIfNecessary({ id: url });
     }
+    state.isScraperRunning = false;
+    await startScraping();
   };
 
   chrome.history.search(
@@ -441,9 +464,15 @@ export async function fetchProfiles(filters: Array<any>, numRows: number) {
 }
 
 export async function getScrapers() {
-  const db = await getDBPromise();
-  const values = await db.getAll(STORE_SCRAPERS);
-  return values;
+  try {
+    const db = await getDBPromise();
+    const values = await db.getAll(STORE_SCRAPERS);
+    return values;
+  } catch (err) {
+    console.log(err);
+    debugger;
+    return;
+  }
 }
 
 export async function scrapeIfNecessary(source: { [k: string]: any; id: string | number; providerId?: string | number }) {
@@ -453,7 +482,11 @@ export async function scrapeIfNecessary(source: { [k: string]: any; id: string |
   }
   let now = new Date();
   let profile = await getProfile(profileId);
-  console.log('comparing now to next scrape date: ' + now + ' vs. ' + profile.nextScrape);
+  addLog({
+    objectKeys: 'general',
+    objectType: 'none',
+    message: 'comparing now to next scrape date: ' + now + ' vs. ' + profile.nextScrape,
+  });
   if (profile.nextScrape == null || new Date(profile.nextScrape) < now) {
     scrapeProfile(profileId);
   }
@@ -463,9 +496,36 @@ export async function scrapeProfile(url: string | number) {
   if (typeof url !== 'string') {
     return;
   }
-  console.log('scraping ' + url);
-  state.urlsToScrape[url] = true;
-  chrome.tabs.create({ url: 'http://' + url, active: false });
+  if (url.startsWith('chrome://')) return;
+  if (url.startsWith('chrome-extension://')) return;
+  console.log('queueing url to scrape ' + url);
+  let db = await getDBPromise();
+  let payload = {
+    status: 'not started', // started
+  };
+  payload[STORE_SCRAPING_QUEUE_PROFILEID] = url;
+  payload[STORE_SCRAPING_QUEUE_TIMEQUEUED] = new Date();
+  let objectKeys = await db.put(STORE_SCRAPING_QUEUE, payload);
+  // Check that scraper is running. If not, start.
+  // state.urlsToScrape[url] = true;
+  // chrome.tabs.create({ url: 'http://' + url, active: false });
+  console.log('CHECKING');
+  if (!state.isScraperRunning) {
+    console.log('STARTING');
+    state.isScraperRunning = true;
+    // chrome.runtime.sendMessage('startScraping');
+    await startScraping();
+  }
+}
+
+export async function startScraping() {
+  console.log('starting scraper!');
+  state.isScraperRunning = true;
+  const nextUrl = await getNextPageToScrape();
+  chrome.tabs.create({ url: 'http://' + nextUrl[STORE_SCRAPING_QUEUE_PROFILEID], active: false }, tab => {
+    console.log('storing scraper tab id', tab);
+    state.scraperTabId = tab.id;
+  });
 }
 
 export async function getSuggestion(profileId: string | number) {
@@ -545,6 +605,19 @@ export async function getLinks(profileId: string | number) {
   return out;
 }
 
+export async function getScrapingQueue({ filters, offset, numRows, sortOrder }) {
+  let db = await getDBPromise();
+  // let out = await db.getAllFromIndex(STORE_SCRAPING_QUEUE, STORE_SCRAPING_QUEUE_PROFILEID, profileId);
+  let items = await this.getStoreResults({
+    storeName: STORE_SCRAPING_QUEUE,
+    filters,
+    offset,
+    numRows,
+    sortOrder,
+  });
+  return items;
+}
+
 export async function deleteProfile(payload: any) {
   let db = await getDBPromise();
   await db.delete(STORE_PROFILES, payload.profileId);
@@ -554,7 +627,7 @@ export async function deleteProfile(payload: any) {
 export async function loadScrapers() {
   let scrapers = await getScrapers();
   store.commit(types.LOAD_SCRAPERS, scrapers);
-  console.log('scrapers: ' + JSON.stringify(state.scrapers));
+  // console.log('scrapers: ' + JSON.stringify(state.scrapers));
 }
 
 export async function deleteScraper({ scraperId }: { scraperId: number }) {
@@ -736,6 +809,8 @@ export async function storeSource({
   pointsChange: number;
   overwrite: boolean;
 }) {
+  console.log('idb.storeSource', source, providerId, consumerId, pointsChange, overwrite);
+
   const db = await getDBPromise();
 
   let profile = await db.get(STORE_PROFILES, consumerId);
@@ -1256,6 +1331,10 @@ export async function getNumIndices() {
     await tx.done;
   }
   return out;
+}
+
+export async function getLengthScrapingQueue(filters) {
+  return await this.getNumResults({ storeName: STORE_SCRAPING_QUEUE, filters });
 }
 
 export async function deleteLog(id: number | string) {

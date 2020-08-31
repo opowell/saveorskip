@@ -16,6 +16,9 @@ export const Hrefs = {
   indices() {
     return '#/indices';
   },
+  scrapingQueue() {
+    return '#/scraping-queue';
+  },
   link(profileId: string | number, linkUrl: string | number) {
     return '#/profile/' + encodeURIComponent(profileId) + '/links/' + encodeURIComponent(linkUrl);
   },

@@ -13,6 +13,10 @@ export const STORE_LINKS_PROFILEID = 'profileId';
 export const STORE_LINKS_TIME_ADDED = 'timeAdded';
 export const STORE_LINKS_URL = 'url';
 
+export const STORE_SCRAPING_QUEUE = 'scraping-queue';
+export const STORE_SCRAPING_QUEUE_PROFILEID = 'profileId';
+export const STORE_SCRAPING_QUEUE_TIMEQUEUED = 'timeQueued';
+
 export const STORE_PROFILES = 'profiles';
 
 export const STORE_SOURCES = 'sources';
@@ -57,21 +61,8 @@ export const reset = async function() {
     },
     {}
   );
-  // let sources = ['www.reddit.com', 'news.ycombinator.com', 'www.theguardian.com/international'];
-  // for (let i in sources) {
-  //   let srcObj = {
-  //     source: {
-  //       saved: 0,
-  //     },
-  //     providerId: sources[i],
-  //     consumerId: 1,
-  //     pointsChange: 5,
-  //     overwrite: false,
-  //   };
-  //   await storeSource(srcObj);
-  // }
 
-  await parseBrowserHistory({ cId: 1 });
+  await parseBrowserHistory({ consumerId: 1, maxScrapes: 10 });
 
   await addScraper(DefaultScraper);
   await addScraper(RedditScraper);
@@ -106,11 +97,19 @@ export const createDB = function() {
           keyPath: 'id',
           autoIncrement: true,
         });
+
+        let scrapingQueueStore = db.createObjectStore(STORE_SCRAPING_QUEUE, { keyPath: STORE_SCRAPING_QUEUE_PROFILEID });
+
+        scrapingQueueStore.createIndex(STORE_SCRAPING_QUEUE_TIMEQUEUED, STORE_SCRAPING_QUEUE_TIMEQUEUED);
+
         db.createObjectStore(STORE_LINKS, {
           keyPath: [STORE_LINKS_PROFILEID, 'url'],
         });
 
-        db.createObjectStore(STORE_SOURCES, { keyPath: [STORE_SOURCES_CONSUMERID, STORE_SOURCES_PROVIDERID] });
+        db.createObjectStore(STORE_SOURCES, {
+          keyPath: [STORE_SOURCES_CONSUMERID, STORE_SOURCES_PROVIDERID],
+        });
+
         db.createObjectStore(STORE_SCRAPERS, {
           keyPath: 'id',
           autoIncrement: true,

@@ -26,7 +26,6 @@
 
 <script>
 import ObjectsTable from '../components/ObjectsTable.vue';
-import * as idb from '../../../store/idb';
 import { STORE_PROFILES } from '../../../store/Constants';
 import { Hrefs } from '../../Constants';
 
@@ -59,31 +58,34 @@ export default {
       this.$refs.input.focus();
     },
     deleteProfiles(selection) {
-      for (let i in selection) {
-        idb.deleteProfile({
-          profileId: selection[i].id,
-        });
-      }
-      this.$refs.table.callFetchData();
+      chrome.runtime.sendMessage({ action: 'deleteProfiles', profiles: selection }, function(response) {
+        this.$refs.table.callFetchData();
+      });
     },
     async fetchInitialData() {
-      this.numResults = await idb.getNumResults({ storeName: STORE_PROFILES, filters: this.$refs.table.filters });
+      const self = this;
+      chrome.runtime.sendMessage({ action: 'fetchNumResults', object: 'profiles', storeName: STORE_PROFILES, filters: this.$refs.table.filters }, function(numResults) {
+        self.numResults = numResults;
+        console.log('fid', this, self, self.numResults, self.$refs.table.numResults);
+        self.$nextTick(() => self.$refs.table.checkIfNeedData());
+      });
     },
     async fetchRows() {
-      let items = await idb.getStoreResults({
-        storeName: STORE_PROFILES,
-        filters: this.$refs.table.filters,
-        offset: this.$refs.table.items.length,
-        numRows: 100,
-        sortOrder: this.$refs.table.sortOrder,
-      });
-      for (let i in items) {
-        try {
-          await idb.addProfileChildrenCounts(items[i]);
-          console.log('found', items[i]);
-        } catch (e) {}
-      }
-      return items;
+      const self = this;
+      console.log('fetching rows');
+      chrome.runtime.sendMessage(
+        {
+          action: 'getProfiles',
+          filters: this.$refs.table.filters,
+          offset: this.$refs.table.items.length,
+          numRows: 100,
+          sortOrder: this.$refs.table.sortOrder,
+        },
+        function(items) {
+          console.log('sending message', this);
+          self.$refs.table.setRows(items);
+        }
+      );
     },
     addProfilePrompt() {
       this.$bvModal.show('addProfileModal');
@@ -98,8 +100,9 @@ export default {
         name: nameInput,
         generatedBy: 'user',
       };
-      await idb.storeProfile(profile, {});
-      this.$refs.table.callFetchData();
+      chrome.runtime.sendMessage({ action: 'storeProfile', profile }, function(response) {
+        this.$refs.table.callFetchData();
+      });
     },
     openProfile({ item, index, event }) {
       this.$router.push({ name: 'profile', params: { id: item.id } });

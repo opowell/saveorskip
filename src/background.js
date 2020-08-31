@@ -4,7 +4,8 @@ import store from './store';
 import * as idb from './store/idb';
 import * as types from './store/mutation-types';
 import { trimmedUrl, convertId } from './Utils';
-import { LINK_STATUS } from './store/Constants.ts';
+import { LINK_STATUS, STORE_PROFILES, STORE_SCRAPING_QUEUE_PROFILEID, DB_NAME, createDB } from './store/Constants.ts';
+import { deleteDB } from 'idb';
 
 global.browser = require('webextension-polyfill');
 
@@ -197,14 +198,22 @@ async function doGetPage(senderUrl, message, sender) {
     store.dispatch('setTestPage', { page: message.page });
   }
   let profile = await idb.getProfile(state.profileId);
-  if (profile == null) {
-    console.log('No profile, not storing page.');
-    return;
+  if (profile != null) {
+    message.page.url = senderUrl;
+    await idb.storePage(message.page, state.profileId, profile.defaultLinkAction, profile.defaultSourceAction);
+    setPageUrl();
+    setPage(message.page);
   }
-  message.page.url = senderUrl;
-  await idb.storePage(message.page, state.profileId, profile.defaultLinkAction, profile.defaultSourceAction);
-  setPageUrl();
-  setPage(message.page);
+
+  console.log('scraper tab id', store.state);
+  await idb.removePageToScrape(senderUrl);
+  if (sender.tab.id === store.state.scraperTabId) {
+    let nextPageToScrape = await idb.getNextPageToScrape();
+    if (nextPageToScrape != null) {
+      chrome.tabs.update(sender.tab.id, { url: 'http://' + nextPageToScrape[STORE_SCRAPING_QUEUE_PROFILEID] });
+      // chrome.tabs.sendMessage(sender.tab.id, { action: 'setUrl', url: 'http://' + nextPageToScrape[STORE_SCRAPING_QUEUE_PROFILEID] });
+    }
+  }
 }
 
 function setPage(page) {
@@ -240,23 +249,78 @@ async function handleMessage(message, sender) {
   }
 
   switch (action) {
+    case 'startScraping':
+      idb.startScraping();
+      break;
+    case 'getUrlStatus':
+      let statusData = {};
+      statusData.linkStatus = await idb.getLinkStatus(this.profileId, this.pageUrl);
+      statusData.sourceStatus = await idb.getSourceStatus(this.profileId, this.pageUrl);
+      return statusData;
     case 'getPopupData':
       const popupData = {};
       popupData.profileId = state.profileId;
       popupData.pageUrl = state.pageUrl;
       popupData.page = state.page;
+      popupData.profiles = await idb.fetchProfiles([{ field: 'generatedBy', lowerValue: 'user', upperValue: 'user' }], 100);
+
       // If no page, ask for it to be loaded.
       if (state.page == null) {
         getCurrentPageObj(senderUrl, message, sender);
       }
       return popupData;
+    case 'deleteProfiles':
+      for (let i in message.profiles) {
+        await idb.deleteProfile({
+          profileId: message.profiles[i].id,
+        });
+      }
+      break;
+    case 'deleteProfileSource':
+      await idb.removeSource({ targetId: message.targetId, url: message.url });
+      break;
+    case 'fetchNumResults':
+      const numResults = await idb.getNumResults({ storeName: message.storeName, filters: message.filters });
+      return numResults;
+    case 'getIndices':
+      let indices = await idb.getIndices({ offset: message.offset, numRows: message.numRows, storeNames: message.storeNames });
+      return indices;
+    case 'getProfiles':
+      let profiles = await idb.getStoreResults({
+        storeName: STORE_PROFILES,
+        filters: message.filters,
+        offset: message.offset,
+        numRows: message.numRows,
+        sortOrder: message.sortOrder,
+      });
+      for (let i in profiles) {
+        try {
+          await idb.addProfileChildrenCounts(profiles[i]);
+        } catch (e) {}
+      }
+      return profiles;
+    case 'removeLink':
+      await idb.removeLink({
+        targetId: message.targetId,
+        url: message.url,
+      });
+      break;
+    case 'setLinkStatus':
+      await idb.setLinkStatus(message.url, message.status, message.profileId, message.page);
+      break;
     case 'setTestPageUrl':
       state.testPageUrl = message.url;
       chrome.tabs.create({ url: 'http://' + message.url, active: false });
       break;
+    case 'saveOrSkipSource':
+      await idb.saveOrSkipSource(message.status, message.profileId, message.source);
+      break;
     case 'saveSourcesOfUrl':
       state.urlToScrape = message.url;
       saveSourcesOfUrl(message.url, null, LINK_STATUS.SAVED);
+      break;
+    case 'storeProfile':
+      await idb.storeProfile(message.profile, {});
       break;
     case 'getPage':
       doGetPage(senderUrl, message, sender);
@@ -266,15 +330,20 @@ async function handleMessage(message, sender) {
       if (senderUrl === state.testPageUrl) {
         closeWhenDone = true;
       }
+      console.log('loaded page', sender, store.state);
+      let isScraperPage = store.state.scraperTabId === sender.tab.id;
+
       if (state.urlsToScrape[senderUrl] === true) {
-        closeWhenDone = true;
+        closeWhenDone = !isScraperPage;
         delete state.urlsToScrape[senderUrl];
       }
+
       let scraper = await getScraper(senderUrl);
       console.log('sending response for ' + senderUrl + ' with scraper' + scraper.id, scraper);
       let payload = {
         scraper,
         closeWhenDone,
+        isScraperPage,
       };
       chrome.tabs.sendMessage(sender.tab.id, { action: 'getScraper', payload });
       // sendResponse(payload);
@@ -294,6 +363,15 @@ async function handleMessage(message, sender) {
       showNextPage(message.profileId);
       break;
     case 'saveAsSource':
+      break;
+    case 'reset':
+      console.log('Starting reset...');
+      await deleteDB(DB_NAME, {
+        blocked() {
+          console.log('call was blocked!');
+        },
+      });
+      createDB();
       break;
   }
 }

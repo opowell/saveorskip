@@ -86,8 +86,16 @@ export default {
       if (this.curKeyPath.length < 1) {
         return;
       }
-      await idb.createIndex(storeNameInput, this.curKeyPath);
-      this.fetchData();
+      chrome.runtime.sendMessage(
+        {
+          action: 'createIndex',
+          storeName: storeNameInput,
+          keyPath: this.curKeyPath,
+        },
+        function() {
+          this.fetchData();
+        }
+      );
     },
     addIndexPrompt() {
       this.$bvModal.show('addIndexModal');

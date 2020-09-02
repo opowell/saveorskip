@@ -56,7 +56,7 @@
             {{ displayIndex(preset) }}
           </option>
         </select>
-        <button @click="loadIndex" :disabled="indices.length === 0">Load</button>
+        <button @click="loadIndex" :disabled="noIndices">Load</button>
       </div>
     </b-modal>
     <!-- User Interface controls -->
@@ -781,6 +781,9 @@ export default {
     },
   },
   computed: {
+    noIndices() {
+      return this.indices == null || this.indices.length === 0;
+    },
     numRows() {
       if (this.numResults == null) {
         return this.items.length;

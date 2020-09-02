@@ -87,6 +87,7 @@ export const getDBPromise = function() {
 };
 
 export const createDB = function() {
+  console.log('creating DB');
   // When anything below changes, increment DB_VERSION or delete existing database. This forces the database schema to be updated.
   let dbPromise = openDB(DB_NAME, dbVersion, {
     async upgrade(db, oldVersion, newVersion, transaction) {
@@ -133,6 +134,7 @@ export const createDB = function() {
     },
   });
   setDBPromise(dbPromise);
+  console.log('DONE: creating DB');
 };
 
 // @ts-ignore

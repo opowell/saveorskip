@@ -120,7 +120,7 @@ export async function storePage(page: any, profileId: number | string, linkActio
   await saveOrSkipSource(sourceAction, profileId, page);
 }
 
-export async function parseBrowserHistory({ consumerId, maxScrapes }) {
+export async function parseBrowserHistory({ consumerId, maxScrapes = 20 }) {
   state.isScraperRunning = true;
 
   var microsecondsPerWeek = 1000 * 60 * 60 * 24 * 7;
@@ -139,7 +139,7 @@ export async function parseBrowserHistory({ consumerId, maxScrapes }) {
           saved: 1,
         },
         providerId: url,
-        consumerId: consumerId,
+        consumerId,
         pointsChange: 3,
         overwrite: false,
       };
@@ -719,7 +719,7 @@ export async function setSourceSaved(payload: any) {
     url: trimmedUrl(payload.link.url),
     title: payload.link.title,
     saved: payload.action,
-    profileId: payload.targetId,
+    profileId: payload.profileId,
   };
   if (payload.props != null) {
     let propKeys = Object.keys(payload.props);
@@ -754,10 +754,12 @@ export async function saveOrSkipLink(action: number, profileId: number | string,
     let sources = link.sources;
     for (let i in sources) {
       let source = sources[i];
+      let consumerId = source.profileId;
+      if (consumerId == null) consumerId = source.consumerId;
       storeSource({
         source,
         providerId: source.id,
-        consumerId: source.profileId,
+        consumerId,
         overwrite: false,
         pointsChange: source.points,
       });
@@ -813,6 +815,14 @@ export async function storeSource({
 
   const db = await getDBPromise();
 
+  if (providerId == null) {
+    providerId = source.url;
+  }
+
+  if (consumerId == null) {
+    console.log('no consumer given, stopping...');
+    return;
+  }
   let profile = await db.get(STORE_PROFILES, consumerId);
   if (profile == null) {
     debugger;
@@ -1022,6 +1032,11 @@ export async function storeLinkSources(sources: Array<any>, profileId: string | 
 }
 
 export async function storeLinkSource(source: any) {
+  if (source.profileId == null) {
+    console.log('no profileId, stopping');
+    return;
+  }
+
   let link = await getLink({ profileId: source.profileId, linkId: source.linkId });
   if (link == null) {
     return;

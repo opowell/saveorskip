@@ -13,7 +13,7 @@ global.browser = require('webextension-polyfill');
 function saveSources(sourcesToSave, callback) {
   if (sourcesToSave == null) return;
   for (let i in sourcesToSave) {
-    sourcesToSave[i].consumerId = store.state.targetId;
+    sourcesToSave[i].consumerId = store.state.profileId;
     sourcesToSave[i].generatedBy = 'auto';
   }
   idb.addSources({
@@ -254,8 +254,8 @@ async function handleMessage(message, sender) {
       break;
     case 'getUrlStatus':
       let statusData = {};
-      statusData.linkStatus = await idb.getLinkStatus(this.profileId, this.pageUrl);
-      statusData.sourceStatus = await idb.getSourceStatus(this.profileId, this.pageUrl);
+      statusData.linkStatus = await idb.getLinkStatus(message.profileId, message.pageUrl);
+      statusData.sourceStatus = await idb.getSourceStatus(message.profileId, message.pageUrl);
       return statusData;
     case 'getPopupData':
       const popupData = {};
@@ -275,6 +275,9 @@ async function handleMessage(message, sender) {
           profileId: message.profiles[i].id,
         });
       }
+      break;
+    case 'parseBrowserHistory':
+      await idb.parseBrowserHistory({ consumerId: message.consumerId });
       break;
     case 'deleteProfileSource':
       await idb.removeSource({ targetId: message.targetId, url: message.url });
@@ -349,7 +352,7 @@ async function handleMessage(message, sender) {
       // sendResponse(payload);
       getSourcesOfUrl({
         url: senderUrl,
-        profileId: state.targetId,
+        profileId: state.profileId,
       });
       break;
     case 'scrapeProfile':
@@ -358,6 +361,9 @@ async function handleMessage(message, sender) {
     // NOT SURE NEEDED
     case 'showNextPage':
       showNextPage();
+      break;
+    case 'createIndex':
+      await idb.createIndex(message.storeName, message.keyPath);
       break;
     case 'go':
       showNextPage(message.profileId);
@@ -371,6 +377,7 @@ async function handleMessage(message, sender) {
           console.log('call was blocked!');
         },
       });
+      console.log('DB deleted');
       createDB();
       break;
   }

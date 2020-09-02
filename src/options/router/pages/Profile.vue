@@ -75,8 +75,16 @@ export default {
   methods: {
     async parseBrowserHistory() {
       this.parsingHistory = true;
-      await idb.parseBrowserHistory({ cId: this.profile.id });
-      this.parsingHistory = false;
+      const self = this;
+      chrome.runtime.sendMessage(
+        {
+          action: 'parseBrowserHistory',
+          consumerId: this.profile.id,
+        },
+        function() {
+          self.parsingHistory = false;
+        }
+      );
     },
     openSuggestion() {
       chrome.tabs.create({ url: 'http://' + this.getSuggestionResult.url, active: true });

@@ -47,7 +47,7 @@ if (!('indexedDB' in window)) {
   console.log("This browser doesn't support IndexedDB");
 }
 
-export const reset = async function() {
+export const reset = async function(bgState: Object) {
   addLog({
     objectKeys: [],
     objectType: 'System',
@@ -62,7 +62,7 @@ export const reset = async function() {
     {}
   );
 
-  await parseBrowserHistory({ consumerId: 1, maxScrapes: 10 });
+  await parseBrowserHistory(bgState, { consumerId: 1, maxScrapes: 10 });
 
   await addScraper(DefaultScraper);
   await addScraper(RedditScraper);
@@ -86,7 +86,7 @@ export const getDBPromise = function() {
   return dbPromise;
 };
 
-export const createDB = function() {
+export const createDB = function(bgState: Object) {
   console.log('creating DB');
   // When anything below changes, increment DB_VERSION or delete existing database. This forces the database schema to be updated.
   let dbPromise = openDB(DB_NAME, dbVersion, {
@@ -121,7 +121,7 @@ export const createDB = function() {
           autoIncrement: true,
         });
 
-        await reset();
+        await reset(bgState);
       }
     },
     async blocking() {
@@ -145,4 +145,4 @@ if (dbVersion === 0) {
 
 let dbPromise: Promise<IDBPDatabase<unknown>>;
 
-createDB();
+// createDB(bgState);

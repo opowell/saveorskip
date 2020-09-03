@@ -25,7 +25,7 @@ import * as types from './mutation-types';
 import { trimmedUrl, drawRandomElFromObject, scoreFnJustPoints, convertId } from '../Utils';
 import { MessageEventBus } from '../options/Constants';
 
-let state: any = store.state;
+const state: any = store.state;
 
 export async function getLinkStatus(profileId: string | number, pageUrl: string) {
   try {
@@ -120,7 +120,7 @@ export async function storePage(page: any, profileId: number | string, linkActio
   await saveOrSkipSource(sourceAction, profileId, page);
 }
 
-export async function parseBrowserHistory({ consumerId, maxScrapes = 20 }) {
+export async function parseBrowserHistory(bgState: Object, { consumerId, maxScrapes = 20 }) {
   state.isScraperRunning = true;
 
   var microsecondsPerWeek = 1000 * 60 * 60 * 24 * 7;
@@ -145,10 +145,10 @@ export async function parseBrowserHistory({ consumerId, maxScrapes = 20 }) {
       };
       await storeSource(srcObj);
       await addLink({ profileId: consumerId, url });
-      await scrapeIfNecessary({ id: url });
+      await scrapeIfNecessary(bgState, { id: url });
     }
     state.isScraperRunning = false;
-    await startScraping();
+    await startScraping(bgState);
   };
 
   chrome.history.search(
@@ -475,7 +475,7 @@ export async function getScrapers() {
   }
 }
 
-export async function scrapeIfNecessary(source: { [k: string]: any; id: string | number; providerId?: string | number }) {
+export async function scrapeIfNecessary(bgState, source: { [k: string]: any; id: string | number; providerId?: string | number }) {
   let profileId = source.id;
   if (source.providerId != null) {
     profileId = source.providerId;
@@ -488,11 +488,11 @@ export async function scrapeIfNecessary(source: { [k: string]: any; id: string |
     message: 'comparing now to next scrape date: ' + now + ' vs. ' + profile.nextScrape,
   });
   if (profile.nextScrape == null || new Date(profile.nextScrape) < now) {
-    scrapeProfile(profileId);
+    scrapeProfile(profileId, bgState);
   }
 }
 
-export async function scrapeProfile(url: string | number) {
+export async function scrapeProfile(url: string | number, bgState: Object) {
   if (typeof url !== 'string') {
     return;
   }
@@ -514,21 +514,22 @@ export async function scrapeProfile(url: string | number) {
     console.log('STARTING');
     state.isScraperRunning = true;
     // chrome.runtime.sendMessage('startScraping');
-    await startScraping();
+    await startScraping(bgState);
   }
 }
 
-export async function startScraping() {
+export async function startScraping(bgState: any) {
   console.log('starting scraper!');
   state.isScraperRunning = true;
   const nextUrl = await getNextPageToScrape();
   chrome.tabs.create({ url: 'http://' + nextUrl[STORE_SCRAPING_QUEUE_PROFILEID], active: false }, tab => {
-    console.log('storing scraper tab id', tab);
-    state.scraperTabId = tab.id;
+    console.log('storing scraper tab id', tab, store.state);
+    bgState.scraperTabId = tab.id;
+    console.log('bgState', bgState, bgState.scraperTabId);
   });
 }
 
-export async function getSuggestion(profileId: string | number) {
+export async function getSuggestion(bgState: Object, profileId: string | number) {
   try {
     let sources = await getProfileSources(profileId);
     if (sources == null) {
@@ -550,7 +551,7 @@ export async function getSuggestion(profileId: string | number) {
       await db.put(STORE_SOURCES, source);
 
       let provider = await getProfile(source.providerId);
-      await scrapeIfNecessary(provider);
+      await scrapeIfNecessary(bgState, provider);
 
       let linksCursor = null;
       try {

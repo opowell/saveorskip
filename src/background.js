@@ -198,18 +198,23 @@ async function doGetPage(senderUrl, message, sender) {
     store.dispatch('setTestPage', { page: message.page });
   }
   let profile = await idb.getProfile(state.profileId);
-  if (profile != null) {
+  if (profile != null && message.page != null) {
     message.page.url = senderUrl;
     await idb.storePage(message.page, state.profileId, profile.defaultLinkAction, profile.defaultSourceAction);
     setPageUrl();
     setPage(message.page);
+  } else {
+    console.log('no page, skipping');
   }
 
-  console.log('scraper tab id', store.state);
+  console.log('scraper tab id', store.state, sender.tab.id, state.scraperTabId);
   await idb.removePageToScrape(senderUrl);
-  if (sender.tab.id === store.state.scraperTabId) {
+  if (sender.tab.id === state.scraperTabId) {
+    console.log('was a page to scrape');
     let nextPageToScrape = await idb.getNextPageToScrape();
+    console.log('next page', nextPageToScrape);
     if (nextPageToScrape != null) {
+      console.log('scrape next');
       chrome.tabs.update(sender.tab.id, { url: 'http://' + nextPageToScrape[STORE_SCRAPING_QUEUE_PROFILEID] });
       // chrome.tabs.sendMessage(sender.tab.id, { action: 'setUrl', url: 'http://' + nextPageToScrape[STORE_SCRAPING_QUEUE_PROFILEID] });
     }
@@ -277,7 +282,7 @@ async function handleMessage(message, sender) {
       }
       break;
     case 'parseBrowserHistory':
-      await idb.parseBrowserHistory({ consumerId: message.consumerId });
+      await idb.parseBrowserHistory(state, { consumerId: message.consumerId });
       break;
     case 'deleteProfileSource':
       await idb.removeSource({ targetId: message.targetId, url: message.url });
@@ -333,8 +338,8 @@ async function handleMessage(message, sender) {
       if (senderUrl === state.testPageUrl) {
         closeWhenDone = true;
       }
-      console.log('loaded page', sender, store.state);
-      let isScraperPage = store.state.scraperTabId === sender.tab.id;
+      console.log('loaded page', sender, state);
+      let isScraperPage = state.scraperTabId === sender.tab.id;
 
       if (state.urlsToScrape[senderUrl] === true) {
         closeWhenDone = !isScraperPage;
@@ -378,7 +383,7 @@ async function handleMessage(message, sender) {
         },
       });
       console.log('DB deleted');
-      createDB();
+      createDB(state);
       break;
   }
 }
@@ -470,7 +475,7 @@ chrome.tabs.onActivated.addListener(function(activeInfo) {
 });
 
 chrome.tabs.onUpdated.addListener(async function(tabId, changeInfo, tab) {
-  console.log('tab updated', tabId, changeInfo, tab);
+  console.log('tab updated', tabId, changeInfo, tab, state.scraperTabId, store, state);
   if (tabId === state.activeTabId) {
     setPageUrl(tabId);
     chrome.tabs.sendMessage(tabId, { action: 'getPage' });
@@ -491,6 +496,7 @@ const state = {
   linkStatus: null,
   sourceStatus: null,
   urlsToScrape: {},
+  scraperTabId: null,
 };
 
 idb.loadScrapers();

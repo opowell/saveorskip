@@ -163,8 +163,13 @@ function setPageUrl(tabId) {
       state.page = null;
       getPageObj(tab.id);
     }
-    state.linkStatus = await idb.getLinkStatus(state.profileId, state.pageUrl);
-    state.sourceStatus = await idb.getSourceStatus(state.profileId, state.pageUrl);
+    if (state.profileId != null) {
+      state.linkStatus = await idb.getLinkStatus(state.profileId, state.pageUrl);
+      state.sourceStatus = await idb.getSourceStatus(state.profileId, state.pageUrl);
+    } else {
+      state.linkStatus = 'unknown';
+      state.sourceStatus = 'unknown';
+    }
     chrome.runtime.sendMessage({
       action: 'setPageUrl',
       pageUrl: state.pageUrl,

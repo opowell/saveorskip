@@ -27,10 +27,11 @@ import { MessageEventBus } from '../options/Constants';
 
 const state: any = store.state;
 
-export async function getLinkStatus(profileId: string | number, pageUrl: string) {
+export async function getLinkStatus(profileId: string | number, pageUrl: string, bgState: Object) {
+  console.log('getLinkStatus', profileId, pageUrl);
   try {
     if (typeof profileId === 'number' && isNaN(profileId)) return;
-    let db = await getDBPromise();
+    let db = await getDBPromise(bgState);
     profileId = convertId(profileId);
     let link = await db.get(STORE_LINKS, [profileId, pageUrl]);
     if (link == null) {
@@ -38,33 +39,38 @@ export async function getLinkStatus(profileId: string | number, pageUrl: string)
     }
     return link.saved;
   } catch (err) {
-    console.log(err);
+    console.log('getLinkStatus', err, profileId, pageUrl);
   }
   return 'neither';
 }
 
-export async function getSourceStatus(profileId: string | number, pageUrl: string) {
+export async function getSourceStatus(profileId: string | number, pageUrl: string, bgState: Object) {
   if (typeof profileId === 'number') {
     if (isNaN(profileId)) return;
   }
-  let db = await getDBPromise();
+  let db = await getDBPromise(bgState);
   profileId = convertId(profileId);
-  let link = await db.get(STORE_SOURCES, [profileId, pageUrl]);
-  if (link == null) {
+  try {
+    let link = await db.get(STORE_SOURCES, [profileId, pageUrl]);
+    if (link == null) {
+      return 'neither';
+    } else {
+      return link.saved;
+    }
+  } catch (err) {
+    console.log('getSourceStatus: error, returning neither', err, profileId, pageUrl);
     return 'neither';
-  } else {
-    return link.saved;
   }
 }
 
-export async function removePageToScrape(url: string) {
-  let db = await getDBPromise();
+export async function removePageToScrape(url: string, bgState: Object) {
+  let db = await getDBPromise(bgState);
   url = convertId(url);
   await db.delete(STORE_SCRAPING_QUEUE, url);
 }
 
-export async function getNextPageToScrape() {
-  let db = await getDBPromise();
+export async function getNextPageToScrape(bgState: Object) {
+  let db = await getDBPromise(bgState);
   let out = await db.getAllFromIndex(STORE_SCRAPING_QUEUE, STORE_SCRAPING_QUEUE_TIMEQUEUED);
   console.log('get next scrape', out);
   if (out.length < 1) return null;
@@ -73,7 +79,7 @@ export async function getNextPageToScrape() {
   return out[0];
 }
 
-export async function storePage(page: any, profileId: number | string, linkAction: any, sourceAction: any) {
+export async function storePage(page: any, profileId: number | string, linkAction: any, sourceAction: any, bgState: Object) {
   if (page == null) {
     return;
   }
@@ -91,7 +97,7 @@ export async function storePage(page: any, profileId: number | string, linkActio
       link.saved = LINK_STATUS.SAVED;
     }
     link.profileId = page.url;
-    numNewLinksFound += await addLink(link);
+    numNewLinksFound += await addLink(link, bgState);
   }
 
   let sources = page.sources;
@@ -111,13 +117,13 @@ export async function storePage(page: any, profileId: number | string, linkActio
   // });
 
   page.generatedBy = 'auto';
-  await storeProfile(page, { overwriteProps: false, updateScrapeSettings: true, numNewLinksFound });
+  await storeProfile(page, { overwriteProps: false, updateScrapeSettings: true, numNewLinksFound }, bgState);
   // let state: any = store.state;
   // delete state.urlsToScrape[profileId];
 
   // Page as link and source for current consumer profile.
-  await saveOrSkipLink(linkAction, profileId, page);
-  await saveOrSkipSource(sourceAction, profileId, page);
+  await saveOrSkipLink(linkAction, profileId, page, bgState);
+  await saveOrSkipSource(sourceAction, profileId, page, bgState);
 }
 
 export async function parseBrowserHistory(bgState: Object, { consumerId, maxScrapes = 20 }) {
@@ -143,8 +149,8 @@ export async function parseBrowserHistory(bgState: Object, { consumerId, maxScra
         pointsChange: 3,
         overwrite: false,
       };
-      await storeSource(srcObj);
-      await addLink({ profileId: consumerId, url });
+      await storeSource(srcObj, bgState);
+      await addLink({ profileId: consumerId, url }, bgState);
       await scrapeIfNecessary(bgState, { id: url });
     }
     state.isScraperRunning = false;
@@ -160,68 +166,77 @@ export async function parseBrowserHistory(bgState: Object, { consumerId, maxScra
   );
 }
 
-export async function addProfileChildrenCounts(profile: { [k: string]: any; id: string | number }) {
-  profile['Links'] = await getNumResults({
-    storeName: STORE_LINKS,
-    filters: [
-      {
-        field: STORE_LINKS_PROFILEID,
-        lowerValue: profile.id,
-        upperValue: profile.id,
-      },
-    ],
-  });
-  profile['Sources'] = await getNumResults({
-    storeName: STORE_SOURCES,
-    filters: [
-      {
-        field: STORE_SOURCES_CONSUMERID,
-        lowerValue: profile.id,
-        upperValue: profile.id,
-      },
-    ],
-  });
-  profile['Logs'] = await getNumResults({
-    storeName: STORE_LOGS,
-    filters: [
-      {
-        field: 'objectType',
-        lowerValue: 'Profile',
-        upperValue: 'Profile',
-      },
-      {
-        field: 'objectKeys',
-        lowerValue: profile.id,
-        upperValue: profile.id,
-      },
-    ],
-  });
+export async function addProfileChildrenCounts(profile: { [k: string]: any; id: string | number }, bgState: Object) {
+  profile['Links'] = await getNumResults(
+    {
+      storeName: STORE_LINKS,
+      filters: [
+        {
+          field: STORE_LINKS_PROFILEID,
+          lowerValue: profile.id,
+          upperValue: profile.id,
+        },
+      ],
+    },
+    bgState
+  );
+  profile['Sources'] = await getNumResults(
+    {
+      storeName: STORE_SOURCES,
+      filters: [
+        {
+          field: STORE_SOURCES_CONSUMERID,
+          lowerValue: profile.id,
+          upperValue: profile.id,
+        },
+      ],
+    },
+    bgState
+  );
+  profile['Logs'] = await getNumResults(
+    {
+      storeName: STORE_LOGS,
+      filters: [
+        {
+          field: 'objectType',
+          lowerValue: 'Profile',
+          upperValue: 'Profile',
+        },
+        {
+          field: 'objectKeys',
+          lowerValue: profile.id,
+          upperValue: profile.id,
+        },
+      ],
+    },
+    bgState
+  );
 }
 
-export async function loadProfile(payload: any) {
+export async function loadProfile(payload: any, bgState: Object) {
   let profileId = payload.profileId;
-  const db = await getDBPromise();
+  const db = await getDBPromise(bgState);
   let profile = await db.get(STORE_PROFILES, profileId);
-  await addProfileChildrenCounts(profile);
+  await addProfileChildrenCounts(profile, bgState);
   return profile;
 }
 
-export async function setSkippedLinkIfNew(profileId: string | number, link: any) {
+export async function setSkippedLinkIfNew(profileId: string | number, link: any, bgState: Object) {
   if (link == null || link.url == null) {
     return;
   }
   link.url = trimmedUrl(link.url);
-  const db = await getDBPromise();
+  const db = await getDBPromise(bgState);
   let storeItem = await db.get(STORE_LINKS, [profileId, link.url]);
   if (storeItem != null) {
     return;
   }
-  await saveOrSkipLink(LINK_STATUS.SKIPPED, profileId, link);
+  await saveOrSkipLink(LINK_STATUS.SKIPPED, profileId, link, bgState);
 }
 
 export async function setTestPage(page: any) {}
 
-export async function setSkippedSourceIfNew(profileId: number | string, source: any) {
+export async function setSkippedSourceIfNew(profileId: number | string, source: any, bgState: Object) {
   if (source == null || source.url == null) {
     console.log('no url given');
     return;
@@ -232,7 +247,7 @@ export async function setSkippedSourceIfNew(profileId: number | string, source: 
   let prevTitle = source.title;
   delete source.url;
   delete source.title;
-  const db = await getDBPromise();
+  const db = await getDBPromise(bgState);
   let storeItem = await db.get(STORE_PROFILES, source.id);
   if (storeItem != null) {
     for (let i in source.links) {
@@ -241,10 +256,13 @@ export async function setSkippedSourceIfNew(profileId: number | string, source: 
       }
       source.links[i].saved = 1;
     }
-    await addLinks({
-      links: source.links,
-      profileId: source.id,
-    });
+    await addLinks(
+      {
+        links: source.links,
+        profileId: source.id,
+      },
+      bgState
+    );
     for (let i in source.sources) {
       if (typeof source.sources[i] === 'string') {
         source.sources[i] = { providerId: source.sources[i] };
@@ -253,9 +271,12 @@ export async function setSkippedSourceIfNew(profileId: number | string, source: 
       source.sources[i].points = 0;
       source.sources[i].generatedBy = 'auto';
     }
-    await addSources({
-      sources: source.sources,
-    });
+    await addSources(
+      {
+        sources: source.sources,
+      },
+      bgState
+    );
     incrementScrapeDate(storeItem);
     await db.put(STORE_PROFILES, storeItem);
     source.url = prevUrl;
@@ -265,33 +286,33 @@ export async function setSkippedSourceIfNew(profileId: number | string, source: 
   source.points = 0;
   source.generatedBy = 'auto';
   incrementScrapeDate(source);
-  await saveOrSkipSource(LINK_STATUS.SKIPPED, profileId, source);
+  await saveOrSkipSource(LINK_STATUS.SKIPPED, profileId, source, bgState);
   source.url = prevUrl;
   source.title = prevTitle;
 }
 
-export async function setDefaultLinkAction(profileId: number | string, action: string) {
-  let profile = await getProfile(profileId);
+export async function setDefaultLinkAction(profileId: number | string, action: string, bgState: Object) {
+  let profile = await getProfile(profileId, bgState);
   if (profile == null) {
     return;
   }
   profile.defaultLinkAction = action;
-  let db = await getDBPromise();
+  let db = await getDBPromise(bgState);
   await db.put(STORE_PROFILES, profile);
 }
 
-export async function setDefaultSourceAction(profileId: number | string, action: string) {
-  let profile = await getProfile(profileId);
+export async function setDefaultSourceAction(profileId: number | string, action: string, bgState: Object) {
+  let profile = await getProfile(profileId, bgState);
   if (profile == null) {
     return;
   }
   profile.defaultSourceAction = action;
-  let db = await getDBPromise();
+  let db = await getDBPromise(bgState);
   await db.put(STORE_PROFILES, profile);
 }
 
-export async function getLink({ profileId, linkId, createIfNecessary = false }: { profileId: string | number; linkId: string; createIfNecessary?: boolean }) {
-  let db = await getDBPromise();
+export async function getLink({ profileId, linkId, createIfNecessary = false }: { profileId: string | number; linkId: string; createIfNecessary?: boolean }, bgState: Object) {
+  let db = await getDBPromise(bgState);
   let out = await db.get(STORE_LINKS, [profileId, linkId]);
   if (out == null && createIfNecessary) {
     out = {
@@ -303,25 +324,25 @@ export async function getLink({ profileId, linkId, createIfNecessary = false }: 
   return out;
 }
 
-export async function loadLink({ profileId, linkId }: { profileId: string | number; linkId: string }) {
-  let out = await getLink({ profileId, linkId, createIfNecessary: false });
+export async function loadLink({ profileId, linkId }: { profileId: string | number; linkId: string }, bgState: Object) {
+  let out = await getLink({ profileId, linkId, createIfNecessary: false }, bgState);
   return out;
 }
 
-export async function loadSource(key: any) {
-  const db = await getDBPromise();
+export async function loadSource(key: any, bgState: Object) {
+  const db = await getDBPromise(bgState);
   let out = await db.get(STORE_SOURCES, key);
   // out.Links = await db.countFromIndex(STORE_LINKS, INDEX_LINKS_PROFILEID, key[1]);
   return out;
 }
 
-export async function deleteLink({ profileId, linkId }: { profileId: string | number; linkId: string }) {
-  let db = await getDBPromise();
+export async function deleteLink({ profileId, linkId }: { profileId: string | number; linkId: string }, bgState: Object) {
+  let db = await getDBPromise(bgState);
   await db.delete(STORE_LINKS, [profileId, linkId]);
 }
 
-export async function deleteObject(store: string, key: any) {
-  let db = await getDBPromise();
+export async function deleteObject(store: string, key: any, bgState: Object) {
+  let db = await getDBPromise(bgState);
   try {
     await db.delete(store, key);
   } catch (e) {
@@ -330,8 +351,8 @@ export async function deleteObject(store: string, key: any) {
   }
 }
 
-export async function saveLink(link: Object) {
-  let db = await getDBPromise();
+export async function saveLink(link: Object, bgState: Object) {
+  let db = await getDBPromise(bgState);
   try {
     await db.put(STORE_LINKS, link);
   } catch (e) {
@@ -340,8 +361,8 @@ export async function saveLink(link: Object) {
   }
 }
 
-export async function saveObject(storeName: string, object: Object) {
-  let db = await getDBPromise();
+export async function saveObject(storeName: string, object: Object, bgState: Object) {
+  let db = await getDBPromise(bgState);
   try {
     let objKey = await db.put(storeName, object);
     return objKey;
@@ -352,7 +373,7 @@ export async function saveObject(storeName: string, object: Object) {
   }
 }
 
-export async function getProfile(id: string | number) {
+export async function getProfile(id: string | number, bgState: Object) {
   if (id == null) {
     return null;
   }
@@ -360,7 +381,7 @@ export async function getProfile(id: string | number) {
     return null;
   }
   try {
-    let db = await getDBPromise();
+    let db = await getDBPromise(bgState);
     let out = await db.get(STORE_PROFILES, id);
     return out;
   } catch (err) {
@@ -376,7 +397,8 @@ export async function storeProfile(
     updateScrapeSettings = false,
     numNewLinksFound = 0,
     keepExistingProps = true,
-  }: { overwriteProps?: boolean; updateScrapeSettings?: boolean; numNewLinksFound?: number; keepExistingProps?: boolean }
+  }: { overwriteProps?: boolean; updateScrapeSettings?: boolean; numNewLinksFound?: number; keepExistingProps?: boolean },
+  bgState: Object
 ) {
   if (profile.id == null && profile.url != null) {
     profile.id = profile.url;
@@ -401,7 +423,7 @@ export async function storeProfile(
 
   let storeProfile = null;
   if (keepExistingProps) {
-    storeProfile = await getProfile(profile.id);
+    storeProfile = await getProfile(profile.id, bgState);
   }
   if (storeProfile == null) {
     storeProfile = profile;
@@ -439,13 +461,16 @@ export async function storeProfile(
     storeProfile.nextScrape = new Date(x);
   }
 
-  let objKey = await saveObject(STORE_PROFILES, storeProfile);
+  let objKey = await saveObject(STORE_PROFILES, storeProfile, bgState);
 
-  addLog({
-    objectKeys: objKey,
-    objectType: 'Profile',
-    message: 'Store',
-  });
+  addLog(
+    {
+      objectKeys: objKey,
+      objectType: 'Profile',
+      message: 'Store',
+    },
+    bgState
+  );
 
   for (let i in tempStorage) {
     let { field, value } = tempStorage[i];
@@ -455,38 +480,40 @@ export async function storeProfile(
   }
 }
 
-export async function fetchProfiles(filters: Array<any>, numRows: number) {
-  const values = await getStoreResults({ storeName: 'profiles', filters, offset: 0, numRows });
+export async function fetchProfiles(filters: Array<any>, numRows: number, bgState: Object) {
+  const values = await getStoreResults({ storeName: 'profiles', filters, offset: 0, numRows }, bgState);
   for (let i = 0; i < values.length; i++) {
-    addProfileChildrenCounts(values[i]);
+    addProfileChildrenCounts(values[i], bgState);
   }
   return values;
 }
 
-export async function getScrapers() {
+export async function getScrapers(bgState: Object) {
   try {
-    const db = await getDBPromise();
+    const db = await getDBPromise(bgState);
     const values = await db.getAll(STORE_SCRAPERS);
     return values;
   } catch (err) {
     console.log(err);
-    debugger;
     return;
   }
 }
 
-export async function scrapeIfNecessary(bgState, source: { [k: string]: any; id: string | number; providerId?: string | number }) {
+export async function scrapeIfNecessary(bgState: Object, source: { [k: string]: any; id: string | number; providerId?: string | number }) {
   let profileId = source.id;
   if (source.providerId != null) {
     profileId = source.providerId;
   }
   let now = new Date();
-  let profile = await getProfile(profileId);
-  addLog({
-    objectKeys: 'general',
-    objectType: 'none',
-    message: 'comparing now to next scrape date: ' + now + ' vs. ' + profile.nextScrape,
-  });
+  let profile = await getProfile(profileId, bgState);
+  addLog(
+    {
+      objectKeys: 'general',
+      objectType: 'none',
+      message: 'comparing now to next scrape date: ' + now + ' vs. ' + profile.nextScrape,
+    },
+    bgState
+  );
   if (profile.nextScrape == null || new Date(profile.nextScrape) < now) {
     scrapeProfile(profileId, bgState);
   }
@@ -499,7 +526,7 @@ export async function scrapeProfile(url: string | number, bgState: Object) {
   if (url.startsWith('chrome://')) return;
   if (url.startsWith('chrome-extension://')) return;
   console.log('queueing url to scrape ' + url);
-  let db = await getDBPromise();
+  let db = await getDBPromise(bgState);
   let payload = {
     status: 'not started', // started
   };
@@ -521,7 +548,7 @@ export async function scrapeProfile(url: string | number, bgState: Object) {
 export async function startScraping(bgState: any) {
   console.log('starting scraper!');
   state.isScraperRunning = true;
-  const nextUrl = await getNextPageToScrape();
+  const nextUrl = await getNextPageToScrape(bgState);
   chrome.tabs.create({ url: 'http://' + nextUrl[STORE_SCRAPING_QUEUE_PROFILEID], active: false }, tab => {
     console.log('storing scraper tab id', tab, store.state);
     bgState.scraperTabId = tab.id;
@@ -531,13 +558,13 @@ export async function startScraping(bgState: any) {
 
 export async function getSuggestion(bgState: Object, profileId: string | number) {
   try {
-    let sources = await getProfileSources(profileId);
+    let sources = await getProfileSources(profileId, bgState);
     if (sources == null) {
       console.log('no sources found');
       return;
     }
 
-    let consumer = await getProfile(profileId);
+    let consumer = await getProfile(profileId, bgState);
     while (true) {
       let [source, index] = drawRandomElFromObject(sources, scoreFnJustPoints);
       if (source == null) {
@@ -547,10 +574,10 @@ export async function getSuggestion(bgState: Object, profileId: string | number)
 
       // TODO: Make customizable.
       source.points--;
-      let db = await getDBPromise();
+      let db = await getDBPromise(bgState);
       await db.put(STORE_SOURCES, source);
 
-      let provider = await getProfile(source.providerId);
+      let provider = await getProfile(source.providerId, bgState);
       await scrapeIfNecessary(bgState, provider);
 
       let linksCursor = null;
@@ -561,18 +588,21 @@ export async function getSuggestion(bgState: Object, profileId: string | number)
           lowerBounds: [source.providerId],
           upperBounds: [source.providerId],
         };
-        linksCursor = await getCursor(query);
+        linksCursor = await getCursor(query, bgState);
         if (linksCursor == null) {
           continue;
         }
         let nextUrl = null;
         while (nextUrl === null) {
           // Check if current link already exists on profile.
-          let storeLink = await getLink({
-            profileId,
-            linkId: linksCursor.value.url,
-            createIfNecessary: false,
-          });
+          let storeLink = await getLink(
+            {
+              profileId,
+              linkId: linksCursor.value.url,
+              createIfNecessary: false,
+            },
+            bgState
+          );
           let alreadyExists = storeLink != null;
           if (!alreadyExists) {
             nextUrl = linksCursor.value;
@@ -594,20 +624,20 @@ export async function getSuggestion(bgState: Object, profileId: string | number)
   }
 }
 
-export async function getProfileSources(profileId: string | number) {
-  let db = await getDBPromise();
+export async function getProfileSources(profileId: string | number, bgState: Object) {
+  let db = await getDBPromise(bgState);
   let out = await db.getAllFromIndex(STORE_SOURCES, STORE_SOURCES_CONSUMERID, profileId);
   return out;
 }
 
-export async function getLinks(profileId: string | number) {
-  let db = await getDBPromise();
+export async function getLinks(profileId: string | number, bgState: Object) {
+  let db = await getDBPromise(bgState);
   let out = await db.getAllFromIndex(STORE_LINKS, STORE_LINKS_PROFILEID, profileId);
   return out;
 }
 
-export async function getScrapingQueue({ filters, offset, numRows, sortOrder }) {
-  let db = await getDBPromise();
+export async function getScrapingQueue({ filters, offset, numRows, sortOrder }, bgState: Object) {
+  let db = await getDBPromise(bgState);
   // let out = await db.getAllFromIndex(STORE_SCRAPING_QUEUE, STORE_SCRAPING_QUEUE_PROFILEID, profileId);
   let items = await this.getStoreResults({
     storeName: STORE_SCRAPING_QUEUE,
@@ -619,29 +649,29 @@ export async function getScrapingQueue({ filters, offset, numRows, sortOrder }) 
   return items;
 }
 
-export async function deleteProfile(payload: any) {
-  let db = await getDBPromise();
+export async function deleteProfile(payload: any, bgState: Object) {
+  let db = await getDBPromise(bgState);
   await db.delete(STORE_PROFILES, payload.profileId);
   return true;
 }
 
-export async function loadScrapers() {
-  let scrapers = await getScrapers();
+export async function loadScrapers(bgState: Object) {
+  let scrapers = await getScrapers(bgState);
   store.commit(types.LOAD_SCRAPERS, scrapers);
   // console.log('scrapers: ' + JSON.stringify(state.scrapers));
 }
 
-export async function deleteScraper({ scraperId }: { scraperId: number }) {
-  let db = await getDBPromise();
+export async function deleteScraper({ scraperId }: { scraperId: number }, bgState: Object) {
+  let db = await getDBPromise(bgState);
   await db.delete(STORE_SCRAPERS, scraperId);
 }
 
-export async function deleteProfileSource({ profileId, sourceId }: { profileId: string | number; sourceId: string | number }) {
-  let db = await getDBPromise();
+export async function deleteProfileSource({ profileId, sourceId }: { profileId: string | number; sourceId: string | number }, bgState: Object) {
+  let db = await getDBPromise(bgState);
   await db.delete(STORE_SOURCES, [profileId, sourceId]);
 }
 
-export async function addLink(payload: any): Promise<number> {
+export async function addLink(payload: any, bgState: Object): Promise<number> {
   let numNewLinks = 0;
 
   if (payload.profileId === payload.url) {
@@ -649,7 +679,7 @@ export async function addLink(payload: any): Promise<number> {
   }
   payload.url = trimmedUrl(payload.url);
 
-  let db = await getDBPromise();
+  let db = await getDBPromise(bgState);
   let count = await db.count(STORE_LINKS, [payload.profileId, payload.url]);
   if (count === 0) {
     numNewLinks = 1;
@@ -677,11 +707,14 @@ export async function addLink(payload: any): Promise<number> {
   payload[STORE_LINKS_TIME_ADDED] = new Date();
   let objectKeys = await db.put(STORE_LINKS, payload);
 
-  addLog({
-    objectKeys,
-    objectType: 'Link',
-    message: 'Store',
-  });
+  addLog(
+    {
+      objectKeys,
+      objectType: 'Link',
+      message: 'Store',
+    },
+    bgState
+  );
 
   if (deletedName) {
     payload.name = payload.title;
@@ -702,19 +735,19 @@ export async function addLink(payload: any): Promise<number> {
   return numNewLinks;
 }
 
-export async function addSources({ sources }: { sources: Array<any> }) {
+export async function addSources({ sources }: { sources: Array<any> }, bgState: Object) {
   if (!Array.isArray(sources)) {
     return;
   }
   for (let i = 0; i < sources.length; i++) {
     let source = sources[i];
-    await saveOrSkipSource(LINK_STATUS.SAVED, source.consumerId, source);
+    await saveOrSkipSource(LINK_STATUS.SAVED, source.consumerId, source, bgState);
   }
   // await setCurUrlSourceStatus();
 }
 
-export async function setSourceSaved(payload: any) {
-  let db = await getDBPromise();
+export async function setSourceSaved(payload: any, bgState: Object) {
+  let db = await getDBPromise(bgState);
   let storeName = STORE_SOURCES;
   let link: { [k: string]: any; [k: number]: any } = {
     url: trimmedUrl(payload.link.url),
@@ -736,17 +769,17 @@ export async function setSourceSaved(payload: any) {
   // chrome.runtime.sendMessage('save');
 }
 
-export async function setLinkStatus(url: string, action: number, profileId: number | string, page: Object) {
-  return await saveOrSkipLink(action, profileId, page);
+export async function setLinkStatus(url: string, action: number, profileId: number | string, page: Object, bgState: Object) {
+  return await saveOrSkipLink(action, profileId, page, bgState);
 }
 
-export async function saveOrSkipLink(action: number, profileId: number | string, link = <any>{}) {
+export async function saveOrSkipLink(action: number, profileId: number | string, link = <any>{}, bgState: Object) {
   link.url = trimmedUrl(link.url);
   link.saved = action;
   link.profileId = profileId;
   link.timeAdded = new Date();
 
-  let db = await getDBPromise();
+  let db = await getDBPromise(bgState);
   console.log('saving or skipping', action, profileId, link);
   let storeObject = await db.get(STORE_LINKS, [profileId, link.url]);
 
@@ -757,13 +790,16 @@ export async function saveOrSkipLink(action: number, profileId: number | string,
       let source = sources[i];
       let consumerId = source.profileId;
       if (consumerId == null) consumerId = source.consumerId;
-      storeSource({
-        source,
-        providerId: source.id,
-        consumerId,
-        overwrite: false,
-        pointsChange: source.points,
-      });
+      storeSource(
+        {
+          source,
+          providerId: source.id,
+          consumerId,
+          overwrite: false,
+          pointsChange: source.points,
+        },
+        bgState
+      );
       // await saveOrSkipSource({
       //   targetId: sources[i].profileId,
       //   source: sources[i],
@@ -792,29 +828,33 @@ export async function saveOrSkipLink(action: number, profileId: number | string,
     await saveOrSkipSource(
       LINK_STATUS.SKIPPED, // TODO: check if source exists. update, instead of overwrite.
       profileId,
-      source
+      source,
+      bgState
     );
   }
 
-  addLink(link);
+  addLink(link, bgState);
 }
 
-export async function storeSource({
-  source,
-  providerId,
-  consumerId,
-  pointsChange,
-  overwrite,
-}: {
-  source: { [k: string]: any };
-  providerId: string | number;
-  consumerId: string | number;
-  pointsChange: number;
-  overwrite: boolean;
-}) {
+export async function storeSource(
+  {
+    source,
+    providerId,
+    consumerId,
+    pointsChange,
+    overwrite,
+  }: {
+    source: { [k: string]: any };
+    providerId: string | number;
+    consumerId: string | number;
+    pointsChange: number;
+    overwrite: boolean;
+  },
+  bgState: Object
+) {
   console.log('idb.storeSource', source, providerId, consumerId, pointsChange, overwrite);
 
-  const db = await getDBPromise();
+  const db = await getDBPromise(bgState);
 
   if (providerId == null) {
     providerId = source.url;
@@ -826,7 +866,6 @@ export async function storeSource({
   }
   let profile = await db.get(STORE_PROFILES, consumerId);
   if (profile == null) {
-    debugger;
     return;
   }
   if (profile.storeSource != null) {
@@ -862,7 +901,7 @@ export async function storeSource({
   source.generatedBy = 'auto';
   delete source.providerId;
   delete source.consumerId;
-  await storeProfile(source, { overwriteProps: false, updateScrapeSettings: false });
+  await storeProfile(source, { overwriteProps: false, updateScrapeSettings: false }, bgState);
 
   console.log('Source ' + consumerId + ' <-- ' + providerId + ' stored successfully.');
   // await setCurUrlSourceStatus();
@@ -883,10 +922,11 @@ export async function saveOrSkipSource(
           id: string | number;
         };
     consumerId?: string | number;
-  }
+  },
+  bgState: Object
 ) {
   const consumerId = profileId;
-  const db = await getDBPromise();
+  const db = await getDBPromise(bgState);
 
   let providerId = source.id;
   if (source.id == null) {
@@ -926,20 +966,23 @@ export async function saveOrSkipSource(
   }
   let objKey = await db.put(STORE_SOURCES, sourceConnection);
 
-  addLog({
-    objectKeys: objKey,
-    objectType: 'Source',
-    message: 'Store',
-  });
+  addLog(
+    {
+      objectKeys: objKey,
+      objectType: 'Source',
+      message: 'Store',
+    },
+    bgState
+  );
 
   source.id = providerId;
   source.generatedBy = 'auto';
   delete source.providerId;
   delete source.consumerId;
-  await storeProfile(source, { overwriteProps: false, updateScrapeSettings: false });
+  await storeProfile(source, { overwriteProps: false, updateScrapeSettings: false }, bgState);
 }
 
-export async function addLinks({ links, profileId }: { links: Array<any>; profileId: string | number }) {
+export async function addLinks({ links, profileId }: { links: Array<any>; profileId: string | number }, bgState: Object) {
   if (links == null) {
     return;
   }
@@ -950,7 +993,7 @@ export async function addLinks({ links, profileId }: { links: Array<any>; profil
     }
     link.profileId = profileId;
     link.timeAdded = new Date();
-    await addLink(link);
+    await addLink(link, bgState);
   }
 }
 
@@ -958,8 +1001,8 @@ export function incrementScrapeDate(source: { nextScrape: Date }) {
   source.nextScrape = new Date(new Date().getTime() + 24 * 60 * 60 * 1000);
 }
 
-export async function updateProfileScrapeDate({ sourceUrl }: { sourceUrl: string }) {
-  let db = await getDBPromise();
+export async function updateProfileScrapeDate({ sourceUrl }: { sourceUrl: string }, bgState: Object) {
+  let db = await getDBPromise(bgState);
   let source = await db.get(STORE_PROFILES, sourceUrl);
   if (source != null) {
     incrementScrapeDate(source);
@@ -967,9 +1010,9 @@ export async function updateProfileScrapeDate({ sourceUrl }: { sourceUrl: string
   }
 }
 
-export async function changeSourcePoints(payload: any) {
+export async function changeSourcePoints(payload: any, bgState: Object) {
   let source = payload.source;
-  let db = await getDBPromise();
+  let db = await getDBPromise(bgState);
   source.url = trimmedUrl(source.url);
   source.profileId = payload.targetId;
   let storeObject = await db.get(STORE_SOURCES, [source.profileId, source.url]);
@@ -979,66 +1022,69 @@ export async function changeSourcePoints(payload: any) {
   await db.put(STORE_SOURCES, source);
 }
 
-export async function removeLink(payload: any) {
-  let db = await getDBPromise();
+export async function removeLink(payload: any, bgState: Object) {
+  let db = await getDBPromise(bgState);
   let storeObj = await db.get(STORE_LINKS, [payload.targetId, payload.url]);
   if (storeObj != null && storeObj.sources != null) {
     for (let i = 0; i < storeObj.sources.length; i++) {
       let source = storeObj.sources[i];
-      await changeSourcePoints({
-        targetId: source.profileId,
-        source,
-        changePoints: -source.points,
-      });
+      await changeSourcePoints(
+        {
+          targetId: source.profileId,
+          source,
+          changePoints: -source.points,
+        },
+        bgState
+      );
     }
   }
   await db.delete(STORE_LINKS, [payload.targetId, payload.url]);
   // await setCurUrlLinkStatus();
 }
 
-export async function removeSource(payload: { targetId: string | number; url: string | number }) {
-  let db = await getDBPromise();
+export async function removeSource(payload: { targetId: string | number; url: string | number }, bgState: Object) {
+  let db = await getDBPromise(bgState);
   await db.delete(STORE_SOURCES, [payload.targetId, payload.url]);
 }
 
-export async function getScraper({ scraperId }: { scraperId: number }) {
-  let db = await getDBPromise();
+export async function getScraper({ scraperId }: { scraperId: number }, bgState: Object) {
+  let db = await getDBPromise(bgState);
   let out = db.get(STORE_SCRAPERS, scraperId);
   return out;
 }
 
 // export async function addScraper({ domain, getLinks, getSources, getSourcesOfLink, getPageAttributes, onScriptLoad }) {
-export async function addScraper(scraper: { [k: string]: any }) {
-  let db = await getDBPromise();
+export async function addScraper(scraper: { [k: string]: any }, bgState: Object) {
+  let db = await getDBPromise(bgState);
   for (let i in scraper) {
     if (typeof scraper[i] === 'function') {
       scraper[i] = scraper[i].toString();
     }
   }
   await db.put(STORE_SCRAPERS, scraper);
-  await loadScrapers();
+  await loadScrapers(bgState);
 }
 
-export async function saveScraper(scraper: Object) {
-  await saveObject(STORE_SCRAPERS, scraper);
-  await loadScrapers();
+export async function saveScraper(scraper: Object, bgState: Object) {
+  await saveObject(STORE_SCRAPERS, scraper, bgState);
+  await loadScrapers(bgState);
 }
 
-export async function storeLinkSources(sources: Array<any>, profileId: string | number) {
+export async function storeLinkSources(sources: Array<any>, profileId: string | number, bgState: Object) {
   for (let i in sources) {
     let source = sources[i];
     source.profileId = profileId;
-    storeLinkSource(source);
+    storeLinkSource(source, bgState);
   }
 }
 
-export async function storeLinkSource(source: any) {
+export async function storeLinkSource(source: any, bgState: Object) {
   if (source.profileId == null) {
     console.log('no profileId, stopping');
     return;
   }
 
-  let link = await getLink({ profileId: source.profileId, linkId: source.linkId });
+  let link = await getLink({ profileId: source.profileId, linkId: source.linkId }, bgState);
   if (link == null) {
     return;
   }
@@ -1061,26 +1107,29 @@ export async function storeLinkSource(source: any) {
 
   link.sources.push(source.source);
 
-  let db = await getDBPromise();
+  let db = await getDBPromise(bgState);
   await db.put(STORE_LINKS, link);
 
-  await storeSource({
-    source,
-    providerId: source.source.id,
-    consumerId: source.profileId,
-    pointsChange: source.source.points,
-    overwrite: true,
-  });
+  await storeSource(
+    {
+      source,
+      providerId: source.source.id,
+      consumerId: source.profileId,
+      pointsChange: source.source.points,
+      overwrite: true,
+    },
+    bgState
+  );
 }
 
 function getIndexFromKeyPath(keyPath: Array<string | number>) {
   return keyPath.join(KEYPATH_SEPARATOR);
 }
 
-async function getCursor(query: any) {
+async function getCursor(query: any, bgState: Object) {
   try {
     let out = null;
-    let index = await getIndex(query);
+    let index = await getIndex(query, bgState);
     if (index == null) {
       return;
     }
@@ -1095,13 +1144,12 @@ async function getCursor(query: any) {
     return out;
   } catch (e) {
     console.log('error getting cursor', e, query);
-    debugger;
   }
 }
 
-async function getIndexFn(query: any) {
+async function getIndexFn(query: any, bgState: Object) {
   try {
-    const db = await getDBPromise();
+    const db = await getDBPromise(bgState);
     let tx = db.transaction(query.storeName);
     let objStore = tx.objectStore(query.storeName);
     if (query.keyPath.length === 0) {
@@ -1114,15 +1162,15 @@ async function getIndexFn(query: any) {
   }
 }
 
-export async function getIndex(query: any) {
+export async function getIndex(query: any, bgState: Object) {
   // console.log('getting ' + query.storeName + ' by ', query);
   let index;
   try {
-    index = await getIndexFn(query);
+    index = await getIndexFn(query, bgState);
   } catch (e) {
     if (e.name === 'NotFoundError') {
       await createIndex(query.storeName, query.keyPath);
-      index = await getIndexFn(query);
+      index = await getIndexFn(query, bgState);
     } else {
       console.log(e);
     }
@@ -1222,25 +1270,27 @@ function getQueryFromFilters(
   return query;
 }
 
-export async function getStoreResults({
-  storeName,
-  filters,
-  offset,
-  numRows,
-  sortOrder = 'increasing',
-}: {
-  storeName: string;
-  filters: Array<any>;
-  offset: number;
-  numRows: number;
-  sortOrder?: string;
-}) {
+export async function getStoreResults(
+  {
+    storeName,
+    filters,
+    offset,
+    numRows,
+    sortOrder = 'increasing',
+  }: {
+    storeName: string;
+    filters: Array<any>;
+    offset: number;
+    numRows: number;
+    sortOrder?: string;
+  },
+  bgState: Object
+) {
   let out: Array<any> = [];
   let query = getQueryFromFilters(storeName, filters, sortOrder);
-  let cursor = await getCursor(query);
+  let cursor = await getCursor(query, bgState);
   if (cursor == null) {
     console.log('error getting cursor for ', query);
-    debugger;
     return out;
   }
 
@@ -1266,9 +1316,9 @@ export async function getStoreResults({
   return out;
 }
 
-export async function getNumResults({ storeName, filters }: { storeName: string; filters: Array<any> }) {
+export async function getNumResults({ storeName, filters }: { storeName: string; filters: Array<any> }, bgState: Object) {
   let query = getQueryFromFilters(storeName, filters);
-  let index = await getIndex(query);
+  let index = await getIndex(query, bgState);
   if (index == null) {
     return -1;
   }
@@ -1284,27 +1334,29 @@ export async function getNumResults({ storeName, filters }: { storeName: string;
     return out;
   } catch (e) {
     console.log('error getting numResults', e, storeName, filters);
-    debugger;
   }
 
   return -1;
 }
 
-export async function getIndices({
-  offset,
-  numRows,
-  filters,
-  storeNames,
-  sortOrder,
-}: {
-  offset: number;
-  numRows: number;
-  filters: Array<any>;
-  storeNames: Array<string>;
-  sortOrder: string;
-}) {
+export async function getIndices(
+  {
+    offset,
+    numRows,
+    filters,
+    storeNames,
+    sortOrder,
+  }: {
+    offset: number;
+    numRows: number;
+    filters: Array<any>;
+    storeNames: Array<string>;
+    sortOrder: string;
+  },
+  bgState: Object
+) {
   let out = [];
-  const db = await getDBPromise();
+  const db = await getDBPromise(bgState);
   let indices = [];
   for (let s in storeNames) {
     let storeName = storeNames[s];
@@ -1330,14 +1382,14 @@ export async function getIndices({
   return out;
 }
 
-export async function getNumLogs() {
-  let db = await getDBPromise();
+export async function getNumLogs(bgState: Object) {
+  let db = await getDBPromise(bgState);
   let out = await db.count(STORE_LOGS);
   return out;
 }
 
-export async function getNumIndices() {
-  let db = await getDBPromise();
+export async function getNumIndices(bgState: Object) {
+  let db = await getDBPromise(bgState);
   let out = 0;
   for (let s in INDEX_STORES) {
     let indexStore = INDEX_STORES[s];
@@ -1353,13 +1405,13 @@ export async function getLengthScrapingQueue(filters) {
   return await this.getNumResults({ storeName: STORE_SCRAPING_QUEUE, filters });
 }
 
-export async function deleteLog(id: number | string) {
-  let db = await getDBPromise();
+export async function deleteLog(id: number | string, bgState: Object) {
+  let db = await getDBPromise(bgState);
   await db.delete(STORE_LOGS, id);
 }
 
-export async function addLog({ objectKeys, objectType, message }: { objectKeys: any; objectType: string; message: string }) {
-  let db = await getDBPromise();
+export async function addLog({ objectKeys, objectType, message }: { objectKeys: any; objectType: string; message: string }, bgState: Object) {
+  let db = await getDBPromise(bgState);
   let msgObj = {
     objectKeys,
     objectType,
@@ -1371,7 +1423,7 @@ export async function addLog({ objectKeys, objectType, message }: { objectKeys: 
   MessageEventBus.$emit('showMessage', popupMessage);
 }
 
-export async function getCurUrlLinkStatus() {
+export async function getCurUrlLinkStatus(bgState: Object) {
   try {
     if (state.profileId == null) {
       return 'neither';
@@ -1382,7 +1434,7 @@ export async function getCurUrlLinkStatus() {
     let url = state.pageUrl;
     url = trimmedUrl(url);
 
-    let db = await getDBPromise();
+    let db = await getDBPromise(bgState);
     let link = await db.get(STORE_LINKS, [state.profileId, url]);
     if (link == null) {
       return 'neither';
@@ -1394,7 +1446,7 @@ export async function getCurUrlLinkStatus() {
   return 'neither';
 }
 
-export async function getCurUrlSourceStatus() {
+export async function getCurUrlSourceStatus(bgState: Object) {
   if (state.profileId == null) {
     return 'neither';
   }
@@ -1403,7 +1455,7 @@ export async function getCurUrlSourceStatus() {
     return 'neither';
   }
   url = trimmedUrl(url);
-  let db = await getDBPromise();
+  let db = await getDBPromise(bgState);
   let link = await db.get(STORE_SOURCES, [state.profileId, url]);
   if (link == null) {
     return 'neither';

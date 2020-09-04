@@ -48,45 +48,53 @@ if (!('indexedDB' in window)) {
 }
 
 export const reset = async function(bgState: Object) {
-  addLog({
-    objectKeys: [],
-    objectType: 'System',
-    message: 'Reset database.',
-  });
+  addLog(
+    {
+      objectKeys: [],
+      objectType: 'System',
+      message: 'Reset database.',
+    },
+    bgState
+  );
   await storeProfile(
     {
       name: 'myProfile',
       defaultLinkAction: LINK_STATUS.SAVED,
       defaultSourceAction: 'forget',
     },
-    {}
+    {},
+    bgState
   );
 
   await parseBrowserHistory(bgState, { consumerId: 1, maxScrapes: 10 });
 
-  await addScraper(DefaultScraper);
-  await addScraper(RedditScraper);
-  await addScraper(HackerNewsScraper);
-  await addScraper(TheGuardianScraper);
+  await addScraper(DefaultScraper, bgState);
+  await addScraper(RedditScraper, bgState);
+  await addScraper(HackerNewsScraper, bgState);
+  await addScraper(TheGuardianScraper, bgState);
   resetState();
 };
 
 export const setDBPromise = async function(dbp: Promise<IDBPDatabase<unknown>>) {
   try {
+    console.log('setting db promise');
     dbPromise = dbp;
     let x = await dbp;
     setDBVersion(x.version);
   } catch (e) {
     console.log(e);
-    debugger;
   }
 };
 
-export const getDBPromise = function() {
+export const getDBPromise = async function(bgState: Object) {
+  if (dbPromise == null) {
+    console.log('no dbPromise?! Creating DB again...');
+    await createDB(bgState);
+  }
   return dbPromise;
 };
 
-export const createDB = function(bgState: Object) {
+export const createDB = async function(bgState: Object) {
   console.log('creating DB');
   // When anything below changes, increment DB_VERSION or delete existing database. This forces the database schema to be updated.
   let dbPromise = openDB(DB_NAME, dbVersion, {

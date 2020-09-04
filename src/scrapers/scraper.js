@@ -119,8 +119,8 @@ let getScraperCallback = function(response) {
     console.log('THIS IS THE SCRAPING TAB!');
     let elemDiv = document.createElement('div');
     elemDiv.style.cssText =
-      'position:fixed;width:100%;height:100%;opacity:0.8;z-index:999999999;background:#000;color:#FFF;align-items: center; justify-content: center; display: flex; top: 0; left: 0; font-size: 5rem;';
-    elemDiv.innerHTML = '<div style="margin: 5rem">This tab is scraping pages for GoForward.</div>';
+      'position:fixed;width:100%;height:100%;z-index:999999999;background-color:rgba(0,0,0,0.8);color:#FFF;align-items: center; justify-content: center; display: flex; top: 0; left: 0; font-size: 5rem;';
+    elemDiv.innerHTML = '<div style="margin: 5rem;">This tab is scraping pages for GoForward.</div>';
     document.body.appendChild(elemDiv);
   }
   sos.scraper = scraper;

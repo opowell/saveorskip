@@ -28,6 +28,7 @@
 import ObjectsTable from '../components/ObjectsTable.vue';
 import { STORE_PROFILES } from '../../../store/Constants';
 import { Hrefs } from '../../Constants';
+import * as idb from '../../../store/idb';
 
 export default {
   name: 'Profiles',
@@ -73,19 +74,32 @@ export default {
     async fetchRows() {
       const self = this;
       console.log('fetching rows');
-      chrome.runtime.sendMessage(
-        {
-          action: 'getProfiles',
-          filters: this.$refs.table.filters,
-          offset: this.$refs.table.items.length,
-          numRows: 100,
-          sortOrder: this.$refs.table.sortOrder,
-        },
-        function(items) {
-          console.log('sending message', this);
-          self.$refs.table.setRows(items);
-        }
-      );
+      let profiles = await idb.getStoreResults({
+        storeName: STORE_PROFILES,
+        filters: this.$refs.table.filters,
+        offset: this.$refs.table.items.length,
+        numRows: 100,
+        sortOrder: this.$refs.table.sortOrder,
+      });
+      for (let i in profiles) {
+        try {
+          await idb.addProfileChildrenCounts(profiles[i]);
+        } catch (e) {}
+      }
+      self.$refs.table.setRows(profiles);
+      // chrome.runtime.sendMessage(
+      //   {
+      //     action: 'getProfiles',
+      //     filters: this.$refs.table.filters,
+      //     offset: this.$refs.table.items.length,
+      //     numRows: 100,
+      //     sortOrder: this.$refs.table.sortOrder,
+      //   },
+      //   function(items) {
+      //     console.log('sending message', this);
+      //     self.$refs.table.setRows(items);
+      //   }
+      // );
     },
     addProfilePrompt() {
       this.$bvModal.show('addProfileModal');

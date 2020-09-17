@@ -298,20 +298,6 @@ async function handleMessage(message, sender) {
     case 'getIndices':
       let indices = await idb.getIndices({ offset: message.offset, numRows: message.numRows, storeNames: message.storeNames });
       return indices;
-    case 'getProfiles':
-      let profiles = await idb.getStoreResults({
-        storeName: STORE_PROFILES,
-        filters: message.filters,
-        offset: message.offset,
-        numRows: message.numRows,
-        sortOrder: message.sortOrder,
-      });
-      for (let i in profiles) {
-        try {
-          await idb.addProfileChildrenCounts(profiles[i]);
-        } catch (e) {}
-      }
-      return profiles;
     case 'removeLink':
       await idb.removeLink({
         targetId: message.targetId,

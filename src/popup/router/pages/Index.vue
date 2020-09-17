@@ -45,7 +45,8 @@
 
 <script>
 import { Source } from '../../../models/Source';
-import { LINK_STATUS } from '../../../store/Constants.ts';
+import { LINK_STATUS, STORE_PROFILES } from '../../../store/Constants.ts';
+import * as idb from '../../../store/idb';
 
 export default {
   data() {
@@ -68,7 +69,7 @@ export default {
       thisComponent.pageUrl = response.pageUrl;
       thisComponent.profileId = response.profileId;
       thisComponent.page = response.page;
-      thisComponent.profiles.push(...response.profiles);
+      // thisComponent.profiles.push(...response.profiles);
       if (!thisComponent.hasValidTarget && thisComponent.profiles.length > 0) {
         thisComponent.profileId = thisComponent.profiles[0].id;
       }
@@ -88,6 +89,20 @@ export default {
           break;
       }
     });
+
+    let profiles = await idb.getStoreResults({
+      storeName: STORE_PROFILES,
+      filters: [
+        {
+          field: 'generatedBy',
+          lowerValue: 'user',
+          upperValue: 'user',
+        },
+      ],
+    });
+
+    console.log('profiles', profiles);
+    this.profiles.push(...profiles);
   },
   watch: {
     pageUrl() {

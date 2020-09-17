@@ -1273,9 +1273,9 @@ function getQueryFromFilters(
 export async function getStoreResults(
   {
     storeName,
-    filters,
-    offset,
-    numRows,
+    filters = [],
+    offset = 0,
+    numRows = 100,
     sortOrder = 'increasing',
   }: {
     storeName: string;
@@ -1286,6 +1286,7 @@ export async function getStoreResults(
   },
   bgState: Object
 ) {
+  console.log('getStoreResults', storeName, filters, offset, numRows, sortOrder);
   let out: Array<any> = [];
   let query = getQueryFromFilters(storeName, filters, sortOrder);
   let cursor = await getCursor(query, bgState);

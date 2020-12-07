@@ -14,7 +14,7 @@ sos.getLinks = function(sendResponse) {
     }
   }
 
-  console.log('found ' + linkEls.length + ' links');
+  // console.log('found ' + linkEls.length + ' links');
 
   for (let i = 0; i < linkEls.length; i++) {
     let url = linkEls[i].getAttribute('href');
@@ -46,7 +46,7 @@ sos.getSources = function(sendResponse) {
   // If not on last page of story, redirect to last page and getSources there.
   let pageSelect = document.querySelector('select');
   if (pageSelect != null) {
-    console.log('not last page');
+    // console.log('not last page');
     // Open last page in background and scrape sources from there.
     let pageLinks = document.querySelectorAll('.b-pager-pages a');
     let lastLink = pageLinks[pageLinks.length - 1].href;
@@ -96,7 +96,7 @@ sos.getSources = function(sendResponse) {
   }
 
   sendResponse({ sources: sources });
-  console.log('sent sources: ' + sources.join('\n'));
+  // console.log('sent sources: ' + sources.join('\n'));
 };
 
 sos.buildUrl = function(url) {
@@ -119,7 +119,7 @@ sos.trimmedUrl = function(url) {
 };
 
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
-  console.log('sos received message: ' + request.action);
+  // console.log('sos received message: ' + request.action);
 
   if (request.action === 'getSources') {
     sos.getSources(sendResponse);
@@ -128,7 +128,7 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
   } else if (request.action == 'getLinks') {
     sos.getLinks(sendResponse);
   } else {
-    console.log('sos unknown message: ' + request.action);
+    // console.log('sos unknown message: ' + request.action);
     sendResponse({}); // Send nothing..
   }
 });

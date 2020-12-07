@@ -28,7 +28,7 @@ import { MessageEventBus } from '../options/Constants';
 const state: any = store.state;
 
 export async function getLinkStatus(profileId: string | number, pageUrl: string, bgState: Object) {
-  console.log('getLinkStatus', profileId, pageUrl);
+  // console.log('getLinkStatus', profileId, pageUrl);
   try {
     if (typeof profileId === 'number' && isNaN(profileId)) return;
     let db = await getDBPromise(bgState);
@@ -39,7 +39,7 @@ export async function getLinkStatus(profileId: string | number, pageUrl: string,
     }
     return link.saved;
   } catch (err) {
-    console.log('getLinkStatus', err, profileId, pageUrl);
+    // console.log('getLinkStatus', err, profileId, pageUrl);
   }
   return 'neither';
 }
@@ -58,7 +58,7 @@ export async function getSourceStatus(profileId: string | number, pageUrl: strin
       return link.saved;
     }
   } catch (err) {
-    console.log('getSourceStatus: error, returning neither', err, profileId, pageUrl);
+    // console.log('getSourceStatus: error, returning neither', err, profileId, pageUrl);
     return 'neither';
   }
 }
@@ -72,7 +72,7 @@ export async function removePageToScrape(url: string, bgState: Object) {
 export async function getNextPageToScrape(bgState: Object) {
   let db = await getDBPromise(bgState);
   let out = await db.getAllFromIndex(STORE_SCRAPING_QUEUE, STORE_SCRAPING_QUEUE_TIMEQUEUED);
-  console.log('get next scrape', out);
+  // console.log('get next scrape', out);
   if (out.length < 1) return null;
   out[0].status = 'started';
   await db.put(STORE_SCRAPING_QUEUE, out[0]);
@@ -131,7 +131,7 @@ export async function parseBrowserHistory(bgState: Object, { consumerId, maxScra
 
   var microsecondsPerWeek = 1000 * 60 * 60 * 24 * 7;
   var oneWeekAgo = new Date().getTime() - microsecondsPerWeek;
-  console.log('parsing history');
+  // console.log('parsing history');
 
   let parseSearch = async function(historyItems) {
     // For each history item, get details on all visits.
@@ -238,7 +238,7 @@ export async function setTestPage(page: any) {}
 
 export async function setSkippedSourceIfNew(profileId: number | string, source: any, bgState: Object) {
   if (source == null || source.url == null) {
-    console.log('no url given');
+    // console.log('no url given');
     return;
   }
   source.id = trimmedUrl(source.url);
@@ -346,8 +346,8 @@ export async function deleteObject(store: string, key: any, bgState: Object) {
   try {
     await db.delete(store, key);
   } catch (e) {
-    console.log(e);
-    console.log(e.stack);
+    // console.log(e);
+    // console.log(e.stack);
   }
 }
 
@@ -356,8 +356,8 @@ export async function saveLink(link: Object, bgState: Object) {
   try {
     await db.put(STORE_LINKS, link);
   } catch (e) {
-    console.log(e);
-    console.log(e.stack);
+    // console.log(e);
+    // console.log(e.stack);
   }
 }
 
@@ -367,9 +367,9 @@ export async function saveObject(storeName: string, object: Object, bgState: Obj
     let objKey = await db.put(storeName, object);
     return objKey;
   } catch (e) {
-    console.log(storeName, object);
-    console.log(e);
-    console.log(e.stack);
+    // console.log(storeName, object);
+    // console.log(e);
+    // console.log(e.stack);
   }
 }
 
@@ -385,7 +385,7 @@ export async function getProfile(id: string | number, bgState: Object) {
     let out = await db.get(STORE_PROFILES, id);
     return out;
   } catch (err) {
-    console.log('Error getting profile ' + id, err);
+    // console.log('Error getting profile ' + id, err);
     return null;
   }
 }
@@ -494,7 +494,7 @@ export async function getScrapers(bgState: Object) {
     const values = await db.getAll(STORE_SCRAPERS);
     return values;
   } catch (err) {
-    console.log(err);
+    // console.log(err);
     return;
   }
 }
@@ -525,7 +525,7 @@ export async function scrapeProfile(url: string | number, bgState: Object) {
   }
   if (url.startsWith('chrome://')) return;
   if (url.startsWith('chrome-extension://')) return;
-  console.log('queueing url to scrape ' + url);
+  // console.log('queueing url to scrape ' + url);
   let db = await getDBPromise(bgState);
   let payload = {
     status: 'not started', // started
@@ -536,9 +536,9 @@ export async function scrapeProfile(url: string | number, bgState: Object) {
   // Check that scraper is running. If not, start.
   // state.urlsToScrape[url] = true;
   // chrome.tabs.create({ url: 'http://' + url, active: false });
-  console.log('CHECKING');
+  // console.log('CHECKING');
   if (!state.isScraperRunning) {
-    console.log('STARTING');
+    // console.log('STARTING');
     state.isScraperRunning = true;
     // chrome.runtime.sendMessage('startScraping');
     await startScraping(bgState);
@@ -546,13 +546,17 @@ export async function scrapeProfile(url: string | number, bgState: Object) {
 }
 
 export async function startScraping(bgState: any) {
-  console.log('starting scraper!');
+  // console.log('starting scraper!');
   state.isScraperRunning = true;
   const nextUrl = await getNextPageToScrape(bgState);
   chrome.tabs.create({ url: 'http://' + nextUrl[STORE_SCRAPING_QUEUE_PROFILEID], active: false }, tab => {
-    console.log('storing scraper tab id', tab, store.state);
+    // console.log('storing scraper tab id', tab, store.state);
+    if (bgState == null) {
+      // console.log('no bg state, returning')
+      return;
+    }
     bgState.scraperTabId = tab.id;
-    console.log('bgState', bgState, bgState.scraperTabId);
+    // console.log('bgState', bgState, bgState.scraperTabId);
   });
 }
 
@@ -560,7 +564,7 @@ export async function getSuggestion(bgState: Object, profileId: string | number)
   try {
     let sources = await getProfileSources(profileId, bgState);
     if (sources == null) {
-      console.log('no sources found');
+      // console.log('no sources found');
       return;
     }
 
@@ -568,7 +572,7 @@ export async function getSuggestion(bgState: Object, profileId: string | number)
     while (true) {
       let [source, index] = drawRandomElFromObject(sources, scoreFnJustPoints);
       if (source == null) {
-        console.log('error loading suggestion: no source found');
+        // console.log('error loading suggestion: no source found');
         return;
       }
 
@@ -620,7 +624,7 @@ export async function getSuggestion(bgState: Object, profileId: string | number)
       }
     }
   } catch (err) {
-    console.log(err);
+    // console.log(err);
   }
 }
 
@@ -762,9 +766,9 @@ export async function setSourceSaved(payload: any, bgState: Object) {
       link[propKey] = payload.props[propKey];
     }
   }
-  console.log('Storing source:', link);
+  // console.log('Storing source:', link);
   await db.put(storeName, link);
-  console.log('Source "' + payload.link.url + '" stored successfully.');
+  // console.log('Source "' + payload.link.url + '" stored successfully.');
   // await setCurUrlSourceStatus();
   // chrome.runtime.sendMessage('save');
 }
@@ -780,7 +784,7 @@ export async function saveOrSkipLink(action: number, profileId: number | string,
   link.timeAdded = new Date();
 
   let db = await getDBPromise(bgState);
-  console.log('saving or skipping', action, profileId, link);
+  // console.log('saving or skipping', action, profileId, link);
   let storeObject = await db.get(STORE_LINKS, [profileId, link.url]);
 
   // If necessary, reverse previous action.
@@ -852,7 +856,7 @@ export async function storeSource(
   },
   bgState: Object
 ) {
-  console.log('idb.storeSource', source, providerId, consumerId, pointsChange, overwrite);
+  // console.log('idb.storeSource', source, providerId, consumerId, pointsChange, overwrite);
 
   const db = await getDBPromise(bgState);
 
@@ -861,7 +865,7 @@ export async function storeSource(
   }
 
   if (consumerId == null) {
-    console.log('no consumer given, stopping...');
+    // console.log('no consumer given, stopping...');
     return;
   }
   let profile = await db.get(STORE_PROFILES, consumerId);
@@ -903,7 +907,7 @@ export async function storeSource(
   delete source.consumerId;
   await storeProfile(source, { overwriteProps: false, updateScrapeSettings: false }, bgState);
 
-  console.log('Source ' + consumerId + ' <-- ' + providerId + ' stored successfully.');
+  // console.log('Source ' + consumerId + ' <-- ' + providerId + ' stored successfully.');
   // await setCurUrlSourceStatus();
 }
 
@@ -1080,7 +1084,7 @@ export async function storeLinkSources(sources: Array<any>, profileId: string | 
 
 export async function storeLinkSource(source: any, bgState: Object) {
   if (source.profileId == null) {
-    console.log('no profileId, stopping');
+    // console.log('no profileId, stopping');
     return;
   }
 
@@ -1143,7 +1147,7 @@ async function getCursor(query: any, bgState: Object) {
     out = cursor;
     return out;
   } catch (e) {
-    console.log('error getting cursor', e, query);
+    // console.log('error getting cursor', e, query);
   }
 }
 
@@ -1187,17 +1191,17 @@ export async function createIndex(storeName: string, keyPath: Array<string>) {
 
   let newDBPromise = openDB(DB_NAME, version, {
     async upgrade(db, oldVersion, newVersion, transaction) {
-      console.log(db, oldVersion, newVersion, transaction, keyPath, keyPathName);
+      // console.log(db, oldVersion, newVersion, transaction, keyPath, keyPathName);
       const store = transaction.objectStore(storeName);
       store.createIndex(keyPathName, keyPath);
     },
     async blocking() {
-      console.log('blocking something, closing');
+      // console.log('blocking something, closing');
       this.close();
     },
 
     blocked() {
-      console.log('blocked');
+      // console.log('blocked');
     },
   });
   setDBPromise(newDBPromise);
@@ -1213,12 +1217,12 @@ export async function deleteIndex(storeName: string, keyPathName: string) {
       store.deleteIndex(keyPathName);
     },
     async blocking() {
-      console.log('blocking something, closing');
+      // console.log('blocking something, closing');
       this.close();
     },
 
     blocked() {
-      console.log('blocked');
+      // console.log('blocked');
     },
   });
   setDBPromise(newDBPromise);
@@ -1286,7 +1290,7 @@ export async function getStoreResults(
   },
   bgState: Object
 ) {
-  console.log('getStoreResults', storeName, filters, offset, numRows, sortOrder);
+  // console.log('getStoreResults', storeName, filters, offset, numRows, sortOrder);
   let out: Array<any> = [];
   let query = getQueryFromFilters(storeName, filters, sortOrder);
   let cursor = await getCursor(query, bgState);
@@ -1310,7 +1314,7 @@ export async function getStoreResults(
     try {
       await cursor.continue();
     } catch (err) {
-      console.log('no more items, stopping');
+      // console.log('no more items, stopping');
       hasMoreItems = false;
     }
   }

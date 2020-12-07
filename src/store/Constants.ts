@@ -77,7 +77,7 @@ export const reset = async function(bgState: Object) {
 
 export const setDBPromise = async function(dbp: Promise<IDBPDatabase<unknown>>) {
   try {
-    console.log('setting db promise');
+    // console.log('setting db promise');
     dbPromise = dbp;
     let x = await dbp;
     setDBVersion(x.version);
@@ -88,19 +88,19 @@ export const setDBPromise = async function(dbp: Promise<IDBPDatabase<unknown>>) 
 
 export const getDBPromise = async function(bgState: Object) {
   if (dbPromise == null) {
-    console.log('no dbPromise?! Creating DB again...');
+    // console.log('no dbPromise?! Creating DB again...');
     await createDB(bgState);
   }
   return dbPromise;
 };
 
 export const createDB = async function(bgState: Object) {
-  console.log('creating DB');
+  // console.log('creating DB');
   // When anything below changes, increment DB_VERSION or delete existing database. This forces the database schema to be updated.
   let dbPromise = openDB(DB_NAME, dbVersion, {
     async upgrade(db, oldVersion, newVersion, transaction) {
       if (oldVersion === 0) {
-        console.log('Creating stores');
+        // console.log('Creating stores');
 
         db.createObjectStore(STORE_PROFILES, {
           keyPath: 'id',
@@ -133,16 +133,16 @@ export const createDB = async function(bgState: Object) {
       }
     },
     async blocking() {
-      console.log('blocking something, closing');
+      // console.log('blocking something, closing');
       this.close();
     },
 
     blocked() {
-      console.log('blocked');
+      // console.log('blocked');
     },
   });
   setDBPromise(dbPromise);
-  console.log('DONE: creating DB');
+  // console.log('DONE: creating DB');
 };
 
 // @ts-ignore

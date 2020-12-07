@@ -43,7 +43,7 @@ export function scoreFnJustPoints(src: { points: number }) {
 
 export function drawRandomElFromObject(object: Array<any>, scoreFn: Function) {
   let sum = 0;
-  console.log('DRAWING RANDOM ELEMENT');
+  // console.log('DRAWING RANDOM ELEMENT');
   let scores = [];
   for (let i = 0; i < object.length; i++) {
     let score = scoreFn(object[i]);
@@ -54,7 +54,7 @@ export function drawRandomElFromObject(object: Array<any>, scoreFn: Function) {
   }
 
   if (sum === 0) {
-    console.log('Error drawing item from list: no item with any points');
+    // console.log('Error drawing item from list: no item with any points');
     return [null, -1];
   }
 
@@ -83,7 +83,7 @@ export function drawRandomElFromObject(object: Array<any>, scoreFn: Function) {
     }
     let obj = object[k];
     try {
-      console.log(selText + ' ' + score + ' - ' + obj.saved + ' - ' + obj.points + ' - ' + obj.providerId);
+      // console.log(selText + ' ' + score + ' - ' + obj.saved + ' - ' + obj.points + ' - ' + obj.providerId);
     } catch (err) {
       console.error('ERROR2');
     }

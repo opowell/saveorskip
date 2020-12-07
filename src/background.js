@@ -22,7 +22,7 @@ function saveSources(sourcesToSave, callback) {
   try {
     callback();
   } catch (err) {
-    console.log('callback is not a function.');
+    // console.log('callback is not a function.');
   }
 }
 
@@ -66,7 +66,7 @@ function saveSources(sourcesToSave, callback) {
 // }
 
 function saveSourcesOfUrl(url, cb, action) {
-  console.log(action + ' sources of ' + url);
+  // console.log(action + ' sources of ' + url);
 
   // Save sources from open pages that link to this item.
   chrome.tabs.query({}, function(tabs) {
@@ -74,7 +74,7 @@ function saveSourcesOfUrl(url, cb, action) {
       let tab = tabs[i];
       if (trimmedUrl(tab.url) === trimmedUrl(url)) {
         // Check tab itself for sources.
-        console.log('scraping own sources from tabId=' + tab.id);
+        // console.log('scraping own sources from tabId=' + tab.id);
         chrome.tabs.sendMessage(tab.id, { action: 'getSources', saveOrSkip: action }, function(response) {
           if (response != null) {
             for (let j = 0; j < response.sources.length; j++) {
@@ -88,7 +88,7 @@ function saveSourcesOfUrl(url, cb, action) {
               try {
                 cb();
               } catch (err) {
-                console.log('Scraping sources: Error evaluating callback.');
+                // console.log('Scraping sources: Error evaluating callback.');
               }
             }
           }
@@ -97,7 +97,7 @@ function saveSourcesOfUrl(url, cb, action) {
         let otherTab = tabs[i];
         chrome.tabs.sendMessage(otherTab.id, { action: 'getUrlSources', url: url, saveOrSkip: action }, function(response) {
           if (response == null || response.sources == null) {
-            console.log(otherTab.url + ' returned no sources of ' + url);
+            // console.log(otherTab.url + ' returned no sources of ' + url);
             return;
           }
 
@@ -118,9 +118,9 @@ async function showNextPage(profileId) {
   await store.dispatch('gettingSuggestion', profileId);
   await store.dispatch('status', 'Getting suggestion');
   // If next suggestion already exists, use it and find a new one.
-  console.log('show next link');
+  // console.log('show next link');
   if (store.state.nextSuggestion != null) {
-    console.log('next suggestion exists');
+    // console.log('next suggestion exists');
     changeActiveTabToUrl(store.state.nextSuggestion);
     store.commit(types.SET_CUR_SUGGESTION, {
       url: store.state.nextSuggestion,
@@ -132,7 +132,7 @@ async function showNextPage(profileId) {
       value: false,
     });
   } else {
-    console.log('no next suggestion');
+    // console.log('no next suggestion');
     store.commit(types.SET_NEED_CUR_SUGGESTION, {
       value: true,
     });
@@ -143,7 +143,7 @@ async function showNextPage(profileId) {
 async function loadNextSuggestion(profileId) {
   await store.dispatch('status', 'Getting suggestion');
   try {
-    console.log('Loading next link');
+    // console.log('Loading next link');
     let nextLink = await idb.getSuggestion(profileId);
     if (nextLink != null) {
       changeActiveTabToUrl(nextLink.url);
@@ -152,7 +152,7 @@ async function loadNextSuggestion(profileId) {
       await store.dispatch('status', 'Waiting for suggestion');
     }
   } catch (err) {
-    console.log(err);
+    // console.log(err);
   }
 }
 
@@ -209,17 +209,17 @@ async function doGetPage(senderUrl, message, sender) {
     setPageUrl();
     setPage(message.page);
   } else {
-    console.log('no page, skipping');
+    // console.log('no page, skipping');
   }
 
-  console.log('scraper tab id', store.state, sender.tab.id, state.scraperTabId);
+  // console.log('scraper tab id', store.state, sender.tab.id, state.scraperTabId);
   await idb.removePageToScrape(senderUrl);
   if (sender.tab.id === state.scraperTabId) {
-    console.log('was a page to scrape');
+    // console.log('was a page to scrape');
     let nextPageToScrape = await idb.getNextPageToScrape();
-    console.log('next page', nextPageToScrape);
+    // console.log('next page', nextPageToScrape);
     if (nextPageToScrape != null) {
-      console.log('scrape next');
+      // console.log('scrape next');
       chrome.tabs.update(sender.tab.id, { url: 'http://' + nextPageToScrape[STORE_SCRAPING_QUEUE_PROFILEID] });
       // chrome.tabs.sendMessage(sender.tab.id, { action: 'setUrl', url: 'http://' + nextPageToScrape[STORE_SCRAPING_QUEUE_PROFILEID] });
     }
@@ -240,7 +240,7 @@ async function getSourcesOfUrl({ url, profileId }) {
       let tab = tabs[i];
       chrome.tabs.sendMessage(tab.id, { action: 'getUrlSources', url: url }, function(response) {
         if (response == null || response.sources == null) {
-          console.log(tab.url + ' returned no sources of ' + url);
+          // console.log(tab.url + ' returned no sources of ' + url);
           return;
         }
         idb.storeLinkSources(response.sources, profileId);
@@ -251,7 +251,7 @@ async function getSourcesOfUrl({ url, profileId }) {
 
 async function handleMessage(message, sender) {
   let senderUrl = trimmedUrl(sender.url);
-  console.log('message received from ' + senderUrl, message);
+  // console.log('message received from ' + senderUrl, message);
 
   let action = message;
   if (message.action != null) {
@@ -329,7 +329,7 @@ async function handleMessage(message, sender) {
       if (senderUrl === state.testPageUrl) {
         closeWhenDone = true;
       }
-      console.log('loaded page', sender, state);
+      // console.log('loaded page', sender, state);
       let isScraperPage = state.scraperTabId === sender.tab.id;
 
       if (state.urlsToScrape[senderUrl] === true) {
@@ -338,7 +338,7 @@ async function handleMessage(message, sender) {
       }
 
       let scraper = await getScraper(senderUrl);
-      console.log('sending response for ' + senderUrl + ' with scraper' + scraper.id, scraper);
+      // console.log('sending response for ' + senderUrl + ' with scraper' + scraper.id, scraper);
       let payload = {
         scraper,
         closeWhenDone,
@@ -367,13 +367,13 @@ async function handleMessage(message, sender) {
     case 'saveAsSource':
       break;
     case 'reset':
-      console.log('Starting reset...');
+      // console.log('Starting reset...');
       await deleteDB(DB_NAME, {
         blocked() {
-          console.log('call was blocked!');
+          // console.log('call was blocked!');
         },
       });
-      console.log('DB deleted');
+      // console.log('DB deleted');
       createDB(state);
       break;
   }
@@ -401,7 +401,7 @@ async function getScraper(url) {
     scraper = curScraper;
   }
   if (scraper == null) {
-    console.log('Error, no scraper found for ' + url);
+    // console.log('Error, no scraper found for ' + url);
   }
   return scraper;
 }
@@ -415,7 +415,7 @@ function saveAsSource(tab, profileId, sourceUrl) {
 }
 
 async function getLinksCB(links) {
-  console.log('received ' + links.length + ' new suggestions for ' + store.state.sourceToScrape + ':\n' + JSON.stringify(links));
+  // console.log('received ' + links.length + ' new suggestions for ' + store.state.sourceToScrape + ':\n' + JSON.stringify(links));
 
   for (let i in links) {
     let link = links[i];
@@ -432,9 +432,9 @@ async function getLinksCB(links) {
 // Open URL and get suggestion from it.
 // eslint-disable-next-line no-unused-vars
 function openUrl(newURL, getSuggestion) {
-  console.log('creating new tab: ' + newURL);
+  // console.log('creating new tab: ' + newURL);
   chrome.tabs.create({ url: newURL, active: false }, function(tab) {
-    console.log('tab created: ' + newURL);
+    // console.log('tab created: ' + newURL);
     store.commit(types.SET_CUR_SUGGESTION_TAB_ID, {
       tabId: tab.id,
     });
@@ -442,10 +442,10 @@ function openUrl(newURL, getSuggestion) {
 }
 
 function changeActiveTabToUrl(newURL) {
-  console.log('changing active tab (' + store.state.activeTabId + ') to ' + newURL);
+  // console.log('changing active tab (' + store.state.activeTabId + ') to ' + newURL);
   chrome.tabs.get(store.state.activeTabId, function(activeTab) {
     if (activeTab == null) {
-      console.log('no active tab, aborting');
+      // console.log('no active tab, aborting');
       return;
     }
     store.commit(types.SET_CUR_SUGGESTION, {
@@ -457,7 +457,7 @@ function changeActiveTabToUrl(newURL) {
 
 // LISTEN TO TAB CHANGES / ACTIVATIONS
 chrome.tabs.onActivated.addListener(function(activeInfo) {
-  console.log('tab activated', activeInfo);
+  // console.log('tab activated', activeInfo);
 
   setPageUrl(activeInfo.tabId);
   state.activeTabId = activeInfo.tabId;
@@ -466,7 +466,7 @@ chrome.tabs.onActivated.addListener(function(activeInfo) {
 });
 
 chrome.tabs.onUpdated.addListener(async function(tabId, changeInfo, tab) {
-  console.log('tab updated', tabId, changeInfo, tab, state.scraperTabId, store, state);
+  // console.log('tab updated', tabId, changeInfo, tab, state.scraperTabId, store, state);
   if (tabId === state.activeTabId) {
     setPageUrl(tabId);
     chrome.tabs.sendMessage(tabId, { action: 'getPage' });
@@ -497,7 +497,7 @@ if (state.profileId == null) {
   let profiles = idb.fetchProfiles([{ field: 'generatedBy', lowerValue: 'user', upperValue: 'user' }], 1);
   profiles.then(value => {
     state.profileId = value[0].id;
-    console.log('set profile id to ' + state.profileId);
+    // console.log('set profile id to ' + state.profileId);
   });
 } else {
   state.profileId = convertId(state.profileId);

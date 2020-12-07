@@ -4,23 +4,16 @@
 
 1. Clone / download this repository.
 2. Install dependencies
-
-- `npm install`
-
+   - `npm install`
 3. Install standalone Vue devtools.
-
-- `npm install --save-dev "@vue/devtools"`
+   - `npm install --save-dev "@vue/devtools"`
 
 ## Running
 
 1. Run Vue devtools
-
-- `./node_modules/.bin/vue-devtools`
-
+   - `./node_modules/.bin/vue-devtools`
 2. Serve extension
-
-- `npm run watch:dev`
-
+   - `npm run watch:dev`
 3. Install extension in browser (see README.md, substituting the zip file contents with the "dist" folder contents).
 
 ## Deployment

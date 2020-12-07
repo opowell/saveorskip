@@ -10,6 +10,7 @@ Vue.use(BootstrapVue);
 
 global.browser = require('webextension-polyfill');
 
+Vue.config.productionTip = false;
 /* eslint-disable no-new */
 window.vue = new Vue({
   el: '#app',

@@ -1,3 +1,5 @@
+import Vue from 'vue';
+
 export const LINKS = {
   PROFILES: 'profiles?filters=user,generatedBy,user%5D%5D,timeAdded,&sort=decr',
   PROFILE_LINKS: '',
@@ -5,7 +7,7 @@ export const LINKS = {
   LOGS: 'logs?filters=,time,&sort=decr',
 };
 
-import Vue from 'vue';
+Vue.config.productionTip = false;
 
 export const MessageEventBus = new Vue();
 

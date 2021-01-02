@@ -438,7 +438,7 @@ export default {
         if (Array.isArray(this.object)) {
           this.object.splice(0, this.object.length);
         }
-        console.log('fetch initial data', this.fetchInitialData, this);
+        // console.log('fetch initial data', this.fetchInitialData, this);
         await this.fetchInitialData();
       }
       await this.checkIfNeedData();
@@ -450,9 +450,9 @@ export default {
       document.getElementById('checkBoxHeader').checked = false;
     },
     async checkIfNeedData() {
-      console.log('check data', this, this.items.length, this.numResults);
+      // console.log('check data', this, this.items.length, this.numResults);
       if (this.items.length < this.numResults && this.items.length < this.perPage * (this.currentPage - 1) + 1) {
-        console.log('need data, try to fetch rows');
+        // console.log('need data, try to fetch rows');
         if (typeof this.fetchRows === 'function') {
           let items = await this.fetchRows();
           if (typeof items === 'object') this.setRows(items);
@@ -460,7 +460,7 @@ export default {
       }
     },
     setRows(newItems) {
-      console.log('checked data, got', newItems);
+      // console.log('checked data, got', newItems);
       if (newItems != null) this.object.push(...newItems);
       this.$refs.table.refresh();
       if (newItems.length > 0) {

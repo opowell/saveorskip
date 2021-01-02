@@ -6,6 +6,7 @@ import * as types from './store/mutation-types';
 import { trimmedUrl, convertId } from './Utils';
 import { LINK_STATUS, STORE_PROFILES, STORE_SCRAPING_QUEUE_PROFILEID, DB_NAME, createDB } from './store/Constants.ts';
 import { deleteDB } from 'idb';
+import { loadProfile } from './store/idb';
 
 global.browser = require('webextension-polyfill');
 
@@ -115,11 +116,11 @@ function saveSourcesOfUrl(url, cb, action) {
 
 // Selects a random source, with prob. of selecting source i proportional to source i's points.
 async function showNextPage(profileId) {
-  await store.dispatch('gettingSuggestion', profileId);
+  const nextUrl = await loadNextSuggestion(profileId);
   await store.dispatch('status', 'Getting suggestion');
   // If next suggestion already exists, use it and find a new one.
   // console.log('show next link');
-  if (store.state.nextSuggestion != null) {
+  if (nextUrl != null) {
     // console.log('next suggestion exists');
     changeActiveTabToUrl(store.state.nextSuggestion);
     store.commit(types.SET_CUR_SUGGESTION, {
@@ -144,7 +145,7 @@ async function loadNextSuggestion(profileId) {
   await store.dispatch('status', 'Getting suggestion');
   try {
     // console.log('Loading next link');
-    let nextLink = await idb.getSuggestion(profileId);
+    let nextLink = await idb.getSuggestion(store.state, profileId);
     if (nextLink != null) {
       changeActiveTabToUrl(nextLink.url);
       return;

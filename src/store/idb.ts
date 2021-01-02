@@ -24,6 +24,7 @@ import {
 import * as types from './mutation-types';
 import { trimmedUrl, drawRandomElFromObject, scoreFnJustPoints, convertId } from '../Utils';
 import { MessageEventBus } from '../options/Constants';
+import Profile from '../models/Profile';
 
 const state: any = store.state;
 
@@ -72,7 +73,6 @@ export async function removePageToScrape(url: string, bgState: Object) {
 export async function getNextPageToScrape(bgState: Object) {
   let db = await getDBPromise(bgState);
   let out = await db.getAllFromIndex(STORE_SCRAPING_QUEUE, STORE_SCRAPING_QUEUE_TIMEQUEUED);
-  // console.log('get next scrape', out);
   if (out.length < 1) return null;
   out[0].status = 'started';
   await db.put(STORE_SCRAPING_QUEUE, out[0]);
@@ -86,7 +86,6 @@ export async function storePage(page: any, profileId: number | string, linkActio
 
   let numNewLinksFound = 0;
 
-  // Page as a profile.
   for (let i in page.links) {
     let link = page.links[i];
     if (typeof link === 'string') {
@@ -112,16 +111,9 @@ export async function storePage(page: any, profileId: number | string, linkActio
     }
     source.consumerId = profileId;
   }
-  // await addSources({
-  //   sources,
-  // });
 
   page.generatedBy = 'auto';
   await storeProfile(page, { overwriteProps: false, updateScrapeSettings: true, numNewLinksFound }, bgState);
-  // let state: any = store.state;
-  // delete state.urlsToScrape[profileId];
-
-  // Page as link and source for current consumer profile.
   await saveOrSkipLink(linkAction, profileId, page, bgState);
   await saveOrSkipSource(sourceAction, profileId, page, bgState);
 }
@@ -129,17 +121,16 @@ export async function storePage(page: any, profileId: number | string, linkActio
 export async function parseBrowserHistory(bgState: Object, { consumerId, maxScrapes = 20 }) {
   state.isScraperRunning = true;
 
-  var microsecondsPerWeek = 1000 * 60 * 60 * 24 * 7;
-  var oneWeekAgo = new Date().getTime() - microsecondsPerWeek;
-  // console.log('parsing history');
+  const microsecondsPerWeek = 1000 * 60 * 60 * 24 * 7;
+  const oneWeekAgo = new Date().getTime() - microsecondsPerWeek;
+  let numMatches = 0;
 
   let parseSearch = async function(historyItems) {
-    // For each history item, get details on all visits.
-    for (var i = 0; i < historyItems.length; ++i) {
-      if (i >= maxScrapes) break;
-      var url = historyItems[i].url;
+    for (let i = 0; i < historyItems.length; ++i) {
+      if (numMatches >= maxScrapes) break;
+      let url = historyItems[i].url;
       url = trimmedUrl(url);
-      // console.log('found url ' + url);
+      if (url.startsWith('chrome-extension://')) continue;
       let srcObj = {
         source: {
           saved: 1,
@@ -152,6 +143,7 @@ export async function parseBrowserHistory(bgState: Object, { consumerId, maxScra
       await storeSource(srcObj, bgState);
       await addLink({ profileId: consumerId, url }, bgState);
       await scrapeIfNecessary(bgState, { id: url });
+      numMatches++;
     }
     state.isScraperRunning = false;
     await startScraping(bgState);
@@ -159,8 +151,8 @@ export async function parseBrowserHistory(bgState: Object, { consumerId, maxScra
 
   chrome.history.search(
     {
-      text: '', // Return every history item....
-      startTime: oneWeekAgo, // that was accessed less than one week ago.
+      text: '',
+      startTime: oneWeekAgo,
     },
     parseSearch
   );
@@ -374,7 +366,7 @@ export async function saveObject(storeName: string, object: Object, bgState: Obj
 }
 
 export async function getProfile(id: string | number, bgState: Object) {
-  if (id == null) {
+  if (!id) {
     return null;
   }
   if (typeof id === 'number' && isNaN(id)) {
@@ -383,6 +375,13 @@ export async function getProfile(id: string | number, bgState: Object) {
   try {
     let db = await getDBPromise(bgState);
     let out = await db.get(STORE_PROFILES, id);
+    Object.setPrototypeOf(out, Profile.prototype);
+    for (let i in out) {
+      if (i.startsWith('__fnStr_')) {
+        const fieldName = i.replace('__fnStr_', '');
+        eval(`out[${fieldName}] = ${out.i}`);
+      }
+    }
     return out;
   } catch (err) {
     // console.log('Error getting profile ' + id, err);
@@ -562,75 +561,18 @@ export async function startScraping(bgState: any) {
 
 export async function getSuggestion(bgState: Object, profileId: string | number) {
   try {
-    let sources = await getProfileSources(profileId, bgState);
-    if (sources == null) {
-      // console.log('no sources found');
-      return;
-    }
-
     let consumer = await getProfile(profileId, bgState);
-    while (true) {
-      let [source, index] = drawRandomElFromObject(sources, scoreFnJustPoints);
-      if (source == null) {
-        // console.log('error loading suggestion: no source found');
-        return;
-      }
-
-      // TODO: Make customizable.
-      source.points--;
-      let db = await getDBPromise(bgState);
-      await db.put(STORE_SOURCES, source);
-
-      let provider = await getProfile(source.providerId, bgState);
-      await scrapeIfNecessary(bgState, provider);
-
-      let linksCursor = null;
-      try {
-        // linksCursor = await getLinksByTimeAdded(source.providerId);
-        let query = {
-          storeName: STORE_LINKS,
-          lowerBounds: [source.providerId],
-          upperBounds: [source.providerId],
-        };
-        linksCursor = await getCursor(query, bgState);
-        if (linksCursor == null) {
-          continue;
-        }
-        let nextUrl = null;
-        while (nextUrl === null) {
-          // Check if current link already exists on profile.
-          let storeLink = await getLink(
-            {
-              profileId,
-              linkId: linksCursor.value.url,
-              createIfNecessary: false,
-            },
-            bgState
-          );
-          let alreadyExists = storeLink != null;
-          if (!alreadyExists) {
-            nextUrl = linksCursor.value;
-          } else {
-            await linksCursor.continue();
-          }
-        }
-
-        if (nextUrl !== null) {
-          return nextUrl;
-        }
-      } catch (err) {
-        sources.splice(index, 1);
-        continue;
-      }
-    }
+    const suggestion = consumer.getSuggestion(this, bgState);
+    return suggestion;
   } catch (err) {
     // console.log(err);
   }
 }
 
 export async function getProfileSources(profileId: string | number, bgState: Object) {
+  console.log('getProfileSources', STORE_SOURCES, STORE_SOURCES_CONSUMERID, profileId);
   let db = await getDBPromise(bgState);
-  let out = await db.getAllFromIndex(STORE_SOURCES, STORE_SOURCES_CONSUMERID, profileId);
+  let out = await db.getAllFromIndex(STORE_SOURCES, STORE_SOURCES_CONSUMERID, [profileId]);
   return out;
 }
 
@@ -709,16 +651,19 @@ export async function addLink(payload: any, bgState: Object): Promise<number> {
     deletedId = true;
   }
   payload[STORE_LINKS_TIME_ADDED] = new Date();
-  let objectKeys = await db.put(STORE_LINKS, payload);
-
-  addLog(
-    {
-      objectKeys,
-      objectType: 'Link',
-      message: 'Store',
-    },
-    bgState
-  );
+  try {
+    let objectKeys = await db.put(STORE_LINKS, payload);
+    await addLog(
+      {
+        objectKeys,
+        objectType: 'Link',
+        message: 'Store',
+      },
+      bgState
+    );
+  } catch (err) {
+    console.log('error storing link', payload, err);
+  }
 
   if (deletedName) {
     payload.name = payload.title;
@@ -838,6 +783,16 @@ export async function saveOrSkipLink(action: number, profileId: number | string,
   }
 
   addLink(link, bgState);
+}
+
+export async function storeLink(profileId: number | string, link = <any>{}, bgState: Object) {
+  link.url = trimmedUrl(link.url);
+  link.profileId = profileId;
+  link.timeAdded = new Date();
+
+  // console.log('saving or skipping', profileId, link);
+  let profile = await getProfile(profileId, bgState);
+  await profile.storeLink(this, link, bgState);
 }
 
 export async function storeSource(
@@ -1322,6 +1277,7 @@ export async function getStoreResults(
 }
 
 export async function getNumResults({ storeName, filters }: { storeName: string; filters: Array<any> }, bgState: Object) {
+  // console.log('getNumResults', storeName, filters)
   let query = getQueryFromFilters(storeName, filters);
   let index = await getIndex(query, bgState);
   if (index == null) {

@@ -12,7 +12,8 @@
     "build:dev": "cross-env NODE_ENV=development webpack --hide-modules",
     "build-zip": "node scripts/build-zip.js",
     "watch": "npm run build -- --watch",
-    "watch:dev": "cross-env HMR=true npm run build:dev -- --watch"
+    "watch:dev": "cross-env HMR=true npm run build:dev -- --watch",
+    "postinstall": "node postinstall.js"
   },
   "dependencies": {
     "@types/chrome": "0.0.103",
@@ -60,6 +61,7 @@
     "node-sass": "^4.13.0",
     "prettier": "^1.19.1",
     "pretty-quick": "^1.11.1",
+    "replace-in-file": "^6.1.0",
     "sass-loader": "^7.3.1",
     "vue-loader": "^15.7.2",
     "vue-template-compiler": "^2.6.11",

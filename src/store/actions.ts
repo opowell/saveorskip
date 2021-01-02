@@ -1,4 +1,5 @@
 import * as types from './mutation-types';
+import { loadProfile } from './idb';
 
 export const setTestPage = ({ commit }: { commit: any }, payload: any) => {
   commit(types.SET_TEST_PAGE, payload);

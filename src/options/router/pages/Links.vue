@@ -87,7 +87,8 @@ export default {
       let url = document.getElementById('addLinkUrlInput').value;
       let title = document.getElementById('addLinkTitleInput').value;
       let link = { url, title };
-      await idb.saveOrSkipLink(LINK_STATUS.SAVE, this.profileId, link);
+      // await idb.saveOrSkipLink(LINK_STATUS.SAVE, this.profileId, link);
+      await idb.storeLink(this.profileId, link);
       await this.fetchInitialData();
     },
     openLink({ item, index, event }) {

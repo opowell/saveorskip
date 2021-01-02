@@ -1,5 +1,6 @@
 import * as types from './mutation-types';
 import { trimmedUrl } from '../Utils';
+import { loadProfile } from './idb';
 
 /**
  * Mutations are synchronous.

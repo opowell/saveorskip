@@ -1,6 +1,6 @@
-import { getDBPromise, LINK_STATUS, STORE_LINKS, STORE_PROFILES, STORE_SOURCES } from '../store/Constants';
+import { getDBPromise, LINK_STATUS, STORE_LINKS, STORE_SOURCES } from '../store/Constants';
 import { drawRandomElFromObject, scoreFnJustPoints } from '../Utils';
-import { addLink, getLink, getProfileSources, saveOrSkipSource, scrapeIfNecessary, storeProfile } from '../store/idb';
+import { addLink, getLink, getProfileSources, scrapeIfNecessary, storeProfile } from '../store/idb';
 
 export default class {
   name: string;
@@ -66,8 +66,9 @@ export default class {
     // console.log('Source ' + consumerId + ' <-- ' + providerId + ' stored successfully.');
   }
   async storeLink(idb, link, bgState) {
-    // If necessary, reverse previous action.
     let db = await getDBPromise(bgState);
+
+    // If necessary, reverse previous action.
     let storeObject = await db.get(STORE_LINKS, [this.id, link.url]);
 
     if (storeObject != null && storeObject.saved !== link.saved) {
@@ -104,21 +105,21 @@ export default class {
         };
       }
       if (source.points == null) {
-        if (action === LINK_STATUS.SAVED) {
+        if (link.saved === LINK_STATUS.SAVED) {
           source.points = source.pointsSave;
         } else {
           source.points = source.pointsSkip;
         }
       }
-      await saveOrSkipSource(
+      await idb.saveOrSkipSource(
         LINK_STATUS.SKIPPED, // TODO: check if source exists. update, instead of overwrite.
-        profileId,
+        this.id,
         source,
         bgState
       );
     }
 
-    addLink(link, bgState);
+    await addLink(link, bgState);
   }
   async getSuggestion(idb, bgState) {
     let sources = await getProfileSources(this.id, bgState);

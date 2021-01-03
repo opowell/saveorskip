@@ -631,25 +631,25 @@ export async function addLink(payload: any, bgState: Object): Promise<number> {
     numNewLinks = 1;
   }
 
-  let linksProp = payload.links;
-  delete payload.links;
-
-  let autoGenProp = payload.generatedBy;
-  delete payload.generatedBy;
-
-  let pointsProp = payload.points;
-  delete payload.points;
-
-  let deletedName = false;
-  if (payload.title === payload.name) {
-    delete payload.name;
-    deletedName = true;
-  }
-  let deletedId = false;
-  if (payload.url === payload.id) {
-    delete payload.id;
-    deletedId = true;
-  }
+  // let linksProp = payload.links;
+  // delete payload.links;
+  //
+  // let autoGenProp = payload.generatedBy;
+  // delete payload.generatedBy;
+  //
+  // let pointsProp = payload.points;
+  // delete payload.points;
+  //
+  // let deletedName = false;
+  // if (payload.title === payload.name) {
+  //   delete payload.name;
+  //   deletedName = true;
+  // }
+  // let deletedId = false;
+  // if (payload.url === payload.id) {
+  //   delete payload.id;
+  //   deletedId = true;
+  // }
   payload[STORE_LINKS_TIME_ADDED] = new Date();
   try {
     let objectKeys = await db.put(STORE_LINKS, payload);
@@ -665,21 +665,21 @@ export async function addLink(payload: any, bgState: Object): Promise<number> {
     console.log('error storing link', payload, err);
   }
 
-  if (deletedName) {
-    payload.name = payload.title;
-  }
-  if (deletedId) {
-    payload.id = payload.url;
-  }
-  if (linksProp != null) {
-    payload.links = linksProp;
-  }
-  if (pointsProp != null) {
-    payload.points = pointsProp;
-  }
-  if (autoGenProp != null) {
-    payload.generatedBy = autoGenProp;
-  }
+  // if (deletedName) {
+  //   payload.name = payload.title;
+  // }
+  // if (deletedId) {
+  //   payload.id = payload.url;
+  // }
+  // if (linksProp != null) {
+  //   payload.links = linksProp;
+  // }
+  // if (pointsProp != null) {
+  //   payload.points = pointsProp;
+  // }
+  // if (autoGenProp != null) {
+  //   payload.generatedBy = autoGenProp;
+  // }
 
   return numNewLinks;
 }

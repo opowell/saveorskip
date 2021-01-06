@@ -14,7 +14,7 @@
    - `./node_modules/.bin/vue-devtools`
 2. Serve extension
    - `npm run watch:dev`
-3. Install extension in browser (see README.md, substituting the zip file contents with the "dist" folder contents).
+3. If not already installed, install extension in browser (see README.md, substituting the zip file contents with the "dist" folder contents).
 
 ## Deployment
 
